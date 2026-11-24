@@ -26,6 +26,8 @@ internal static class OriginalAllSubtypesChecks
                 OriginalAllSubtypesModel.Active(context, before.Spawn.Turn == 0) && RelicModel.Validate(context) == null,
                 "The exact AllUnitsAllSubtypes owner must be active from native deployment through each combat turn.");
         }
+        if (root.GetProperty("OriginalKillCopyPrepared").GetBoolean())
+            OriginalKillCopyChecks.Native(root, allSubtypes: true);
         SolverStageChecks.Native(path);
     }
 

@@ -25,7 +25,7 @@ internal static class OriginalKillCopyChecks
             playerPosition: index == 0 ? 0 : index < 4 ? index - 1 : -1, targetUnitId: target);
         return BattleActionModel.PlayCard(source, action).Supported ? action : null;
     }
-    internal static void Native(FixtureValue root)
+    internal static void Native(FixtureValue root, bool allSubtypes = false)
     {
         Require(root.GetProperty("OriginalKillCopyPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed Surgical Strike witness.");
@@ -53,7 +53,7 @@ internal static class OriginalKillCopyChecks
                 copyRule.Upgrade!.Stats.Damage == 0 && copyRule.Upgrade.Lifecycle!.AddedTraits.Single().RuntimeType == "CardTraitEphemeral",
                 "Self-reference, modifier copying or original Ephemeral upgrade differs.");
             var added = actual.Cards.Hand.Where(token => token.InstanceId >= context.NextCardId).ToArray();
-            int count = i is 8 or 10 or 11 ? 1 : 0;
+            int count = i is 10 or 11 || (i == 8 && !allSubtypes) ? 1 : 0;
             Require(added.Length == count && actual.NextCardId - context.NextCardId == count && Json(context.BattleRng) == Json(actual.BattleRng),
                 "Suppressed/nonlethal copy count, identity allocation or no-roll RNG differs.");
             foreach (var token in added)
@@ -68,7 +68,10 @@ internal static class OriginalKillCopyChecks
             if (i == 6) Require(Victim(before, 2).Health == 8 && Victim(after, 2).Health == 4 && Stacks(Victim(after, 2), "damage shield") == 1, "Piercing must bypass, preserve shield and deal nonlethal four.");
             if (i == 7) Require(Victim(before, 3).Subtypes.Contains("SubtypesData_FunGuy") && Victim(after, 3).Health == 1 &&
                 Stacks(Victim(before, 3), "undying") == 1 && Stacks(Victim(after, 3), "undying") == 0, "Revived FunGuy must remain suppressed.");
-            if (i == 8) Require(!Victim(before, 2).Subtypes.Contains("SubtypesData_FunGuy") && !after.Spawn.Train.Rooms[1].Units.Any(unit => unit.SpawnerCardId == ids[2]), "Ordinary friendly lethal must still copy.");
+            if (i == 8) Require(!Victim(before, 2).Subtypes.Contains("SubtypesData_FunGuy") &&
+                !after.Spawn.Train.Rooms[1].Units.Any(unit => unit.SpawnerCardId == ids[2]) &&
+                OriginalAllSubtypesModel.Active(context, deployment: false) == allSubtypes,
+                "Ordinary friendly lethal must use the native active subtype rule.");
             if (i == 9)
             {
                 var old = before.Spawn.Train.Rooms[0].Units.Single(unit => unit.AssetKey == "ShieldGuardT1_BasicNonAttack");
@@ -78,7 +81,7 @@ internal static class OriginalKillCopyChecks
         }
         var discard = root.GetProperty("Turns").EnumerateArray().First(row => row.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Turn == 1)
             .GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
-        Require(generated.Count == 3 && generated.All(id => discard.OtherPiles!.Single(pile => pile.Name == "Purged").Cards.Any(token => token.InstanceId == id)),
+        Require(generated.Count == (allSubtypes ? 2 : 3) && generated.All(id => discard.OtherPiles!.Single(pile => pile.Name == "Purged").Cards.Any(token => token.InstanceId == id)),
             "Played and unplayed generated Ephemeral cards must all purge.");
         var sample = Before(8); var source = sample.Spawn.Train.Context!.FindCard(ids[8])!; var d = source.MaskDescriptor!;
         var bad = d.SourceTraits!.Single(trait => trait.Type == CardKillTriggerModel.SuppressTrait);
@@ -87,8 +90,9 @@ internal static class OriginalKillCopyChecks
             d.TemporaryTraits, d.PermanentReplacements, d.SourceTraits.Select(trait => trait.Type == bad.Type ? unknown : trait).ToArray(), d.KillTriggers));
         Require(CardModifierModel.Resolve(sample.PlayRules!.Cards.Single(rule => rule.DataId == OriginalId), broken).ExternalInteractions.Any(message => message.Contains("suppression")),
             "Missing team/subtype metadata was silently accepted.");
-        RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-KILL-COPY PASS: six unchanged originals and one generated play, FunGuy-only suppression/revival, ordinary friendly and enemy kills, armor/shield bypass, three deterministic self-copies, inherited Ephemeral upgrades/purge and 16 immutable full chains.");
+        if (!allSubtypes) RecordedBattleChecks.Native(root);
+        Console.WriteLine($"ORIGINAL-KILL-COPY PASS: six original plays, one generated play, all-subtypes active={allSubtypes}, " +
+            $"friendly suppression, enemy kills, armor/shield bypass and {generated.Count} deterministic Ephemeral copies.");
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

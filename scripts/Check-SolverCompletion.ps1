@@ -77,6 +77,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Original Surgical Strike subtype suppression failed.' }
     dotnet $checks --native-all-unit-subtypes-battle-only "$current/all-unit-subtypes/native-battle.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original AllUnitsAllSubtypes battle failed.' }
+    dotnet $checks --native-all-unit-subtypes-battle-only "$current/all-unit-subtypes/native-surgical-strike-battle.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original AllUnitsAllSubtypes Surgical Strike battle failed.' }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }

@@ -1431,7 +1431,7 @@ if ($selectedOriginalMutatorTests.Count -gt 0) {
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if ($OriginalShuffleUnitsWitness) { $witnessArguments += 'ShuffleUnitsThreeHosts' }
     if ($OriginalBothSidesUnitsWitness) { $witnessArguments += 'BothSidesUnitsCardless' }
-    if ($OriginalAllSubtypesBattle) { $witnessArguments += 'OriginalIsolatedSpellIds' }
+    if ($OriginalAllSubtypesBattle) { $witnessArguments += @('OriginalIsolatedSpellIds', 'OriginalKillCopy') }
     if (-not $BinaryCapture -or $selectedOriginalMutatorTests.Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Select one original mutator test with isolated binary capture.'
