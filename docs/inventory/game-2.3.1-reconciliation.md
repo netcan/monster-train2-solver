@@ -56,7 +56,7 @@
 | CardEffectMix | shared-path | The original effect presents ordered ingredient choices; the model expands selection and effect application through the same captured content. Original Secret Ingredient, Mixology with one to three choices, and the pinned Advisor receipt exercise those paths. The Lazarus rank II pair adds ordered selection controls. Potion Kit and Lazarus ranks I and III lack separate paired receipts in this review. |
 | CardEffectPlayUnitTrigger | shared-path | The exact original FavoredChild_2 post-combat payload queues one self OnFeed after room capacity decreases and applies three Rage. The component verifies the full queue result and RNG and rejects edited capacity. Other nested replay payloads retain their existing guards. |
 | CardEffectReplayTrigger | shared-path | Original Transcend Imp replays cached successful OnSpawn effects in order using the newly spawned self and its room. Five native battles verify empty history, retained history after source recall, gold, fixed temporary self upgrades, Fledgling Imp room Rage, Welder Helper front Armor with its Battle RNG advance, original enemy-room Decay and Sap, and Starter Imp front Damage followed by Unstable Infery room Damage. The last fixture covers the same natural wave with Armor absorption and two surviving targets. All recorded successors, candidate frontiers and independent branches pass. Effect payload support follows the calibrated history guards. |
-| CardEffectRewardGold | shared-path | Three physical hits on the original owner path give 2, 1, 0, and 0 gold across four states. Native actor damage and RNG match the shared signed-gold path. Changed conditional or random costs are rejected. |
+| CardEffectRewardGold | shared-path | Three controlled physical hits on the original owner path give 2, 1, 0, and 0 gold across four states. A full original battle adds 18 one-gold deductions tied to physical exchange damage and verifies 21 plays, seven EndTurns and both candidate frontiers. Changed conditional or random costs are rejected. |
 | CardEffectSpawnHeroIfNoOtherHeroUnits | shared-path | The pinned Railforged Unruly component spawns one original Decoy in the next physical slot when only the boss remains. With that Decoy present, the fallback test fails and the earlier copy applies. Component successors and RNG match. The separate original Unruly battle verifies initial birth, room selection, Relentless and terminal scheduling across 33 plays, seven EndTurns, both candidate frontiers and 16 independent branches. |
 | CardEffectTransferAttackFromUnit | shared-path | The effect transfers attack from the original resolved target. The pinned Brain Transfer and all three Lazarus Devour rank receipts verify the fixed front and activator paths. Devour verifies positive attack gain, Undying consumption, and each exact paid successor and card frontier. |
 | CardEffectUnitAbilityTeleport | shared-path | The original effect distinguishes a cross-floor move from an in-room rearrangement using the physical ability drop. The controlled original GrimFlight recordings show the caster moves before the following same-floor subtype and summon checks. The pinned selection-search check expands the complete native root frontier, agrees serially and in parallel, and replays the returned fragment selection with unchanged parent and exact RNG. The stock platform entitlement and released modal remain separate acceptance boundaries. |
@@ -194,10 +194,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `f7a24c52d528bd2034c2c20fc982c54b3ee34d8dfe8d852384e83205e8a1b55b`。
+- 人工审查索引 SHA-256: `7277dbce805c9067d08e93ea0a1cbec51966bc151ece95d47ba5bbd8446ba971`。
 - Model: PDB 校验过的项目源码集合 `b6bf0b7d29e74e64e37f5c09e73949a424730a74525c458084791d97a336e467`。
-- Probe: PDB 校验过的项目源码集合 `b0f2a64485eb9dc91cf7bcacd9b471d8f6e97764c284f425e7e17eeea2bdc1b7`。
-- ModelChecks: PDB 校验过的项目源码集合 `db0efce2961013e1448c948a6604af6ff5fc9d2da10a669e41a6e6348f200fcf`。
+- Probe: PDB 校验过的项目源码集合 `a4547efccc3984fe7e4af50bac549e3db866aed11e109ee63467f145c479a7b7`。
+- ModelChecks: PDB 校验过的项目源码集合 `8c05f8f7dd1c7d0c1adc5b4111e859e327abadd73bfc1c45721972fd57b8e0ff`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
