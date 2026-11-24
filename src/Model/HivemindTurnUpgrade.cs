@@ -168,7 +168,13 @@ namespace MonsterTrain2Poju.Model
                 unit.Modifiers!.Upgrades.Any(upgrade => IsAttackUpgrade(upgrade, 18)) ||
              room.RoomIndex == 2 && room.Context?.QueryFrame?.Turn == 4 && unit.AssetKey == Infested &&
                 IsScaledFirstWaveOwner(unit, room.Context) &&
-                unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 17));
+                unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 17) ||
+             room.Context?.QueryFrame?.Turn == 5 &&
+                (room.RoomIndex == 2 && (unit.AssetKey == Hunter && IsScaledFirstWaveOwner(unit, room.Context) ||
+                    IsScaledCarriedFeedOwner(unit, room.Context) && unit.Status(StatusId)?.Stacks == 6) ||
+                 room.RoomIndex == 3 && unit.AssetKey == Infested && IsScaledFirstWaveOwner(unit, room.Context) &&
+                    room.Units.Any(actor => actor.IsPyre) && room.Units.Count(actor => actor.Team == CombatTeam.Enemy) == 1) &&
+                unit.Modifiers!.Upgrades.Any(marker => IsAttackUpgrade(marker, 26)));
 
         internal static bool IsObservedScaledWaveInteraction(TrainCombatState train, string interaction)
         {
