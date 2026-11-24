@@ -47,7 +47,7 @@ public sealed class FixtureCatalog
 
 public enum Game231FixtureKind { Legacy, Component, UnsettledBattle, SettledBattle }
 
-public sealed record Game231FixtureRegistration(string Path, long Bytes, string Sha256, bool Stage)
+public sealed record Game231FixtureRegistration(string Path, long Bytes, string Sha256, bool Stage, bool Revalidated = false)
 {
     public string Verify(string directory)
     {
@@ -63,6 +63,7 @@ public static class Game231FixtureCatalog
 {
     public const string Version = "2.3.1";
     public const string Module = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+    public const string RevalidatedManifest = "revalidated.tsv";
     private const string LegacyModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
     private static readonly string[] BattleCounters = ["CaptureFailures", "Mismatches", "Unsupported", "Pending"];
 
@@ -72,9 +73,12 @@ public static class Game231FixtureCatalog
     {
         var archives = new SortedDictionary<string, Game231FixtureRegistration>(StringComparer.Ordinal);
         string stagePath = Path.Combine(directory, "solver-stage.tsv");
-        foreach (string manifest in Directory.EnumerateFiles(directory, "manifest.tsv", SearchOption.AllDirectories).Append(stagePath))
+        var manifests = Directory.EnumerateFiles(directory, "manifest.tsv", SearchOption.AllDirectories)
+            .Concat(Directory.EnumerateFiles(directory, RevalidatedManifest, SearchOption.AllDirectories)).Append(stagePath);
+        foreach (string manifest in manifests)
         {
             bool stage = manifest == stagePath;
+            bool revalidated = Path.GetFileName(manifest) == RevalidatedManifest;
             string[] lines = File.ReadAllLines(manifest);
             string header = stage ? "case\tarchive\tbytes\tsha256" : "path\tbytes\tsha256";
             if (lines.Length < 2 || lines[0].Replace("\"", "", StringComparison.Ordinal) != header)
@@ -97,12 +101,12 @@ public static class Game231FixtureCatalog
                 string key = Path.GetRelativePath(directory, path).Replace('\\', '/');
                 if (archives.TryGetValue(key, out Game231FixtureRegistration? prior))
                 {
-                    if (prior.Bytes != bytes || prior.Sha256 != sha256)
+                    if (prior.Bytes != bytes || prior.Sha256 != sha256 || prior.Revalidated || revalidated)
                         throw new InvalidDataException("Conflicting archive registrations: " + key);
                     archives[key] = prior with { Stage = stage || prior.Stage };
                     continue;
                 }
-                archives.Add(key, new Game231FixtureRegistration(key, bytes, sha256, stage));
+                archives.Add(key, new Game231FixtureRegistration(key, bytes, sha256, stage, revalidated));
             }
         }
         return archives;
@@ -111,7 +115,7 @@ public static class Game231FixtureCatalog
     public static Game231FixtureKind Classify(Game231FixtureRegistration archive, FixtureValue root)
     {
         bool legacy = archive.Path.StartsWith("2.2.1/", StringComparison.Ordinal);
-        if ((legacy && archive.Stage) || !root.TryGetProperty("GameModuleMvid", out FixtureValue module) ||
+        if ((legacy && (archive.Stage || archive.Revalidated)) || !root.TryGetProperty("GameModuleMvid", out FixtureValue module) ||
             module.ValueKind != FixtureKind.String || module.GetString() != (legacy ? LegacyModule : Module))
             throw new InvalidDataException("Unexpected fixture module: " + archive.Path);
         if (legacy) return Game231FixtureKind.Legacy;
@@ -119,9 +123,27 @@ public static class Game231FixtureCatalog
         bool settled = hasActions && root.TryGetProperty("Turns", out FixtureValue turns) && turns.ValueKind == FixtureKind.Array &&
             root.TryGetProperty("TerminalEffectsSettled", out FixtureValue terminal) && terminal.ValueKind == FixtureKind.True &&
             BattleCounters.All(key => root.TryGetProperty(key, out FixtureValue counter) && counter.ValueKind == FixtureKind.Number && counter.GetInt32() == 0);
+        if (archive.Revalidated)
+        {
+            if (!HasCompleteRevalidatedCapture(root))
+                throw new InvalidDataException("Incomplete original capture for offline revalidation: " + archive.Path);
+            return Game231FixtureKind.SettledBattle;
+        }
         if (archive.Stage && (!settled || !root.TryGetProperty("NativeWon", out FixtureValue won) || won.ValueKind != FixtureKind.True))
             throw new InvalidDataException("Stage archive failed its native battle gate: " + archive.Path);
         if (settled) return Game231FixtureKind.SettledBattle;
         return hasActions ? Game231FixtureKind.UnsettledBattle : Game231FixtureKind.Component;
     }
+
+    private static bool HasCompleteRevalidatedCapture(FixtureValue root) =>
+        root.TryGetProperty("GameVersion", out var version) && version.ValueKind == FixtureKind.String && version.GetString() == Version &&
+        root.TryGetProperty("TerminalEffectsSettled", out var terminal) && terminal.ValueKind == FixtureKind.True &&
+        root.TryGetProperty("TerminalCaptureBoundary", out var boundary) && boundary.ValueKind == FixtureKind.String &&
+        boundary.GetString() == "AfterStopCombatLoop" &&
+        root.TryGetProperty("NativeWon", out var outcome) && outcome.ValueKind is FixtureKind.True or FixtureKind.False &&
+        root.TryGetProperty("Actions", out var actions) && actions.ValueKind == FixtureKind.Array &&
+        root.TryGetProperty("Turns", out var turns) && turns.ValueKind == FixtureKind.Array &&
+        actions.GetArrayLength() + turns.GetArrayLength() > 0 &&
+        root.TryGetProperty("CaptureFailures", out var captureFailures) && captureFailures.ValueKind == FixtureKind.Number && captureFailures.GetInt32() == 0 &&
+        root.TryGetProperty("Pending", out var pending) && pending.ValueKind == FixtureKind.Number && pending.GetInt32() == 0;
 }

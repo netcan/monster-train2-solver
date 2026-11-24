@@ -9185,7 +9185,7 @@ if ((args.Length == 2 || args.Length == 3 && args[2] == "--frontiers") && args[0
         BattleSearchChecks.RecordedEndTurnFrontiers(chainDocument.RootElement, choiceBudget: 64);
         Console.WriteLine("NATIVE-RECORDED-END-TURN-FRONTIERS PASS.");
     }
-    Console.WriteLine("RECORDED-CHAIN-DIAGNOSTIC: capture counters are not acceptance checks; require a fresh passing native capture before curation.");
+    Console.WriteLine("RECORDED-CHAIN-DIAGNOSTIC: replay used the archived native input and successor snapshots.");
     return;
 }
 if (args.Length == 2 && args[0] == "--recorded-decision-diagnose")

@@ -14,6 +14,10 @@ exit code 1 when any decision fails. Use `--recorded-chain-diagnose` on the same
 archive to verify continuity once those gaps are resolved. Append `--frontiers`
 to check the recorded card and EndTurn candidates in the same run.
 
+`Register-Game231NativeBattle.ps1 -Revalidate` accepts a complete native capture
+with an older model verdict after continuous replay and both candidate checks
+pass. Registration hashes the original binary and preserves its capture counters.
+
 `FixtureTools extract-unsupported-branch <full-battle.mt2f> <request.mt2f> '<exact reason>'`
 reuses recorded forecasts and actual input successors, including the last successor
 where the advisor stopped. It can select either a rejected card play or an EndTurn.

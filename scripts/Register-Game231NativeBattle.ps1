@@ -3,6 +3,7 @@
 param(
     [Parameter(Mandatory)][string] $Profile,
     [Parameter(Mandatory)][string] $Archive,
+    [switch] $Revalidate,
     [switch] $SkipBuild,
     [switch] $CheckCardFrontiers,
     [switch] $CheckEndTurnFrontiers
@@ -16,6 +17,7 @@ if (-not $SkipBuild) {
 }
 $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
 $checkerArguments = @('--register-game231-native-battle', $workspace, [IO.Path]::GetFullPath($Profile, (Get-Location).ProviderPath), $Archive)
+if ($Revalidate) { $checkerArguments += '--revalidate' }
 if ($CheckCardFrontiers) { $checkerArguments += '--card-frontiers' }
 if ($CheckEndTurnFrontiers) { $checkerArguments += '--end-turn-frontiers' }
 & dotnet $checker @checkerArguments

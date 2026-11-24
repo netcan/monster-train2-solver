@@ -1,7 +1,9 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using MonsterTrain2Poju.Fixtures;
+using MonsterTrain2Poju.Model;
 
 internal static class NativeBattleRegistration
 {
@@ -9,8 +11,9 @@ internal static class NativeBattleRegistration
 
     internal static void Run(string workspace, string profile, string relativeArchive, string[] options)
     {
-        if (options.Any(option => option is not ("--card-frontiers" or "--end-turn-frontiers")))
-            throw new ArgumentException("Expected optional card or EndTurn frontier checks.");
+        if (options.Any(option => option is not ("--card-frontiers" or "--end-turn-frontiers" or "--revalidate")))
+            throw new ArgumentException("Expected optional frontier checks or offline revalidation.");
+        bool revalidate = options.Contains("--revalidate");
 
         workspace = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspace));
         string probeRuns = Path.Combine(workspace, ".probe-runs");
@@ -27,29 +30,27 @@ internal static class NativeBattleRegistration
         string destinationDirectory = Path.GetDirectoryName(destination)!;
         string source = Path.Combine(profile, "full-battle.mt2f");
         string summaryPath = Path.Combine(profile, "native-accepted-summary.json");
-        string manifest = Path.Combine(destinationDirectory, "manifest.tsv");
+        string manifest = Path.Combine(destinationDirectory, revalidate ? Game231FixtureCatalog.RevalidatedManifest : "manifest.tsv");
         string lockPath = Path.Combine(probeRuns, "native-battle-registration.lock");
         CheckPath(workspace, source);
-        CheckPath(workspace, summaryPath);
         CheckPath(workspace, destination);
         if (!Directory.Exists(destinationDirectory)) throw new DirectoryNotFoundException(destinationDirectory);
         if (File.Exists(destination) || Directory.Exists(destination))
             throw new IOException("Fixture already exists: " + destination);
 
-        using var summaryDocument = JsonDocument.Parse(File.ReadAllBytes(summaryPath));
-        JsonElement summary = summaryDocument.RootElement;
-        string? sha256 = summary.GetProperty("TraceSha256").GetString();
-        if (summary.GetProperty("Schema").GetInt32() != 1 || summary.GetProperty("ExitCode").GetInt32() != 0 ||
-            !summary.GetProperty("NativePassed").GetBoolean() || !summary.GetProperty("OriginalFilesUnchanged").GetBoolean() ||
-            !string.Equals(Path.GetFileName(summary.GetProperty("Profile").GetString()), profileName, StringComparison.OrdinalIgnoreCase) ||
-            new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.Any(key => summary.GetProperty(key).GetInt32() != 0) ||
-            sha256 == null || !Regex.IsMatch(sha256, @"^[a-fA-F0-9]{64}\z"))
-            throw new InvalidDataException("Expected the accepted native run summary with four zero counters and SHA-256.");
-
         using var sourceStream = File.Open(source, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var registration = new Game231FixtureRegistration("full-battle.mt2f", sourceStream.Length, sha256.ToLowerInvariant(), Stage: false);
-        bool cardFrontiers = options.Contains("--card-frontiers");
-        bool endTurnFrontiers = options.Contains("--end-turn-frontiers");
+        string sha256;
+        bool? acceptedOutcome = null;
+        if (revalidate) sha256 = Convert.ToHexString(SHA256.HashData(sourceStream));
+        else
+        {
+            CheckPath(workspace, summaryPath);
+            (sha256, acceptedOutcome) = ReadAcceptedSummary(summaryPath, profileName);
+        }
+        var registration = new Game231FixtureRegistration("full-battle.mt2f", sourceStream.Length, sha256.ToLowerInvariant(),
+            Stage: false, Revalidated: revalidate);
+        bool cardFrontiers = revalidate || options.Contains("--card-frontiers");
+        bool endTurnFrontiers = revalidate || options.Contains("--end-turn-frontiers");
         string continuity = "full";
         int plays, endTurns;
         using (var fixture = FixtureDocument.Read(registration.Verify(profile)))
@@ -57,18 +58,24 @@ internal static class NativeBattleRegistration
             FixtureValue battle = fixture.RootElement;
             if (Game231FixtureCatalog.Classify(registration, battle) != Game231FixtureKind.SettledBattle ||
                 battle.GetProperty("GameVersion").GetString() != Game231FixtureCatalog.Version ||
-                battle.GetProperty("NativeWon").GetBoolean() != summary.GetProperty("NativeWon").GetBoolean())
+                acceptedOutcome.HasValue && battle.GetProperty("NativeWon").GetBoolean() != acceptedOutcome.Value)
                 throw new InvalidDataException("Expected a settled pinned native battle matching the accepted outcome.");
 
             plays = battle.GetProperty("Actions").GetArrayLength();
             endTurns = battle.GetProperty("Turns").GetArrayLength();
+            if (revalidate)
+            {
+                string nativeLog = Path.Combine(profile, "unity-scenario.log");
+                CheckPath(workspace, nativeLog);
+                CheckCapturedDecisions(battle, nativeLog);
+            }
             try { RecordedBattleChecks.ReplayOnce(battle); }
-            catch (InvalidOperationException mismatch) when (archiveKey == RoomCorruptionChecks.RelicBattleArchive)
+            catch (InvalidOperationException mismatch) when (!revalidate && archiveKey == RoomCorruptionChecks.RelicBattleArchive)
             {
                 RoomCorruptionChecks.ReplayRelicSetup(battle, mismatch.Message);
                 continuity = "verified-setup-segments";
             }
-            catch (InvalidOperationException mismatch) when (OriginalUnitRelicBatchChecks.IsPreparedBattleArchive(archiveKey))
+            catch (InvalidOperationException mismatch) when (!revalidate && OriginalUnitRelicBatchChecks.IsPreparedBattleArchive(archiveKey))
             {
                 OriginalUnitRelicBatchChecks.ReplayPreparedTurns(archiveKey, battle, mismatch.Message);
                 continuity = "verified-setup-segments";
@@ -111,7 +118,50 @@ internal static class NativeBattleRegistration
             File.Delete(temporaryManifest);
         }
         Console.WriteLine($"NATIVE-BATTLE-REGISTRATION PASS archive={archiveKey} bytes={registration.Bytes} sha256={registration.Sha256} " +
-            $"plays={plays} endTurns={endTurns} continuity={continuity} cardFrontiers={cardFrontiers} endTurnFrontiers={endTurnFrontiers}");
+            $"plays={plays} endTurns={endTurns} continuity={continuity} cardFrontiers={cardFrontiers} endTurnFrontiers={endTurnFrontiers} revalidated={revalidate}");
+    }
+
+    private static (string Sha256, bool Won) ReadAcceptedSummary(string path, string profileName)
+    {
+        using var document = JsonDocument.Parse(File.ReadAllBytes(path));
+        JsonElement summary = document.RootElement;
+        string? sha256 = summary.GetProperty("TraceSha256").GetString();
+        if (summary.GetProperty("Schema").GetInt32() != 1 || summary.GetProperty("ExitCode").GetInt32() != 0 ||
+            !summary.GetProperty("NativePassed").GetBoolean() || !summary.GetProperty("OriginalFilesUnchanged").GetBoolean() ||
+            !string.Equals(Path.GetFileName(summary.GetProperty("Profile").GetString()), profileName, StringComparison.OrdinalIgnoreCase) ||
+            new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.Any(key => summary.GetProperty(key).GetInt32() != 0) ||
+            sha256 == null || !Regex.IsMatch(sha256, @"^[a-fA-F0-9]{64}\z"))
+            throw new InvalidDataException("Expected the accepted native run summary with four zero counters and SHA-256.");
+        return (sha256, summary.GetProperty("NativeWon").GetBoolean());
+    }
+
+    private static void CheckCapturedDecisions(FixtureValue battle, string nativeLog)
+    {
+        var endings = new List<RoomOutcome>();
+        foreach (string kind in new[] { "Actions", "Turns" })
+        {
+            int index = 0;
+            FixtureValue rows = battle.GetProperty(kind);
+            foreach (FixtureValue row in rows.EnumerateArray())
+            {
+                if (row.GetProperty("Index").GetInt32() != index++ || row.GetProperty("Before").ValueKind != FixtureKind.Object ||
+                    row.GetProperty("Actual").ValueKind != FixtureKind.Object)
+                    throw new InvalidDataException("Recorded native decisions must have complete ordered input and successor snapshots.");
+                var outcome = row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>();
+                if (outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated)
+                {
+                    if (index != rows.GetArrayLength()) throw new InvalidDataException("Recorded decisions continue after the terminal outcome.");
+                    endings.Add(outcome);
+                }
+            }
+        }
+        bool won = battle.GetProperty("NativeWon").GetBoolean();
+        RoomOutcome expected = won ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated;
+        if (endings.Count != 1 || endings[0] != expected)
+            throw new InvalidDataException("Expected one recorded terminal outcome matching native settlement.");
+        string terminal = $"BATTLE-TERMINAL won={won} pyre=";
+        if (!File.ReadLines(nativeLog).Any(line => line.Contains(terminal, StringComparison.Ordinal)))
+            throw new InvalidDataException("The original worker log must confirm the recorded terminal outcome.");
     }
 
     private static bool SafeSegment(string segment) => Regex.IsMatch(segment, @"^[a-zA-Z0-9][a-zA-Z0-9._-]*\z") &&

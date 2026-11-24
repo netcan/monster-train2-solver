@@ -20,7 +20,8 @@ foreach ($path in $Archive) {
 }
 
 function Get-ChangedArchiveRegistrations([string] $revision, [string] $relativeDirectory) {
-    $manifestPatterns = @(":(glob)${relativeDirectory}**/manifest.tsv", "${relativeDirectory}solver-stage.tsv")
+    $manifestPatterns = @(":(glob)${relativeDirectory}**/manifest.tsv", ":(glob)${relativeDirectory}**/revalidated.tsv",
+        "${relativeDirectory}solver-stage.tsv")
     $changed = @(& git -C $workspace -c core.quotePath=false diff --name-status --no-renames --diff-filter=AM $revision -- @manifestPatterns)
     if ($LASTEXITCODE) { throw 'Could not compare archive manifests.' }
     $untracked = @(& git -C $workspace -c core.quotePath=false ls-files --others --exclude-standard -- @manifestPatterns)
