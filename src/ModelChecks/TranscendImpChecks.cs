@@ -6,6 +6,7 @@ internal static class TranscendImpChecks
 {
     private const string DataId = "57c1d696-f48d-48a3-9ac5-e868f3f669fe";
     private const string AggressiveImpDataId = "5a8399dd-a958-4317-b814-de0e2972ca3d";
+    private const string WelderHelperDataId = "61d9f4f1-80f5-416b-bf22-1836925c8ccd";
     internal static PlayCardAction? Choose(BattleTurnState source, int[] imps, int[] units, int recall)
     {
         CombatContext context = source.Spawn.Train.Context!; var plays = BattleActionModel.EnumerateSupportedPlays(source);
@@ -29,8 +30,8 @@ internal static class TranscendImpChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] sources = root.GetProperty("TranscendImpSourceCardIds").Deserialize<int[]>()!;
-        Require(sources.Length is 2 or 3, "Unexpected original replay source count.");
-        bool hasOriginalRage = sources.Length == 3;
+        Require(sources.Length is >= 2 and <= 4, "Unexpected original replay source count.");
+        bool hasOriginalRage = sources.Length >= 3, hasOriginalArmor = sources.Length == 4;
         int index = 0;
         foreach (FixtureValue row in root.GetProperty("TranscendImpRecords").EnumerateArray())
         {
@@ -52,6 +53,17 @@ internal static class TranscendImpChecks
                     !BattleTriggerReplayModel.Calibrated(new CombatEffect(rage.Type, rage.Value, rage.Counter,
                         rage.Destination, rage.Count, rage.CardPool, rage.SkipDuplicateInHand, action: rage.Action)),
                     "Altered Rage stacks or uncaptured scaling must remain unsupported.");
+            }
+            if (index > 0 && hasOriginalArmor)
+            {
+                CombatEffect armor = history.Batches[3].Effects.Single();
+                Require(before.Context.FindCard(sources[3])?.DataId == WelderHelperDataId &&
+                    history.Batches[3].SpawnerCardId == sources[3] && BattleTriggerReplayModel.Calibrated(armor),
+                    "Missing original Welder Helper Armor source and fixed payload.");
+                Require(!BattleTriggerReplayModel.Calibrated(armor.WithActionValue(99)) &&
+                    !BattleTriggerReplayModel.Calibrated(armor.WithAction(armor.Action!.WithStatuses(
+                        new[] { armor.Action.Statuses[0].WithStacks(21) }))),
+                    "Altered Armor chance or stacks must remain unsupported.");
             }
             string parent = JsonSerializer.Serialize(before, ModelJson.Options);
             void Replay()
@@ -83,6 +95,22 @@ internal static class TranscendImpChecks
                             "Original Fledgling Imp Rage affected the wrong room or team.");
                     }
                 }
+                if (hasOriginalArmor)
+                {
+                    CombatEffect armor = history.Batches[3].Effects.Single();
+                    CardTargets front = CardTargetModel.Collect(before, room, armor.Action!, Array.Empty<int>());
+                    Require(front.Supported && front.UnitIds.Count == 1, "Welder Helper replay needs one original friendly front target.");
+                    foreach (CombatUnit old in before.Rooms.SelectMany(item => item.Units))
+                    {
+                        CombatUnit next = after.Rooms.SelectMany(item => item.Units).Single(unit => unit.Id == old.Id);
+                        int expected = old.Id == front.UnitIds[0] ? 20 : 0;
+                        Require((next.Status("armor")?.Stacks ?? 0) - (old.Status("armor")?.Stacks ?? 0) == expected,
+                            "Original Welder Helper Armor affected a non-front target.");
+                    }
+                    Require(JsonSerializer.Serialize(before.Context.BattleRng, ModelJson.Options) !=
+                        JsonSerializer.Serialize(after.Context.BattleRng, ModelJson.Options),
+                        "Welder Helper's guaranteed chance must advance native Battle RNG.");
+                }
                 if (index == 2) Require(before.Rooms.SelectMany(item => item.Units).All(unit => unit.SpawnerCardId != sources[0]) &&
                     before.Context.Cards.Hand.Any(card => card.InstanceId == sources[0]), "Missing retained history after source recall.");
             }
@@ -94,6 +122,7 @@ internal static class TranscendImpChecks
         RecordedBattleChecks.Native(root);
         Console.WriteLine("TRANSCEND-IMP PASS: original empty/ordered OnSpawn replay, retained source history after recall, Self upgrades" +
             (hasOriginalRage ? ", original Fledgling Imp room Rage" : "") +
+            (hasOriginalArmor ? ", original Welder Helper front Armor and Battle RNG" : "") +
             ", no recursive history growth, immutable parallel contexts and full action chains.");
     }
     private static void Equal<T>(T predicted, T actual, string label)

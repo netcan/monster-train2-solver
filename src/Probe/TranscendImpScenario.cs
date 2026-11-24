@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "transcend-imp";
         internal const string DataId = "57c1d696-f48d-48a3-9ac5-e868f3f669fe";
         internal const string AggressiveImpDataId = "5a8399dd-a958-4317-b814-de0e2972ca3d";
+        internal const string WelderHelperDataId = "61d9f4f1-80f5-416b-bf22-1836925c8ccd";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -46,10 +47,11 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
             CardIds = Enumerable.Range(0, 3).Select(_ => FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(DataId)!, CardPile.HandPile, false, false, animate: false))).ToArray();
             SourceCardIds = Enumerable.Range(0, 2).Select(_ => FullBattleTrace.Active!.CardId(cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false)))
-                .Concat(new[] { FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(AggressiveImpDataId)!, CardPile.HandPile, false, false, animate: false)) }).ToArray();
+                .Concat(new[] { AggressiveImpDataId, WelderHelperDataId }.Select(id =>
+                    FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false)))).ToArray();
             RecallCardId = FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(MagneticRelayScenario.DataId)!, CardPile.HandPile, false, false, animate: false));
             managers.GetPlayerManager().AddEnergy(12); Prepared = true;
-            log.LogInfo("TRANSCEND-IMP-PREPARED three original Transcend Imps and one original Fledgling Imp: empty history, ordered gold/self upgrades and room Rage, retained history after source recall; natural waves/boss retained.");
+            log.LogInfo("TRANSCEND-IMP-PREPARED three original Transcend Imps, Fledgling Imp and Welder Helper: empty history, ordered gold/self upgrades, room Rage and front Armor, retained history after source recall; natural waves/boss retained.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] imps, int[] units, int recall)
         {

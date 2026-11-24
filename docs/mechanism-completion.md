@@ -965,6 +965,11 @@ Transcend Imp 随后按原有顺序重放召唤历史，被召回的单位可重
 敌军和随机流的对照。8 次出牌、5 次结束回合、两类候选和并行独立复放通过。
 [`transcend-imp-original-fledgling-rage.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/transcend-imp-original-fledgling-rage.mt2f)
 
+同组追加原版 Welder Helper。两次有历史的重放只给本层原版友军前排加 20 护甲，
+并核对原版必定触发仍推进 Battle RNG 的行为。8 次操作、5 次结束回合、两类候选和
+并行独立复放通过。
+[`transcend-imp-original-welder-front-armor.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/transcend-imp-original-welder-front-armor.mt2f)
+
 原版 Hallowed Halls 牺牲同层友军，并从预置耗尽堆重建六名升级单位。专项核对 Standby、
 站位和容量。5 次出牌、6 次结束回合及两类候选通过。
 [`hallowed-halls.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/hallowed-halls.mt2f)

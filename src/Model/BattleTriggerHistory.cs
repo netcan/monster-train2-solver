@@ -31,27 +31,36 @@ namespace MonsterTrain2Poju.Model
     public static class BattleTriggerReplayModel
     {
         private const string OriginalAggressiveImp = "5a8399dd-a958-4317-b814-de0e2972ca3d";
+        private const string OriginalWelderHelper = "61d9f4f1-80f5-416b-bf22-1836925c8ccd";
         internal static bool Calibrated(CombatEffect effect) =>
             effect.Type == "CardEffectRewardGold" && effect.Value >= 0 ||
             effect.UnitUpgrade is CardActionEffect upgrade && upgrade.Type == "UnitUpgrade" &&
             upgrade.Target == "Self" && !upgrade.ScaleUpgrade && upgrade.Range == null &&
             upgrade.Lifetime == "TemporaryUntilUnitDeath" && upgrade.Upgrade?.ExternalInteractions.Count == 0 &&
             (upgrade.Upgrade.TriggerUpgrades == null || upgrade.Upgrade.TriggerUpgrades.Count == 0) ||
-            FixedAggressiveImpRage(effect);
+            FixedAggressiveImpRage(effect) || FixedWelderHelperArmor(effect);
 
-        // Original Fledgling Imp's fixed OnSpawn payload, as captured in the 2.3.1 card catalog.
         private static bool FixedAggressiveImpRage(CombatEffect effect) =>
-            effect.Type == "CardEffectAddStatusEffect" && effect.Value == 0 && effect.Counter == 0 &&
+            FixedOriginalStatus(effect, "Room", 0, "buff", 5, 2);
+        private static bool FixedWelderHelperArmor(CombatEffect effect) =>
+            FixedOriginalStatus(effect, "FrontInRoom", 100, "armor", 20, 1);
+
+        // Only the two fixed stock OnSpawn payloads captured in the 2.3.1 card catalog.
+        private static bool FixedOriginalStatus(CombatEffect effect, string target, int chance,
+            string status, int stacks, int paramInt) =>
+            effect.Type == "CardEffectAddStatusEffect" && effect.Value == chance && effect.Counter == 0 &&
             effect.Count == 0 && effect.CardPool.Count == 0 && effect.Generation == null &&
             effect.UnitUpgrade == null && effect.Summon == null && effect.Enchantment == null &&
             effect.DamageStatusMultiplier == null && effect.BoxedPool == null &&
             effect.StatusScaling is { ActorStatus: null, MissingHealth: false, MagicPower: false,
                 IgnoreDualism: false, Subtype.Length: 0, HealthChoicePercent: null, HealthChoiceAbove: false } &&
-            effect.Action is { Type: "AddStatus", Target: "Room", Value: 0, AllowEnemy: false,
+            effect.Action is { Type: "AddStatus", AllowEnemy: false,
                 AllowPlayer: true, Range: null, Statuses.Count: 1, Upgrade: null, Generation: null,
                 OnlyIfNoEnemies: false, UseSelectedRoom: false, CountStatusOnlyOnTargets: false,
                 DisallowStatusStackModifiers: false, IgnoreDualism: false } action &&
-            action.Statuses[0] is { Id: "buff", Stacks: 5, ParamInt: 2, Stackable: true } &&
+            action.Target == target && action.Value == chance &&
+            action.Statuses[0] is { Stackable: true } payload && payload.Id == status &&
+            payload.Stacks == stacks && payload.ParamInt == paramInt &&
             action.Tests is { ShouldTest: true, FailToCast: false, CancelSubsequent: false,
                 StrictTargets: false, MustHaveValidTargets: false } &&
             action.Filters is { Health: "Both", IgnoreBosses: false, Subtype.Length: 0,
@@ -80,7 +89,8 @@ namespace MonsterTrain2Poju.Model
                             Array.Empty<CombatStatus>(), goldCostRequired: false));
                     else if (effect.UnitUpgrade is CardActionEffect upgrade)
                         effects.Add(upgrade);
-                    else if (FixedAggressiveImpRage(effect) && spawner.DataId == OriginalAggressiveImp)
+                    else if (FixedAggressiveImpRage(effect) && spawner.DataId == OriginalAggressiveImp ||
+                        FixedWelderHelperArmor(effect) && spawner.DataId == OriginalWelderHelper)
                         effects.Add(effect.Action!);
                     else return Unsupported("Uncalibrated or stateful cached trigger effect " + effect.Type);
                 }

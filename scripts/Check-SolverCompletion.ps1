@@ -47,6 +47,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Original unit ability Mix prompt acceptance failed.' }
     dotnet $checks --transcend-imp-only "$current/controlled-original-support-units/transcend-imp-original-fledgling-rage.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original Fledgling Imp Rage history replay failed.' }
+    dotnet $checks --transcend-imp-only "$current/controlled-original-support-units/transcend-imp-original-welder-front-armor.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original Welder Helper Armor history replay failed.' }
     $output = Join-Path '.probe-runs' ('solver-completion-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
     $null = New-Item -ItemType Directory -Path $output
     dotnet $tools solve-exact $original (Join-Path $output 'node-cutoff.mt2f') 1 30000 1
