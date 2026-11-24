@@ -15,6 +15,8 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string Name = "original-after-draw-spawn";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        private static string? Variant => Environment.GetEnvironmentVariable("MT2_PROBE_AFTER_DRAW_SPAWN");
+        private static bool LonelyRooms => Variant == "CultLeaderLonelyRooms";
         internal static bool Acquired => original != null;
         internal static bool Prepared { get; private set; }
         internal static object? Definition { get; private set; }
@@ -46,19 +48,19 @@ namespace MonsterTrain2Poju.Probe
             if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle ||
                 save.GetMutators().Count != 0 || save.GetCovenants().Count != 0)
                 throw new InvalidOperationException("Original after-draw summons require an isolated first battle.");
-            string key = Environment.GetEnvironmentVariable("MT2_PROBE_AFTER_DRAW_SPAWN")!;
-            string id = key switch
+            string id = Variant switch
             {
                 "Morsels" => RelicResourceProbe.AfterDrawMorselsId,
-                "CultLeader" => RelicResourceProbe.AfterDrawCultLeaderId,
+                "CultLeader" or "CultLeaderLonelyRooms" => RelicResourceProbe.AfterDrawCultLeaderId,
                 _ => throw new InvalidOperationException("Missing original after-draw summon variant.")
             };
             var owner = SpawnStatusScalingMechanismBatch.Owners(save.GetAllGameData()).OfType<MutatorData>()
                 .Single(data => data.GetID() == id);
             var effect = owner.GetEffects().Single();
             if (owner.DisallowInDeploymentPhase || effect.GetEffectClassName() != nameof(RelicEffectSpawnMonsterOnTurnStart) ||
-                effect.GetEffectConditions().Count != 0 || effect.GetParamCharacters().Count != (key == "Morsels" ? 3 : 1))
+                effect.GetEffectConditions().Count != 0 || effect.GetParamCharacters().Count != (Variant == "Morsels" ? 3 : 1))
                 throw new InvalidOperationException("Original after-draw summon definition changed.");
+            if (LonelyRooms) OriginalLonelyRoomsBattle.Acquire(save);
             original = owner;
             Definition = Describe(owner);
             save.AddMutator(owner);
@@ -71,7 +73,7 @@ namespace MonsterTrain2Poju.Probe
             if (original == null || !combat.IsPlacementPhase || Callbacks.Count != 1 || Callbacks[0].After == null)
                 throw new InvalidOperationException("Original after-draw summons must settle before deployment input.");
             var trace = FullBattleTrace.Active!;
-            defenders = OriginalRandomRoomCapacityScenario.CreateDeploymentControls(managers, 3, 1)
+            defenders = OriginalRandomRoomCapacityScenario.CreateDeploymentControls(managers, LonelyRooms ? 1 : 3, 1)
                 .Select(trace.CardId).ToArray();
             OriginalRandomRoomCapacityScenario.RefreshDeploymentControls(managers);
             Prepared = true;
@@ -80,15 +82,16 @@ namespace MonsterTrain2Poju.Probe
 
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
-            int floor = Array.FindIndex(defenders,
+            int defender = Array.FindIndex(defenders,
                 id => state.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
-            if (floor < 0) return null;
-            var frontier = BattleActionModel.EnumerateActions(state, defenders[floor]);
+            if (defender < 0) return null;
+            int floor = LonelyRooms ? 2 : defender;
+            var frontier = BattleActionModel.EnumerateActions(state, defenders[defender]);
             var action = frontier.SupportedActions.FirstOrDefault(candidate => candidate.RoomIndex == floor);
             if (action != null) return action;
 
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "after-draw-spawn-decision.mt2f");
-            using var document = NativeFixtureCapture.Capture(new { State = state, CardId = defenders[floor], Floor = floor });
+            using var document = NativeFixtureCapture.Capture(new { State = state, CardId = defenders[defender], Floor = floor });
             using var stream = File.Create(path);
             document.Write(stream);
             string reasons = string.Join(", ", frontier.UnsupportedAttempts.Select(attempt => attempt.Reason).Distinct());

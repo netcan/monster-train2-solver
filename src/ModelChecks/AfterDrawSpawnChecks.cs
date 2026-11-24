@@ -28,6 +28,9 @@ internal static class AfterDrawSpawnChecks
             callbacks[0].GetProperty("Turn").GetInt32() == 0 && callbacks.Skip(1).All(row => !row.GetProperty("Deployment").GetBoolean()),
             "Expected both deployment and regular after-draw callbacks.");
         int births = 0;
+        bool fullFloorRetry = false, disabledFloorSkip = false;
+        bool lonelyRooms = callbacks[0].GetProperty("Before").Deserialize<TrainCombatState>()!.Context!.Relics!
+            .Any(RelicModel.IsOriginalLonelyRooms);
         foreach (var callback in callbacks)
         {
             var before = callback.GetProperty("Before").Deserialize<TrainCombatState>()!;
@@ -50,11 +53,50 @@ internal static class AfterDrawSpawnChecks
                 !before.Context.BattleRng.Equals(after.Context.BattleRng), "The native callback missed its physical slots or battle RNG samples.");
             if (callback.GetProperty("Deployment").GetBoolean())
                 Require(born.Length == expected.Length, "The original complete roster must appear in deployment.");
+            if (lonelyRooms)
+            {
+                int turn = callback.GetProperty("Turn").GetInt32();
+                UnityRng rng = before.Context.BattleRng;
+                if (turn == 1)
+                {
+                    RngDraw firstFloor = rng.Range(0, 3);
+                    RngDraw secondFloor = firstFloor.State.Next().Range(0, 2);
+                    Require(firstFloor.Value == 2 && secondFloor.Value == 1 &&
+                        before.Context.SpawnPoints!.FirstEmpty(2, CombatTeam.Player) < 0 &&
+                        before.Context.SpawnPoints.FirstEmpty(1, CombatTeam.Player) < 0 && born.Length == 1 &&
+                        after.Rooms.Single(room => room.RoomIndex == 0).Units.Any(unit => unit.Id == born[0].Id) &&
+                        after.Context!.BattleRng.Equals(Advance(rng, 6)),
+                        "The first regular native callback must retry both full floors and spawn after six Battle RNG draws.");
+                    fullFloorRetry = true;
+                }
+                if (turn == 5)
+                {
+                    var settled = root.GetProperty("Turns").EnumerateArray().Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                        .First(state => state.Spawn.Turn == turn);
+                    RngDraw firstFloor = rng.Range(0, 3);
+                    Require(firstFloor.Value == 2 && firstFloor.State.Next().Range(0, 2).Value == 0 &&
+                        before.Context.SpawnPoints!.FirstEmpty(2, CombatTeam.Player) < 0 &&
+                        before.Context.SpawnPoints.FirstEmpty(0, CombatTeam.Player) >= 0 &&
+                        before.Context.SpawnPoints.FirstEmpty(1, CombatTeam.Player) < 0 &&
+                        settled.PlayRules!.Rooms.Any(room => room.RoomIndex == 0 && !room.Enabled) && born.Length == 0 &&
+                        after.Context!.BattleRng.Equals(Advance(rng, 5)),
+                        "The native callback must skip the empty disabled floor and consume five Battle RNG draws.");
+                    disabledFloorSkip = true;
+                }
+            }
             births += born.Length;
         }
         Require(births > expected.Length, "No later after-draw summon actually appeared.");
+        Require(!lonelyRooms || fullFloorRetry && disabledFloorSkip, "The Lonely Rooms archive must witness both retry and disabled-floor paths.");
         SolverStageChecks.Native(path);
         Console.WriteLine($"AFTER-DRAW-SPAWN PASS owner={definition.GetProperty("Key").GetString()} callbacks={callbacks.Length} births={births}");
+        if (lonelyRooms) Console.WriteLine("AFTER-DRAW-FLOOR-BOUNDARIES PASS: two full floors retried and empty disabled floor skipped.");
+    }
+
+    private static UnityRng Advance(UnityRng rng, int draws)
+    {
+        for (int draw = 0; draw < draws; draw++) rng = rng.Next();
+        return rng;
     }
 
     private static void Require(bool condition, string message) => TrueFinalBossChecks.Require(condition, message);

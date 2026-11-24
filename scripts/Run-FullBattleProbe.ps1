@@ -797,7 +797,7 @@ param(
     [switch] $OriginalThikDeckChange,
     [switch] $OriginalThikBattle,
     [ValidateRange(1, 3)][int] $OriginalThikTier = 3,
-    [ValidateSet('Morsels', 'CultLeader')][string] $OriginalAfterDrawSpawn,
+    [ValidateSet('Morsels', 'CultLeader', 'CultLeaderLonelyRooms')][string] $OriginalAfterDrawSpawn,
     [switch] $OriginalHoldoverGrant,
     [switch] $OriginalCorruptedAngelsRelic,
     [ValidateSet('cost-first', 'cost-last')]
