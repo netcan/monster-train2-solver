@@ -97,6 +97,9 @@ namespace MonsterTrain2Poju.Probe
         internal static bool OffRouteInputInvalidated { get; private set; }
         internal static bool RapidSecondAcceptedWhileBlocked { get; private set; }
         internal static int PublicationCount => Get<int>("Published");
+        internal static bool MixPromptWitness => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_MIX_PROMPT") == "1";
+        internal static List<object> MixPromptRows { get; } = new List<object>();
+        internal static bool MixPromptCleared => Field<object?>("pendingMixChoice") == null && !Field<bool>("showingCardChoice");
         internal static BattleAdvisorOverlay.Publication LatestTiming =>
             JArray.FromObject(Get<object>("Publications")).Last!.ToObject<BattleAdvisorOverlay.Publication>()!;
         internal static object? Evidence => !Enabled ? null : new
@@ -344,13 +347,47 @@ namespace MonsterTrain2Poju.Probe
             Require(choice.ChoiceIndex >= 0 && choice.ChoiceIndex < items.Count && items[choice.ChoiceIndex] is CardUI,
                 "published draft choice is absent from the original offers");
             var selected = (CardUI)items[choice.ChoiceIndex];
+            PlayCardAction? input = RollingAdviceScenario.Records.LastOrDefault()?.Action;
+            bool observePrompt = MixPromptWitness && input is { ActivatorUnitId: 0, ActivatorRoomIndex: null };
+            string? prompt = null;
+            int promptFrame = -1;
+            if (observePrompt)
+            {
+                int ordinal = input!.MixSelections.Count - expectedMixChoices.Count - 1;
+                prompt = AdvisorForecastPresentation.MixChoice(ordinal, choice.ChoiceIndex);
+                for (int frame = 0; frame < 12 && !VisibleMixPrompt(prompt); frame++) yield return null;
+                Require(VisibleMixPrompt(prompt), "the production Mix prompt is absent from the active original viewport");
+                promptFrame = Time.frameCount;
+            }
             string offers = string.Join(",", items.Cast<CardUI>().Select(item =>
                 item.GetCardState().GetCardDataID() + ":" + (item.GetCardUpgrade()?.GetID() ?? "none")));
+            string selectedCard = selected.GetCardState().GetCardDataID();
+            string? selectedUpgrade = selected.GetCardUpgrade()?.GetID();
             log!.LogInfo("PLAYER-ADVISOR-MIX-CHOICE kind=" + kind + " effect=" + choice.EffectIndex +
                 " mix=" + choice.MixNumber + " choice=" + choice.ChoiceIndex + " offers=" + offers +
-                " selected=" + selected.GetCardState().GetCardDataID() +
-                " upgrade=" + (selected.GetCardUpgrade()?.GetID() ?? "none"));
+                " selected=" + selectedCard + " upgrade=" + (selectedUpgrade ?? "none"));
             AccessTools.Method(typeof(ElixirDraftScreen), "ApplyDraft").Invoke(screen, new object[] { selected });
+            if (observePrompt)
+            {
+                bool hiddenAfterConfirmation = !Field<bool>("showingCardChoice") && Field<Text>("body").text == "正在核对局面…";
+                Require(hiddenAfterConfirmation, "the completed native draft left a visible production choice prompt");
+                MixPromptRows.Add(new { Kind = kind, choice.EffectIndex, choice.MixNumber, choice.ChoiceIndex,
+                    Text = prompt, PromptFrame = promptFrame, ConfirmationFrame = Time.frameCount, Offers = offers,
+                    SelectedCard = selectedCard, SelectedUpgrade = selectedUpgrade,
+                    HiddenAfterConfirmation = hiddenAfterConfirmation });
+                log!.LogInfo("PLAYER-ADVISOR-MIX-PROMPT-PASS " + prompt + " hiddenAfterConfirmation=true");
+            }
+        }
+
+        private static bool VisibleMixPrompt(string expected)
+        {
+            Text body = Field<Text>("body");
+            if (!CurrentIsNull() || !Field<bool>("showingCardChoice") || !body.isActiveAndEnabled ||
+                body.text != expected || AllGameManagers.Instance.GetScreenManager().GetTopScreen() != ScreenName.Elixir)
+                return false;
+            RectTransform viewport = Field<ScrollRect>("planScroll").viewport;
+            Bounds bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(viewport, body.rectTransform);
+            return viewport.rect.Overlaps(Rect.MinMaxRect(bounds.min.x, bounds.min.y, bounds.max.x, bounds.max.y));
         }
 
         [HarmonyPatch(typeof(ElixirDraftScreen), nameof(ElixirDraftScreen.SetupForNewElixir))]

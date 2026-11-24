@@ -19,6 +19,7 @@ param(
     [switch] $AdvisorDeckChoiceDisplay,
     [switch] $AdvisorOffRoute,
     [switch] $AdvisorRapidContinuation,
+    [switch] $AdvisorMixPrompt,
     [switch] $RollingAdvice,
     [switch] $ContinueToNextRing,
     [switch] $PreviewAttackTrace,
@@ -1250,6 +1251,16 @@ if ($AdvisorOffRoute -or $AdvisorRapidContinuation) {
     if (-not ($PlayerAdvisor -and $RollingAdvice -and $BinaryCapture) -or ($AdvisorOffRoute -and $AdvisorRapidContinuation) -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'AdvisorOffRoute and AdvisorRapidContinuation each need a fresh binary PlayerAdvisor rolling test without scenario controls.'
+    }
+}
+if ($AdvisorMixPrompt) {
+    $allowed = @('AdvisorMixPrompt', 'PlayerAdvisor', 'RollingAdvice', 'BinaryCapture', 'PrimaryClan', 'SecondaryClan',
+        'Seed', 'PlannerWholeBattle', 'PlannerSearchWorkers', 'PlannerTimeLimitMs', 'GameSpeed', 'NativeWorker',
+        'NativeBuildRoot', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if (-not ($PlayerAdvisor -and $RollingAdvice -and $BinaryCapture) -or
+        'LazarusLeague' -notin @($PrimaryClan, $SecondaryClan) -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'AdvisorMixPrompt requires fresh stock Lazarus League cards and binary PlayerAdvisor rolling mode.'
     }
 }
 if ($RoomMoonSpellThresholdRelic) {
@@ -2765,7 +2776,7 @@ $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-wor
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
-if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or $AdvisorRapidContinuation -or
+if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorMixPrompt -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalZarielPainWitness -or $OriginalZarielDevotionWitness -or $OriginalEmbeddedRoomWitness -or
@@ -2837,7 +2848,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     if ($OriginalEntropyDrawWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Entropy draw requires the pinned 2.3.1 game module.'
     }
-    if (($AdvisorOffRoute -or $AdvisorRapidContinuation) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+    if (($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorMixPrompt) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "The player advisor observation requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
     if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -3200,6 +3211,7 @@ $environment = @{
     MT2_PROBE_ADVISOR_DECK_CHOICE_DISPLAY = $(if ($AdvisorDeckChoiceDisplay) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_OFF_ROUTE = $(if ($AdvisorOffRoute) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_RAPID_CONTINUATION = $(if ($AdvisorRapidContinuation) { '1' } else { '0' })
+    MT2_PROBE_ADVISOR_MIX_PROMPT = $(if ($AdvisorMixPrompt) { '1' } else { '0' })
     MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PLANNER_TURN = "$PlannerTurn"
@@ -4171,8 +4183,9 @@ if ($OriginalEquilibriusDrawWitness) {
     Write-Output "NATIVE-EQUIBRIUS-T3-DRAW PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath).Hash)"
     return
 }
-if ($AdvisorOffRoute -or $AdvisorRapidContinuation) {
-    $captureName = if ($AdvisorRapidContinuation) { 'player-advisor-rapid-continuation.mt2f' } else { 'player-advisor-off-route.mt2f' }
+if ($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorMixPrompt) {
+    $captureName = if ($AdvisorMixPrompt) { 'player-advisor-mix-prompt.mt2f' }
+        elseif ($AdvisorRapidContinuation) { 'player-advisor-rapid-continuation.mt2f' } else { 'player-advisor-off-route.mt2f' }
     $capturePath = Join-Path $profile $captureName
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
         (Get-OriginalSignature) -cne $originalBefore) {
