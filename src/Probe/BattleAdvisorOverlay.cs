@@ -294,7 +294,7 @@ namespace MonsterTrain2Poju.Probe
             RectTransform refresh = (RectTransform)panel.transform.Find("重新计算");
             refresh.anchoredPosition = new Vector2(18, expanded ? -570 : -315);
             planLabel.text = expanded ? "收起方案" : "完整方案";
-            if (displayed != null && !showingCardChoice && pendingMixChoice == null)
+            if (displayed != null && !showingCardChoice && !HasPendingElixirChoice)
                 body.text = DescribeAdvice(displayed, tentativeSteps);
             planScroll.verticalNormalizedPosition = 1;
             if (displayed != null && tentativeSteps == 0 && !showingCardChoice) RecordDiagnosticView("view");
@@ -314,7 +314,7 @@ namespace MonsterTrain2Poju.Probe
             displayed = null;
             tentativeSteps = 0;
             pendingCardChoice = null;
-            ClearMixChoice();
+            ClearElixirChoice();
             showingCardChoice = false;
             cardHover.Entries.Clear(); cardHover.Clear();
             SetPending(false);
@@ -360,10 +360,10 @@ namespace MonsterTrain2Poju.Probe
             }
             Keyboard();
             AllGameManagers? managers = AllGameManagers.Instance;
-            if (pendingMixChoice != null && managers != null)
+            if (HasPendingElixirChoice && managers != null)
             {
                 if (!paused && !HiddenPause && managers.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle &&
-                    !managers.GetSaveManager().PreviewMode && !PreviewRngIsolation.Active && ShowPendingMixChoice(managers)) return;
+                    !managers.GetSaveManager().PreviewMode && !PreviewRngIsolation.Active && ShowPendingElixirChoice(managers)) return;
                 if (showingCardChoice)
                 {
                     showingCardChoice = false;
@@ -498,7 +498,7 @@ namespace MonsterTrain2Poju.Probe
                     var capture = Stopwatch.StartNew();
                     BattleTurnState root = CaptureReadOnly(managers);
                     pendingCardChoice = null;
-                    ClearMixChoice();
+                    ClearElixirChoice();
                     lastCapture = root;
                     capture.Stop();
                     LastCaptureMs = capture.Elapsed.TotalMilliseconds; TotalCaptureMs += LastCaptureMs;
@@ -866,6 +866,8 @@ namespace MonsterTrain2Poju.Probe
             internal bool Matches;
             internal CardRecursionSelection? CardChoice;
             internal AdvisorMixChoice? MixChoice;
+            internal string? SummonChoice;
+            internal bool ObservedSummonAbility;
         }
 
         private CardInputState PrepareCardInput(CardState card, CharacterState selfTarget, SpawnPoint drop,
@@ -874,14 +876,26 @@ namespace MonsterTrain2Poju.Probe
             var input = new CardInputState { Diagnostic = DiagnosticCardInput(card, selfTarget, drop, direct, actor, roomActor, roomOverride) };
             AllGameManagers managers = AllGameManagers.Instance;
             if (capturing || managers?.GetSaveManager()?.PreviewMode != false || PreviewRngIsolation.Active ||
-                !direct || actor != null || roomActor != null || !managers.GetCardManager().GetHand().Contains(card)) return input;
-            input.DirectHandPlay = true;
+                !direct || roomActor != null) return input;
+            input.DirectHandPlay = actor == null && managers.GetCardManager().GetHand().Contains(card);
             input.Advice = displayed;
             input.Offset = tentativeSteps;
             FullBattleTrace? trace = FullBattleTrace.Active;
-            if (displayed == null || paused || HiddenPause || trace == null ||
-                (tentativeSteps == 0 && !ReferenceEquals(displayed, session.Current)) ||
-                !trace.TryGetCardId(card, out int cardId)) return input;
+            if (displayed == null || paused || HiddenPause || trace == null || tentativeSteps >= displayed.Plan.Steps.Count ||
+                (tentativeSteps == 0 && !ReferenceEquals(displayed, session.Current))) return input;
+            if (actor != null)
+            {
+                var step = displayed.Plan.Steps[tentativeSteps];
+                input.ObservedSummonAbility = step.Action?.SummonSelections.Count > 0;
+                var destination = drop?.GetRoomOwner();
+                if (input.ObservedSummonAbility && drop != null && destination != null && drop.GetTeam() == Team.Type.Monsters &&
+                    trace.TryGetUnitId(actor, out int actorId) && trace.TryGetCardId(card, out int abilityCardId) &&
+                    (!managers.GetRoomManager().IsValidRoomIndex(roomOverride) || roomOverride == destination.GetRoomIndex()))
+                    input.SummonChoice = TentativeAdviceProgress.MatchedSummonAbility(displayed.Plan.Steps, tentativeSteps, abilityCardId,
+                        actorId, destination.GetRoomIndex(), drop.GetIndexInRoom())?.CardDataId;
+                return input;
+            }
+            if (!input.DirectHandPlay || !trace.TryGetCardId(card, out int cardId)) return input;
             int room = managers.GetRoomManager().IsValidRoomIndex(roomOverride) ? roomOverride :
                 drop?.GetRoomOwner()?.GetRoomIndex() ?? selfTarget?.GetCurrentRoomIndex() ?? managers.GetRoomManager().GetSelectedRoom();
             CharacterState? target = drop?.GetCharacterState() ?? selfTarget;
@@ -945,15 +959,16 @@ namespace MonsterTrain2Poju.Probe
         {
             if (input == null) return;
             if (accepted && input.Diagnostic != null) journal?.Record(input.Diagnostic);
-            if (!input.DirectHandPlay || !accepted) return;
+            if (!accepted || (!input.DirectHandPlay && !input.ObservedSummonAbility)) return;
             pendingCardChoice = null;
-            ClearMixChoice();
+            ClearElixirChoice();
             if (input.Advice == null || !ReferenceEquals(displayed, input.Advice) || tentativeSteps != input.Offset ||
-                (!input.Matches && input.CardChoice == null && input.MixChoice == null))
+                (!input.Matches && input.CardChoice == null && input.MixChoice == null && input.SummonChoice == null))
             { ShowMessage("正在核对局面…"); return; }
-            if (input.MixChoice != null)
+            if (input.MixChoice != null || input.SummonChoice != null)
             {
                 pendingMixChoice = input.MixChoice;
+                pendingSummonChoice = input.SummonChoice;
                 cardHover.Entries.Clear();
                 body.text = "正在核对局面…";
                 SetPending(true);
@@ -1003,7 +1018,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Prefix()
             {
-                if (Active != null && !Active.capturing && (Active.tentativeSteps > 0 || Active.pendingCardChoice != null || Active.pendingMixChoice != null) &&
+                if (Active != null && !Active.capturing && (Active.tentativeSteps > 0 || Active.pendingCardChoice != null || Active.HasPendingElixirChoice) &&
                     AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
                     Active.ShowMessage("正在核对局面…");
                 NativeAction(reason: "end-turn");

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using MonsterTrain2Poju.Model;
 
@@ -42,6 +43,18 @@ namespace MonsterTrain2Poju.Probe
 
         internal static string MixChoice(int draftIndex, int choiceIndex) =>
             "第 " + (draftIndex + 1) + " 次备选中选第 " + (choiceIndex + 1) + " 项";
+
+        internal static int SummonOfferIndex(IReadOnlyList<string?> offers, string expectedId)
+        {
+            int match = -1;
+            for (int index = 0; index < offers.Count; index++)
+            {
+                if (!string.Equals(offers[index], expectedId, StringComparison.Ordinal)) continue;
+                if (match >= 0) return -1;
+                match = index;
+            }
+            return match;
+        }
 
         internal static string ChoiceCard(string title, bool duplicate, string? position, string? upgrades) =>
             !duplicate ? title : title + "（" + string.Join("，", new[] { position, upgrades }

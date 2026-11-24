@@ -430,6 +430,12 @@ if (args.Length == 2 && args[0] == "--advisor-mix-modal-only")
     AdvisorChoicePresentationChecks.MixModal(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--advisor-summon-modal-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AdvisorChoicePresentationChecks.SummonModal(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--advisor-duplicate-choice-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

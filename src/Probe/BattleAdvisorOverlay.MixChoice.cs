@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine.UI;
@@ -9,21 +10,31 @@ namespace MonsterTrain2Poju.Probe
     {
         private static readonly FieldInfo elixirDraftItems = AccessTools.Field(typeof(DraftScreenBase), "draftItems");
         private AdvisorMixChoice? pendingMixChoice;
-        private ElixirDraftScreen? mixChoiceScreen;
+        private string? pendingSummonChoice;
+        private ElixirDraftScreen? elixirChoiceScreen;
+        private bool HasPendingElixirChoice => pendingMixChoice != null || pendingSummonChoice != null;
 
-        private void ClearMixChoice()
+        private void ClearElixirChoice()
         {
             pendingMixChoice = null;
-            mixChoiceScreen = null;
+            pendingSummonChoice = null;
+            elixirChoiceScreen = null;
         }
 
-        private bool ShowPendingMixChoice(AllGameManagers managers)
+        private bool ShowPendingElixirChoice(AllGameManagers managers)
         {
             var screens = managers.GetScreenManager();
-            if (mixChoiceScreen == null || screens.GetTopScreen() != ScreenName.Elixir ||
-                !ReferenceEquals(mixChoiceScreen, screens.GetScreen(ScreenName.Elixir))) return false;
-            var items = (List<IDraftableUI>)elixirDraftItems.GetValue(mixChoiceScreen);
+            if (elixirChoiceScreen == null || screens.GetTopScreen() != ScreenName.Elixir ||
+                !ReferenceEquals(elixirChoiceScreen, screens.GetScreen(ScreenName.Elixir))) return false;
+            var items = (List<IDraftableUI>)elixirDraftItems.GetValue(elixirChoiceScreen);
             string? guidance = pendingMixChoice?.Prompt(screenActive: true, items.Count);
+            if (pendingSummonChoice is string expected)
+            {
+                int index = AdvisorForecastPresentation.SummonOfferIndex(items.Select(item =>
+                    (item as CardUI)?.GetCardState()?.GetCardDataID()).ToArray(), expected);
+                if (index >= 0 && items[index] is CardUI chosen)
+                    guidance = "选择 " + AdvisorCardPresentation.Plain(chosen.GetCardState().GetTitle()) + " · 第 " + (index + 1) + " 项";
+            }
             if (guidance == null) return false;
             if (body.text != guidance)
             {
@@ -37,23 +48,24 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
-        private void OpenElixirDraft(ElixirDraftScreen screen, bool infusion)
+        private void OpenElixirDraft(ElixirDraftScreen screen, bool infusion, bool summon)
         {
-            if (pendingMixChoice == null) return;
-            if (!infusion || !pendingMixChoice.Open())
+            if (!HasPendingElixirChoice) return;
+            bool matched = pendingMixChoice != null ? infusion && pendingMixChoice.Open() : summon && elixirChoiceScreen == null;
+            if (!matched)
             {
-                ClearMixChoice();
+                ClearElixirChoice();
                 return;
             }
-            mixChoiceScreen = screen;
+            elixirChoiceScreen = screen;
         }
 
         private void CompleteElixirDraft(ElixirDraftScreen screen, IDraftableUI? chosen)
         {
-            if (pendingMixChoice == null || !ReferenceEquals(screen, mixChoiceScreen)) return;
+            if (!HasPendingElixirChoice || !ReferenceEquals(screen, elixirChoiceScreen)) return;
             var items = (List<IDraftableUI>)elixirDraftItems.GetValue(screen);
-            if (chosen == null || !pendingMixChoice.Choose(items.IndexOf(chosen))) ClearMixChoice();
-            mixChoiceScreen = null;
+            if (chosen == null || pendingMixChoice?.Choose(items.IndexOf(chosen)) != true) ClearElixirChoice();
+            elixirChoiceScreen = null;
             if (showingCardChoice) body.text = "正在核对局面…";
             showingCardChoice = false;
         }
@@ -71,8 +83,9 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(ElixirDraftScreen __instance, ElixirDraftScreen.DraftType draftType, MethodBase __originalMethod)
             {
                 if (AllGameManagers.Instance?.GetSaveManager()?.PreviewMode != false || PreviewRngIsolation.Active) return;
+                bool cardChoice = __originalMethod.Name == nameof(ElixirDraftScreen.SetupForCardChoice);
                 Active?.OpenElixirDraft(__instance, draftType == ElixirDraftScreen.DraftType.Infusion &&
-                    __originalMethod.Name != nameof(ElixirDraftScreen.SetupForCardChoice));
+                    !cardChoice, draftType == ElixirDraftScreen.DraftType.SummonChoice && cardChoice);
             }
         }
 

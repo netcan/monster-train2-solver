@@ -26,5 +26,16 @@ namespace MonsterTrain2Poju.Model
                 return action.TargetUnitId == 0 && action.PlayerPosition == dropPosition ? action : null;
             return action.TargetUnitId == targetId ? action : null;
         }
+
+        internal static SummonChoiceSelection? MatchedSummonAbility(IReadOnlyList<BattleSearchStep> steps, int offset, int cardId,
+            int actorId, int room, int dropPosition)
+        {
+            if (offset < 0 || offset >= steps.Count || cardId <= 0 || actorId <= 0 || room < 0 || dropPosition < 0) return null;
+            PlayCardAction? action = steps[offset].Action;
+            return !steps[offset].IsEndTurn && action is
+                { TargetUnitId: 0, ActivatorRoomIndex: null, RecursionSelections.Count: 0, MixSelections.Count: 0,
+                    SummonSelections: [var summon] } && action.CardInstanceId == cardId && action.ActivatorUnitId == actorId &&
+                action.RoomIndex == room && action.TargetSpawnPointIndex == dropPosition ? summon : null;
+        }
     }
 }

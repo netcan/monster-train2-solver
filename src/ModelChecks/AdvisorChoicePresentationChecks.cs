@@ -129,6 +129,48 @@ internal static class AdvisorChoicePresentationChecks
         Console.WriteLine($"ADVISOR-MIX-MODAL PASS: {picks.Length} original paid draft choices, inactive/invalid screen, divergent target and native skip controls.");
     }
 
+    internal static void SummonModal(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            fixture.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            fixture.GetProperty("ModifierScenario").GetString() == "original-summon-choice",
+            "Expected the pinned original GrimFlight witness.");
+        var actualDrafts = fixture.GetProperty("OriginalSummonChoiceDrafts");
+        FixtureValue[] actions = fixture.GetProperty("Actions").EnumerateArray().Where(row =>
+            row.GetProperty("Action").TryGetProperty("SummonSelections", out FixtureValue choices) && choices.GetArrayLength() > 0).ToArray();
+        Require(actions.Length == 12 && actions.Length == actualDrafts.GetArrayLength(), "Missing native summon modal receipts.");
+        for (int index = 0; index < actions.Length; index++)
+        {
+            var action = actions[index].GetProperty("Action").Deserialize<PlayCardAction>()!;
+            var root = actions[index].GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var actual = actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            var replay = BattleActionModel.PlayCard(root, action);
+            Require(replay.Supported && BattleTurnChecks.Comparable(replay.State!) == BattleTurnChecks.Comparable(actual),
+                "GrimFlight did not reproduce its realized original successor.");
+            BattleSearchStep[] steps = [new BattleSearchStep(action, false)];
+            var choice = TentativeAdviceProgress.MatchedSummonAbility(steps, 0, action.CardInstanceId,
+                action.ActivatorUnitId, action.RoomIndex, action.TargetSpawnPointIndex);
+            var offers = actualDrafts[index].GetProperty("Cards").Deserialize<string[]>()!;
+            string selected = actualDrafts[index].GetProperty("Choice").GetString()!;
+            int position = AdvisorForecastPresentation.SummonOfferIndex(offers, selected);
+            Require(offers.Length == 3 && choice?.CardDataId == selected && position >= 0 && offers[position] == selected &&
+                AdvisorForecastPresentation.SummonOfferIndex(offers.Reverse().ToArray(), selected) == offers.Length - 1 - position &&
+                AdvisorForecastPresentation.SummonOfferIndex(offers.Append(selected).ToArray(), selected) < 0 &&
+                AdvisorForecastPresentation.SummonOfferIndex(offers.Where(id => id != selected).ToArray(), selected) < 0,
+                "The pending choice must identify exactly one currently offered original definition.");
+            Require(TentativeAdviceProgress.MatchedSummonAbility(steps, 0, action.CardInstanceId + 1,
+                    action.ActivatorUnitId, action.RoomIndex, action.TargetSpawnPointIndex) == null &&
+                TentativeAdviceProgress.MatchedSummonAbility(steps, 0, action.CardInstanceId,
+                    action.ActivatorUnitId + 1, action.RoomIndex, action.TargetSpawnPointIndex) == null &&
+                TentativeAdviceProgress.MatchedSummonAbility(steps, 0, action.CardInstanceId,
+                    action.ActivatorUnitId, (action.RoomIndex + 1) % 3, action.TargetSpawnPointIndex) == null &&
+                TentativeAdviceProgress.MatchedSummonAbility(steps, 0, action.CardInstanceId,
+                    action.ActivatorUnitId, action.RoomIndex, action.TargetSpawnPointIndex + 1) == null,
+                "A different card, actor, destination or original physical point cannot retain a recommendation.");
+        }
+        Console.WriteLine("ADVISOR-SUMMON-MODAL PASS: twelve original offers and successors; exact activation and unique definition controls.");
+    }
+
     private static string UnexpectedSummon(string id) => throw new InvalidDataException("Unexpected summon choice " + id);
     private static string UnexpectedCard(int id) => throw new InvalidDataException("Unexpected card choice " + id);
     private static void Require(bool condition, string message) => TrueFinalBossChecks.Require(condition, message);
