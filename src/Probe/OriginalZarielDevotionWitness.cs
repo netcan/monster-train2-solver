@@ -52,11 +52,13 @@ namespace MonsterTrain2Poju.Probe
                 var all = managers.GetAllGameData();
                 CardData definition = all.FindCardData(ChampionId);
                 CardUpgradeData upgrade = all.FindCardUpgradeData(UpgradeId);
+                var trigger = upgrade?.GetCharacterTriggerUpgrades().SingleOrDefault(candidate =>
+                    candidate.GetTrigger() == CharacterTriggerData.Trigger.CardSpellPlayed);
                 if (definition?.name != "PunishedChamp2" || upgrade?.name != "Punished2Path1a" ||
-                    upgrade.GetCharacterTriggerUpgrades() is not [var trigger] || trigger.GetTrigger().ToString() != "CardSpellPlayed" ||
-                    trigger.GetEffects().ToArray() is not [var effect] ||
+                    trigger?.GetEffects().ToArray() is not [var effect] ||
                     effect.GetEffectStateName() != nameof(CardEffectDamagePerDevotionLevel) ||
-                    effect.GetParamInt() != 6 || effect.GetUseIntRange() || effect.GetUseStatusEffectStackMultiplier())
+                    effect.GetTargetMode() != TargetMode.FrontInRoom || effect.GetTargetTeamType() != Team.Type.Heroes ||
+                    effect.GetParamInt() != 6 || !effect.GetParamBool() || effect.GetUseIntRange() || effect.GetUseStatusEffectStackMultiplier())
                     throw new InvalidOperationException("Expected Zariel's original Tier I Devotion path and spell-play trigger.");
                 var rank = new CardUpgradeState();
                 rank.Setup(upgrade);
