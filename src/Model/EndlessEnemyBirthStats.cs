@@ -32,14 +32,21 @@ namespace MonsterTrain2Poju.Model
                 actor.BaseAttack != InitialAttack || actor.Health != InitialHealth || actor.MaxHealth != InitialHealth ||
                 actor.Modifiers is not { AttackDamageAdded: 0, DamageBuff: 0 } modifiers ||
                 modifiers.AttackDamage != InitialAttack || Attack < 0 || Health < 1 ||
-                (statusShape ? 0 : actor.Triggers.FirstOrDefault()?.Effects.Count ?? 0) != EffectValues.Count ||
+                (statusShape ? 0 : actor.Triggers.Sum(trigger => trigger.Effects.Count)) != EffectValues.Count ||
                 EffectValues.Any(value => value < 0))
                 return null;
 
             CombatUnit scaled = actor.WithRawAttack(Attack).WithHealthAndMaxHealth(Health, Health);
-            if (EffectValues.Count == 0 || actor.Triggers is not [var trigger]) return scaled;
-            CombatEffect[] effects = trigger.Effects.Select((effect, index) => effect.WithActionValue(EffectValues[index])).ToArray();
-            return scaled.WithTriggers(new[] { trigger.WithEffects(effects) });
+            if (EffectValues.Count == 0) return scaled;
+            int offset = 0;
+            var triggers = new List<CombatTrigger>();
+            foreach (CombatTrigger trigger in actor.Triggers)
+            {
+                CombatEffect[] effects = trigger.Effects.Select((effect, index) => effect.WithActionValue(EffectValues[offset + index])).ToArray();
+                triggers.Add(trigger.WithEffects(effects));
+                offset += effects.Length;
+            }
+            return scaled.WithTriggers(triggers);
         }
 
         internal static bool SupportedShape(CombatUnit actor) =>
@@ -62,16 +69,21 @@ namespace MonsterTrain2Poju.Model
                 _ => false
             });
 
-        private static bool SupportedTrigger(CombatUnit actor) => actor.Triggers is [var trigger] &&
-            trigger.Effects.All(effect => effect.Action is { Range: null, Statuses.Count: 0 } action &&
+        private static bool SupportedTrigger(CombatUnit actor) =>
+            actor.Triggers.SelectMany(trigger => trigger.Effects).All(effect => effect.Action is { Range: null, Statuses.Count: 0 } action &&
                 action.Value == effect.Value && effect.DamageStatusMultiplier == null) &&
-            (trigger switch
+            (actor.Triggers switch
         {
-            { Kind: "PostCombat", Effects: [
+            [{ Kind: "PostCombat", Effects: [
                 { Type: "CardEffectDamage", Action: { Type: "Damage", Target: "Self" } },
-                { Type: "CardEffectBuffDamage", Action: { Type: "BuffAttack", Target: "Self" } }] } => true,
-            { Kind: "PostCombatHealing", Effects: [
-                { Type: "CardEffectHeal", Action: { Type: "Heal", Target: "RoomHealTargets", AllowEnemy: true, AllowPlayer: false } }] } => true,
+                { Type: "CardEffectBuffDamage", Action: { Type: "BuffAttack", Target: "Self" } }] }] => true,
+            [{ Kind: "PostCombatHealing", Effects: [
+                { Type: "CardEffectHeal", Action: { Type: "Heal", Target: "RoomHealTargets", AllowEnemy: true, AllowPlayer: false } }] }] => true,
+            [{ Kind: "CardSpellPlayed", Effects: [
+                { Type: "CardEffectBuffDamage", Action: { Type: "BuffAttack", Target: "Tower", AllowEnemy: true, AllowPlayer: false } }] },
+             { Kind: "PostCombatHealing", Effects: [
+                { Type: "CardEffectHeal", Action: { Type: "Heal", Target: "RoomHealTargets", AllowEnemy: true, AllowPlayer: false } }] }] =>
+                actor.AssetKey == "ClericT3_IncantAttack_Chosen",
             _ => false
         });
     }
