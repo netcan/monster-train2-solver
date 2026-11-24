@@ -141,17 +141,18 @@ namespace MonsterTrain2Poju.Probe
                     row.BeforeStacks == stacksBefore && row.AfterStacks == stacksAfter) ||
                 StackQueries.Count == 0)
                 throw new InvalidOperationException("Native SpikePotion did not settle with a paid cast and observed stack callbacks.");
+            var removalControls = ObserveRemovalControls(trace, room, target);
             using var document = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, Boundary = "OriginalDoubleStatusEffects", GameVersion = Application.version, GameModuleMvid = Module,
                 Owner = ownerDefinition, AddedPotionToHand = addedPotion, PotionId, Status, StacksBefore = stacksBefore,
                 StacksAfter = stacksAfter, Before = before, Action = action, After = after, QueryControls = queryControls,
-                StackQueries, Applications
+                StackQueries, Applications, RemovalControls = removalControls
             });
             using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, FileName));
             document.Write(stream);
             log.LogInfo("ORIGINAL-DOUBLE-STATUS-EFFECTS OBSERVED spikes=" + stacksBefore + "->" + stacksAfter +
-                " queries=" + StackQueries.Count + " applications=" + Applications.Count);
+                " queries=" + StackQueries.Count + " applications=" + Applications.Count + " removals=" + removalControls.Length);
             return true;
         }
 
@@ -162,6 +163,35 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Original controlled card is unavailable: " + card.GetCardDataID());
             if (!cards.PlayCard(index, point, ref error))
                 throw new InvalidOperationException("Original controlled card was rejected: " + error);
+        }
+
+        private static object[] ObserveRemovalControls(FullBattleTrace trace, RoomState room, CharacterState actor)
+        {
+            if (!actor.IsAlive || actor.IsDestroyed || actor.PreviewMode || actor.GetStatusEffectStacks(Status) != 20)
+                throw new InvalidOperationException("Expected a live Train Steward with twenty Spikes after the paid cast.");
+            return new[]
+            {
+                Remove("ordinary", 2, new CharacterState.RemoveStatusEffectParams()),
+                Remove("enchantment", 2, new CharacterState.RemoveStatusEffectParams
+                    { fromEffectType = typeof(CardEffectEnchant), showNotification = true }),
+                Remove("card-upgrade", 2, new CharacterState.RemoveStatusEffectParams { fromCardUpgrade = true }),
+                Remove("card-upgrade-sentinel", -1, new CharacterState.RemoveStatusEffectParams { fromCardUpgrade = true })
+            };
+
+            object Remove(string label, int count, CharacterState.RemoveStatusEffectParams parameters)
+            {
+                var beforeRoom = trace.Capture(room);
+                int beforeStacks = actor.GetStatusEffectStacks(Status);
+                actor.RemoveStatusEffect(Status, count, parameters, allowModification: true);
+                return new
+                {
+                    Label = label, ActorId = trace.UnitId(actor), Status, Requested = count,
+                    EffectType = parameters.fromEffectType?.Name, FromCardUpgrade = parameters.fromCardUpgrade,
+                    parameters.showNotification, parameters.removeAtEndOfTurn, AllowModification = true,
+                    BeforeStacks = beforeStacks, AfterStacks = actor.GetStatusEffectStacks(Status),
+                    Before = beforeRoom, After = trace.Capture(room)
+                };
+            }
         }
 
         private static object[] ObserveQueryControls(RelicManager relics, CharacterState actor)
