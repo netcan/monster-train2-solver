@@ -151,9 +151,9 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsObservedScaledWaveDeath(RoomCombatState room, CombatUnit unit, int sourceCardId) =>
             (sourceCardId == 0 && unit.RegisteredStatus("hivemindkiller") == null &&
                 room.Units.Any(owner => owner.Id == unit.Id && IsScaledRoomCombatDeath(room, owner))) ||
-            (room is { RoomIndex: 2, Preview: false } && room.Context?.QueryFrame?.Turn == 4 &&
+            (room is { RoomIndex: 2, Preview: false } && room.Context?.QueryFrame?.Turn is 4 or 6 &&
                 room.Context.FindCard(sourceCardId)?.DataId == "8de281af-ab9a-4d3d-ac5f-89cd43ff6c84" &&
-                IsScaledRoomCombatDeath(room, unit)) ||
+                unit.AssetKey == Infested && IsScaledRoomCombatDeath(room, unit)) ||
             (room is { RoomIndex: 0, Preview: false } && room.Context?.QueryFrame?.Turn is 2 or 5 &&
                 room.Context.FindCard(sourceCardId)?.DataId == "87e45427-921e-45d3-b4c4-9c156a83cedf" &&
                 unit.AssetKey == Hunter && IsScaledFirstWaveOwner(unit, room.Context) &&
@@ -177,7 +177,11 @@ namespace MonsterTrain2Poju.Model
                     IsScaledCarriedFeedOwner(unit, room.Context) && unit.Status(StatusId)?.Stacks == 6) ||
                  room.RoomIndex == 3 && unit.AssetKey == Infested && IsScaledFirstWaveOwner(unit, room.Context) &&
                     room.Units.Any(actor => actor.IsPyre) && room.Units.Count(actor => actor.Team == CombatTeam.Enemy) == 1) &&
-                unit.Modifiers!.Upgrades.Any(marker => IsAttackUpgrade(marker, 26)));
+                unit.Modifiers!.Upgrades.Any(marker => IsAttackUpgrade(marker, 26)) ||
+             room.RoomIndex == 2 && room.Context?.QueryFrame?.Turn == 6 &&
+                (unit.AssetKey == Infested && IsScaledFirstWaveOwner(unit, room.Context) ||
+                 IsScaledCarriedFeedOwner(unit, room.Context) && unit.Status(StatusId)?.Stacks == 12) &&
+                unit.Modifiers!.Upgrades.Any(marker => IsAttackUpgrade(marker, 21)));
 
         internal static bool IsObservedScaledWaveInteraction(TrainCombatState train, string interaction)
         {
