@@ -1217,7 +1217,8 @@ namespace MonsterTrain2Poju.Model
                 !(scaledWavePhase && state.Units.Any(unit =>
                     HivemindTurnUpgrade.Marker(unit) == item && (HivemindTurnUpgrade.IsScaledFirstWaveOwner(unit, state.Context) ||
                         HivemindTurnUpgrade.IsScaledCarriedFeedOwner(unit, state.Context) ||
-                        HivemindTurnUpgrade.IsScaledPreviewFeedRecipient(state, unit))))).ToArray();
+                        HivemindTurnUpgrade.IsScaledPreviewFeedRecipient(state, unit) ||
+                        HivemindTurnUpgrade.IsScaledBossFeedOwner(state, unit))))).ToArray();
             if (interactions.Length > 0) return string.Join("; ", interactions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
             {
@@ -1242,7 +1243,8 @@ namespace MonsterTrain2Poju.Model
                     HivemindTurnUpgrade.IsScaledFirstWaveOwner(unit, state.Context) || !state.Preview &&
                     HivemindTurnUpgrade.IsScaledFirstWaveBirth(unit, state.Context) ||
                     HivemindTurnUpgrade.IsScaledCarriedFeedOwner(unit, state.Context) ||
-                    HivemindTurnUpgrade.IsScaledPreviewFeedRecipient(state, unit);
+                    HivemindTurnUpgrade.IsScaledPreviewFeedRecipient(state, unit) ||
+                    HivemindTurnUpgrade.IsScaledBossFeedOwner(state, unit);
                 string? selfAttackError = UnitSelfAttackModel.Validate(state, unit);
                 string? roomResourceError = UnitRoomResourceModel.Validate(unit);
                 if (roomResourceError != null) return roomResourceError;

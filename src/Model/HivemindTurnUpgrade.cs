@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Model
         private const string Infested = "R2_Support_FeedInfested";
         private const string Heavy = "R2_Heavy_HealGorge";
         private const string Zealot = "R2_Attacker_Zealot_Ver2";
+        private const string ScaledTrainBoss = "Boss_SoulSavior_R2_TrainBoss_Titanskin";
         private const string HeavyT2 = "R2_Heavy_HealGorge_T2";
         private const string DeathHorde = "RAny_Horde_T1_DeathAddsHivemind_Ver2";
         private const string FanningTheFlame = "3f974014-72f2-407e-a8c1-28ba5b273cfa";
@@ -191,6 +192,21 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsScaledFirstFeedRecipient(RoomCombatState room, CombatUnit unit) =>
             ScaledFeedRoom(room) && IsScaledFeedRecipient(unit, room.Context?.QueryFrame?.Turn);
 
+        private static bool IsScaledBossFeedingRoom(RoomCombatState room) => room.RoomIndex == 0 &&
+            room.Context?.QueryFrame?.Turn == 5 && IsScaledCampaign(room.Context);
+
+        private static bool IsScaledBossFeedTarget(CombatUnit unit) => RelicModel.IsObservedSoulSaviorBossStatTarget(unit) &&
+            unit is { BaseAttack: 22, MaxHealth: 1530, Modifiers.DamageBuff: 10 } &&
+            unit.RegisteredStatus(KillerStatusId) == null;
+
+        internal static bool IsScaledBossFeedOwner(RoomCombatState room, CombatUnit unit)
+        {
+            if (!IsScaledBossFeedingRoom(room) || !IsScaledBossFeedTarget(unit) ||
+                unit.Status(StatusId) is not { Stacks: 3 } status || !IsOriginalStatusDefinition(status)) return false;
+            return unit.Modifiers!.Upgrades is [var buffs, var feed, ..] && IsFeedBuffUpgrade(buffs) && IsFeedUpgrade(feed) &&
+                (unit.Modifiers.Upgrades.Count == 2 || unit.Modifiers.Upgrades is [_, _, var marker] && IsAttackUpgrade(marker, 0));
+        }
+
         internal static bool IsScaledPreviewFeedRecipient(RoomCombatState room, CombatUnit unit)
         {
             bool secondWave = room is { RoomIndex: 1, Preview: true } && room.Context?.QueryFrame?.Turn == 3;
@@ -266,8 +282,10 @@ namespace MonsterTrain2Poju.Model
 
         private static bool IsOriginalStatus(CombatUnit unit, CombatStatus status) =>
             unit.Team == CombatTeam.Enemy && unit.SpawnerCardId == 0 && unit.IsBoss != true && unit.Health > 0 &&
-            unit.Modifiers is { IsClone: false } &&
-            status.Id == StatusId && status.Stacks == 1 && status.ParamInt == 1 &&
+            unit.Modifiers is { IsClone: false } && status.Stacks == 1 && IsOriginalStatusDefinition(status);
+
+        private static bool IsOriginalStatusDefinition(CombatStatus status) =>
+            status.Id == StatusId && status.ParamInt == 1 &&
             status.DisplayCategory == "Positive" && status.Stackable == true && status.Hidden == false &&
             status.Propagatable == false && !status.RemoveWhenTriggered && !status.RemoveStackAtEnd &&
             !status.RemoveAllAtEnd && !status.RemoveAfterPostCombat && !status.SkipDuringDeployment &&
@@ -593,7 +611,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool PublishesAtCombat(RoomCombatState room) =>
             !room.Preview && (IsFirstCombat(room) || IsSecondCombat(room) || IsThirdCombat(room) || IsObservedPyreCombat(room) ||
-                ScaledFeedRoom(room) || room.Units.Any(unit => IsScaledRoomCombatDeath(room, unit)));
+                ScaledFeedRoom(room) || IsScaledBossFeedingRoom(room) || room.Units.Any(unit => IsScaledRoomCombatDeath(room, unit)));
 
         internal static bool PublishesAtAscension(TrainCombatState train) =>
             (train.Context?.QueryFrame?.Turn is >= 1 and <= 3 ||
@@ -611,7 +629,7 @@ namespace MonsterTrain2Poju.Model
             string[] markers = room.ExternalInteractions.Where(marker => !IsKnownMarker(marker) && !InfestedMarker(marker)).Concat(
                 room.Units.Where(unit => MatchesRoomMarker(Marker(unit), unit) || infested && IsInfestedCombatOwner(room, unit) ||
                     IsScaledFirstWaveOwner(unit, room.Context) || IsScaledCarriedFeedOwner(unit, room.Context) ||
-                    IsScaledCampaign(room.Context) && IsScaledFeedRecipient(unit))
+                    IsScaledCampaign(room.Context) && IsScaledFeedRecipient(unit) || IsScaledBossFeedOwner(room, unit))
                     .Select(Marker)).Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray();
             return room.ExternalInteractions.SequenceEqual(markers) ? room :
                 new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, markers, room.Context, room.Preview,
@@ -850,7 +868,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static bool IsKnownMarker(string marker) =>
-            marker is Hunter + " room modifiers" or Infested + " room modifiers" or Heavy + " room modifiers" or Zealot + " room modifiers";
+            marker is Hunter + " room modifiers" or Infested + " room modifiers" or Heavy + " room modifiers" or
+                Zealot + " room modifiers" or ScaledTrainBoss + " room modifiers";
 
         private static CombatUnit? ApplyUnit(RoomCombatState room, CombatContext? context, CombatUnit unit, CardUpgradeModifier upgrade,
             bool remove, out string? error)
@@ -926,6 +945,8 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsObservedFeedUpgrade(RoomCombatState room, CombatUnit unit, CardUpgradeModifier upgrade, string? kind) =>
             IsObservedInfestedFeedUpgrade(room, unit, upgrade, kind) || kind == "OnEaten" && IsFeedUpgrade(upgrade) && (
                 IsScaledPreviewFeedRecipient(room, unit) && unit.Modifiers!.Upgrades.Count(IsFeedUpgrade) < 2 ||
+                IsScaledBossFeedingRoom(room) && IsScaledBossFeedTarget(unit) && unit.RegisteredStatus(StatusId) == null &&
+                    unit.Modifiers!.Upgrades is [var buffs] && IsFeedBuffUpgrade(buffs) ||
                 ScaledFeedRoom(room) && unit is { AssetKey: Heavy, MaxHealth: 75 } && IsFeedRecipient(unit) &&
                     (unit.BaseAttack == 12 && unit.RegisteredStatus(StatusId) == null || IsScaledFirstFeedRecipient(room, unit)) ||
                 IsFirstCombat(room) && unit.AssetKey == Heavy && IsFeedRecipient(unit) && unit.RegisteredStatus(StatusId) == null ||
@@ -939,11 +960,10 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsObservedCombatUpgrade(RoomCombatState room, CardUpgradeModifier upgrade, string? kind) =>
             (kind == "OnStatusEffectChanged" && ScaledFeedRoom(room) && IsAttackUpgrade(upgrade, 0) &&
                 room.Units.Any(unit => IsScaledFirstFeedRecipient(room, unit))) ||
+            (kind == "OnStatusEffectChanged" && IsAttackUpgrade(upgrade, 0) &&
+                room.Units.Any(unit => IsScaledBossFeedOwner(room, unit))) ||
             (IsFirstCombat(room) || IsSecondCombat(room) || IsThirdCombat(room)) &&
-            ((kind == "OnEaten" && (IsFeedUpgrade(upgrade) || IsThirdCombat(room) &&
-                room.RoomIndex == 0 && upgrade.DataId == FeedBuffUpgrade &&
-                upgrade.Statuses.Select(status => (status.Id, status.Stacks)).SequenceEqual(
-                    new[] { ("damage shield", 1), ("spell shield", 1), ("lifesteal", 1) }))) ||
+            ((kind == "OnEaten" && (IsFeedUpgrade(upgrade) || IsThirdCombat(room) && room.RoomIndex == 0 && IsFeedBuffUpgrade(upgrade))) ||
              (kind == "OnStatusEffectChanged" && upgrade.DataId == UpgradeId && upgrade.Stats.Damage == 0 &&
                 upgrade.Stats.Health == 0 && upgrade.Statuses.Count == 0 && upgrade.Unique));
 
@@ -954,6 +974,10 @@ namespace MonsterTrain2Poju.Model
         private static bool IsFeedUpgrade(CardUpgradeModifier upgrade) => upgrade.DataId == FeedUpgrade &&
             upgrade.Statuses is [var status] && status.Id == StatusId && status.Stacks == 3 && status.ParamInt == 1 &&
             upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.ExternalInteractions.Count == 0;
+
+        private static bool IsFeedBuffUpgrade(CardUpgradeModifier upgrade) => upgrade.DataId == FeedBuffUpgrade &&
+            upgrade.Statuses.Select(status => (status.Id, status.Stacks)).SequenceEqual(
+                new[] { ("damage shield", 1), ("spell shield", 1), ("lifesteal", 1) });
 
         internal static bool IsFedPreviewRecipient(CombatUnit unit) => unit.AssetKey == Heavy && IsFeedRecipient(unit) &&
             unit.Status(StatusId)?.Stacks == 3 &&
@@ -982,7 +1006,8 @@ namespace MonsterTrain2Poju.Model
                  IsObservedHordeRecipient(unit, room.Context) && unit.Status(StatusId) != null ||
              IsFirstCombat(room) && IsFedPreviewRecipient(unit) ||
              IsSecondCombat(room) && unit.AssetKey == Zealot && IsFedSecondPreviewRecipient(unit) ||
-             IsThirdCombat(room) && room.RoomIndex == 0 && IsThirdNewHeavy(unit) || IsScaledFirstFeedRecipient(room, unit)) &&
+             IsThirdCombat(room) && room.RoomIndex == 0 && IsThirdNewHeavy(unit) || IsScaledFirstFeedRecipient(room, unit) ||
+             IsScaledBossFeedOwner(room, unit)) &&
             !unit.Modifiers!.Upgrades.Any(upgrade => upgrade.DataId == UpgradeId);
 
         // This first ordinary turn projects the native attack-only upgrade
