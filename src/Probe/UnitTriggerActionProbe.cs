@@ -13,7 +13,11 @@ namespace MonsterTrain2Poju.Probe
                 FriendlyDamageStatusModel.NativeEffect or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or
                 "CardEffectAddStatusEffectBasedOnHealth" or HealthThresholdStatusEffect;
         private static bool DamageEffect(string type) =>
-            type is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" or OwnerDamageReactionModel.NativeEffect;
+            type is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" or OwnerDamageReactionModel.NativeEffect or DevotionModel.NativeDamage;
+        private static bool FixedDevotionDamage(CardEffectData effect) =>
+            effect.GetParamBool() && effect.GetParamInt() is 6 or 8 or 10 &&
+            !effect.GetUseIntRange() && !effect.GetUseStatusEffectStackMultiplier() &&
+            effect.GetTargetMode() == TargetMode.FrontInRoom && effect.GetTargetTeamType() == Team.Type.Heroes;
         private static bool HealthEffect(string type) => type is "CardEffectAdjustMaxHealth" or "CardEffectBuffMaxHealth";
         private static bool HatchEffect(string type) => type is
             "CardEffectRemoveStatusEffectPerCorrupt" or "CardEffectSacrifice" or "CardEffectForceHatchCheck";
@@ -32,6 +36,10 @@ namespace MonsterTrain2Poju.Probe
         internal static CardActionEffect? Capture(CardEffectState state, List<string>? interactions = null)
         {
             CardEffectData data = state.GetSourceCardEffectData();
+            if (data.GetEffectStateName() == DevotionModel.NativeDamage)
+                return FixedDevotionDamage(data) && state.GetParamBool() && state.GetParamInt() == data.GetParamInt() &&
+                    !state.GetUseIntRange() && !state.GetUseStatusEffectStackMultiplier()
+                    ? Describe(data, state.GetParamInt(), null) : null;
             if (FrontHeroCopy(data))
                 return state.GetParamInt() == data.GetParamInt() && state.GetParamBool() == data.GetParamBool()
                     ? Definition(data, interactions) : null;
@@ -73,6 +81,8 @@ namespace MonsterTrain2Poju.Probe
                     BattleActionProbe.Status(status.statusId, status.count)).ToArray() : null);
         }
         internal static CardActionEffect? Definition(CardEffectData effect, List<string>? interactions = null) =>
+            effect.GetEffectStateName() == DevotionModel.NativeDamage
+                ? FixedDevotionDamage(effect) ? Describe(effect, effect.GetParamInt(), null) : null :
             FrontHeroCopy(effect) ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :
             effect.GetEffectStateName() is "CardEffectGainDevotionPoints" or "CardEffectAddStatusEffectPerDevotionLevel" or "CardEffectAddStatusEffectPerOtherEffect"
                 ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :

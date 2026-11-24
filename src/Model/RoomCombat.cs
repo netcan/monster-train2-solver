@@ -1702,6 +1702,18 @@ namespace MonsterTrain2Poju.Model
                             if (devotionStatusError != null) return devotionStatusError;
                             continue;
                         }
+                        if (effect.Type == DevotionModel.NativeDamage)
+                        {
+                            if (trigger.Kind != "CardSpellPlayed" ||
+                                effect.Action is not { Type: "Damage", Target: "FrontInRoom", Value: 6 or 8 or 10,
+                                    AllowEnemy: true, AllowPlayer: false, Range: null, Statuses.Count: 0 } damage ||
+                                damage.Value != effect.Value || effect.DamageStatusMultiplier != null ||
+                                state.Context?.FindCard(unit.SpawnerCardId)?.MaskDescriptor?.SpareTriggers?.Count > 0)
+                                return "Devotion damage requires the original fixed spell-play payload without a card OnSpare callback.";
+                            string? damageError = DevotionModel.Validate(state.Context) ?? damage.Filters?.Validate();
+                            if (damageError != null) return damageError;
+                            continue;
+                        }
                         if (effect.Type == TriggeredStatusModel.OtherStatusEffect)
                         {
                             if (state.Context == null || !TriggeredStatusModel.MatchesSpurnedAttack(unit, trigger))
@@ -6815,6 +6827,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 // Native samples once after collection, including an empty Room target set.
                 if (action.Type == "DamagePerSourceAttack") amount = unchecked(amount * actor.Attack);
+                if (effect.Type == DevotionModel.NativeDamage)
+                    amount = unchecked(amount * (context!.QueryFrame!.Devotion!.Level + 1));
                 if (effect.Type == OwnerDamageReactionModel.NativeEffect)
                 {
                     amount = unchecked(amount * actor.Source.DamageHistory!.DamageTakenBeforeArmor);
