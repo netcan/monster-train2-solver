@@ -7,7 +7,11 @@ namespace MonsterTrain2Poju.Model
     internal static class HivemindTurnUpgrade
     {
         internal const string StatusId = "hivemind";
+        internal const string KillerStatusId = "hivemindkiller";
         private const string UpgradeId = "RoomStateHivemindModifierUpgrade";
+        private const string KillerUpgradeId = "RoomStateHivemindKillerModifierUpgrade";
+        private const string SproutUpgradeId = "7bdad45c-2981-452c-ac06-3aa5137f8ce4";
+        private const string SproutCarrierCardId = "b9788a77-50da-4654-acfa-960c23649984";
         private const string Hunter = "RAny_Attacker_Hunter_Hivemind_Ver2";
         private const string Infested = "R2_Support_FeedInfested";
         private const string Heavy = "R2_Heavy_HealGorge";
@@ -37,9 +41,58 @@ namespace MonsterTrain2Poju.Model
             definitions.All(entry => entry.Unit.RegisteredStatus("hivemindkiller") == null &&
                 (entry.Unit.RegisteredStatus(StatusId) == null || entry.Unit.Status(StatusId) is CombatStatus status &&
                     IsOriginalFreshOwner(entry.Unit, status))) &&
-            source.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.RegisteredStatus("hivemindkiller") == null &&
+            source.Train.Rooms.All(room => room.Units.All(unit =>
+                (unit.RegisteredStatus(KillerStatusId) == null || source.Turn == 1 && IsObservedSproutCarrier(room, unit)) &&
                 (unit.RegisteredStatus(StatusId) == null || IsScaledFirstWaveOwner(unit, source.Train.Context) ||
-                    IsScaledFeedRecipient(unit)));
+                    IsScaledFeedRecipient(unit))));
+
+        internal static bool IsSproutT1Owner(CombatRelicState relic) => relic is
+        {
+            DataId: "89f86b55-f867-42d4-9128-0ebc6c82bcaf", AssetKey: "SproutT1", IsCovenant: false,
+            DisallowedInPlacementPhase: false, EffectTypes: ["RelicEffectCardUpgrade"]
+        };
+
+        private static bool IsKillerStatus(CombatStatus status) => status is
+        {
+            Id: KillerStatusId, Stacks: 1, ParamInt: 0, DisplayCategory: "Persistent", Hidden: true,
+            Stackable: false, Propagatable: false, ExcludeMonsterPropagation: true, ExcludeHeroPropagation: false,
+            RemoveWhenTriggered: false, RemoveStackAtEnd: false, RemoveAllAtEnd: false, RemoveAfterPostCombat: false,
+            SkipDuringDeployment: false, RemoveDuringDeployment: false, RemoveWhenTriggeredAfterCardPlayed: false,
+            RemoveAtEndOfTurnIfTriggered: false, MarkedForRemovalAfterCardPlayed: false
+        };
+
+        internal static bool IsObservedSproutCarrier(RoomCombatState room, CombatUnit unit, bool replacingUpgrade = false)
+        {
+            CombatContext? context = room.Context;
+            return room.RoomIndex == 2 && context?.QueryFrame?.Turn is 1 or 2 && IsScaledCampaign(context) &&
+                context.Relics!.Count(IsSproutT1Owner) == 1 &&
+                unit is { AssetKey: "ParrafinEnforcer", Team: CombatTeam.Player, Health: > 0,
+                    SpawnerCardId: > 0, Modifiers.IsClone: false } &&
+                unit.RegisteredStatus(KillerStatusId) is CombatStatus killer && IsKillerStatus(killer) &&
+                context.FindCard(unit.SpawnerCardId) is { DataId: SproutCarrierCardId } card &&
+                card.Permanent.Upgrades.Count(upgrade => upgrade is
+                {
+                    DataId: SproutUpgradeId, AssetKey: "SproutT1_Upgrade", Unique: false, ExcludeFromClones: true,
+                    TriggerUpgrades: null, AbilityUpgrade: null, ExternalInteractions.Count: 0, Statuses: [var status]
+                } && IsKillerStatus(status)) == 1 && (TryKillerUpgrade(unit, out _) ||
+                    replacingUpgrade && context.QueryFrame!.Turn == 2 && room.Units.Count == 1 &&
+                    room.ExternalInteractions.Count == 0 && unit.Modifiers.Upgrades.All(upgrade => upgrade.DataId != KillerUpgradeId));
+        }
+
+        private static bool TryKillerUpgrade(CombatUnit unit, out CardUpgradeModifier? native)
+        {
+            native = null;
+            if (unit.Modifiers?.Upgrades.Where(upgrade => upgrade.DataId == KillerUpgradeId).ToArray() is not [var upgrade] ||
+                upgrade is not
+                {
+                    AssetKey: "", Unique: true, ExcludeFromClones: false, RemoveOnDiscard: false,
+                    Stats: { Damage: 0 or 8, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
+                    Statuses.Count: 0, TriggerUpgrades: null, AbilityUpgrade: null, ExternalInteractions.Count: 0,
+                    Lifecycle.Values.DataId: KillerUpgradeId
+                }) return false;
+            native = upgrade;
+            return true;
+        }
 
         private static bool IsScaledCampaign(CombatContext? context) => context?.Relics?.Any(relic =>
             relic is { DataId: "f2c1e86b-ac5c-474f-8c3a-ebee76981fb8", AssetKey: "SoulSavior_DifficultyTier2" } &&
@@ -143,8 +196,10 @@ namespace MonsterTrain2Poju.Model
             CombatUnit[] units = source.Rooms.SelectMany(room => room.Units).ToArray();
             return units.Any(unit => IsScaledFirstWaveOwner(unit, source.Context) &&
                     unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 0)) &&
-                units.All(unit => unit.RegisteredStatus("hivemindkiller") == null &&
-                    (unit.RegisteredStatus(StatusId) == null || IsScaledFirstWaveOwner(unit, source.Context) || IsScaledFeedRecipient(unit)));
+                source.Rooms.All(room => room.Units.All(unit =>
+                    (unit.RegisteredStatus(KillerStatusId) == null || source.Context.QueryFrame.Turn == 2 &&
+                        IsObservedSproutCarrier(room, unit)) &&
+                    (unit.RegisteredStatus(StatusId) == null || IsScaledFirstWaveOwner(unit, source.Context) || IsScaledFeedRecipient(unit))));
         }
 
         internal static bool HasInfestedOpeningWave(IEnumerable<CombatUnit> units)
@@ -718,6 +773,15 @@ namespace MonsterTrain2Poju.Model
                         actor = ApplyUnit(room, source.Context, actor, AttackUpgrade(total), remove: false, out error);
                         if (actor == null) return null;
                     }
+                    if (unit.Status(KillerStatusId) != null && IsObservedSproutCarrier(room, unit) &&
+                        TryKillerUpgrade(unit, out CardUpgradeModifier? killer))
+                    {
+                        actor = ApplyUnit(room, source.Context, unit, killer!, remove: true, out error);
+                        if (actor == null) return null;
+                        actor = ApplyUnit(room, source.Context, actor, killer!.WithStats(new CardStatModifier(damage: total)),
+                            remove: false, out error);
+                        if (actor == null) return null;
+                    }
                     units.Add(actor);
                 }
                 rooms.Add(new RoomCombatState(room.RoomIndex, room.Deployment, units,
@@ -740,7 +804,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult applied = UnitModifierModel.ApplyWithSettlement(local, unit.Id, upgrade,
                 "TemporaryUntilUnitDeath", remove, null, 0, null, (state, actor, _) =>
                     new RoomCombatResult(state.WithUnits(new[] { actor }), RoomOutcome.Exchanged, 0, new List<CombatEvent>()),
-                enqueueCallback: callbacks.Add, directApi: true, upgradeId: UpgradeId, allowFreshHivemind: true);
+                enqueueCallback: callbacks.Add, directApi: true, upgradeId: upgrade.DataId, allowFreshHivemind: true);
             if (!applied.Supported || callbacks.Count != 0 || applied.State!.Units.Count != 1 ||
                 applied.Outcome != RoomOutcome.Exchanged)
             {

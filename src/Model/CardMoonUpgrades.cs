@@ -132,6 +132,7 @@ namespace MonsterTrain2Poju.Model
             if (RelicAscensionHealModel.IsOwner(relic)) return true;
             // Equilibrius freezes its existing purge-count draw bonus through combat.
             if (RelicResourceModel.IsPurgeCountDrawOwner(relic)) return true;
+            if (HivemindTurnUpgrade.IsSproutT1Owner(relic)) return true;
             // These owners from the native Soul Savior run dispatch through
             // setup, unit triggers, birth, or before-draw resources. The
             // ordinary relic validator still checks their captured payloads.

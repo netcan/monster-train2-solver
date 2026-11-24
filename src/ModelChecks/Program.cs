@@ -136,6 +136,12 @@ if (args.Length == 2 && args[0] == "--native-hivemind-first-turn-only")
     HivemindChecks.Turn(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-sprout-t1-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    HivemindChecks.NativeSproutT1(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-hivemind-second-draw-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

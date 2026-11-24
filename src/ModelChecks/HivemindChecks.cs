@@ -16,6 +16,47 @@ internal static class HivemindChecks
     private const string Heavy = "R2_Heavy_HealGorge";
     private const string Upgrade = "RoomStateHivemindModifierUpgrade";
 
+    internal static void NativeSproutT1(FixtureValue root)
+    {
+        Require(Number(root, "Schema") == 1 && root.GetProperty("Boundary").GetString() == "NativeSproutT1Hivemind" &&
+            root.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            root.GetProperty("OwnerId").GetString() == "89f86b55-f867-42d4-9128-0ebc6c82bcaf" &&
+            root.GetProperty("UpgradeId").GetString() == "7bdad45c-2981-452c-ac06-3aa5137f8ce4", "Original Sprout T1 witness identity differs.");
+        int carrier = Number(root, "CarrierUnitId");
+        var observations = root.GetProperty("Observations").EnumerateArray().ToArray();
+        Require(Number(root, "FirstWaveObservation") == 1 && observations.Length == 9 &&
+            observations.Select(row => Number(row, "TowerStacks")).SequenceEqual(new[] { 0, 5, 6, 7, 8, 8, 8, 8, 8 }),
+            "Original Sprout birth and Hivemind wave callbacks differ.");
+        foreach (FixtureValue row in observations)
+        {
+            FixtureValue prior = row.GetProperty("Before"), next = row.GetProperty("After");
+            Require(Number(row, "ActorId") == carrier && Number(next, "ModifierAttack") == Number(row, "TowerStacks") &&
+                Number(next, "ModifierAttack") - Number(prior, "ModifierAttack") ==
+                    Number(next, "TotalAttack") - Number(prior, "TotalAttack") &&
+                new[] { "Battle", "BattleTest", "CardDraw" }.All(stream => prior.GetProperty(stream).ContentEquals(next.GetProperty(stream))),
+                "Original Sprout attack mutation or callback RNG differs.");
+        }
+
+        FixtureValue settled = root.GetProperty("Actual");
+        BattleTurnState before = root.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState actual = settled.Deserialize<BattleTurnState>()!;
+        string parent = JsonSerializer.Serialize(before, ModelJson.Options);
+        BattleTurnResult nextTurn = BattleTurnModel.EndTurn(before);
+        Require(before.Spawn.Turn == 1 && actual.Spawn.Turn == 2 && nextTurn.Supported && nextTurn.Outcome == RoomOutcome.Exchanged,
+            "Original Sprout wave EndTurn failed: " + nextTurn.UnsupportedReason);
+        BattleTurnState reproduced = RecordedBattleChecks.RecordedBoundary(nextTurn.State!, settled, false, "Original Sprout wave", true);
+        Require(reproduced.RngStreams.Select(stream => (stream.Name, stream.Seed, stream.State))
+            .SequenceEqual(actual.RngStreams.Select(stream => (stream.Name, stream.Seed, stream.State))) &&
+            parent == JsonSerializer.Serialize(before, ModelJson.Options), "Sprout changed parent or successor RNG.");
+        Console.WriteLine("NATIVE-SPROUT-T1 PASS: nine original callbacks and complete independent turn 1 to turn 2 successor, including native RNG.");
+
+        static void Require(bool condition, string reason)
+        {
+            if (!condition) throw new InvalidDataException(reason);
+        }
+    }
+
     internal static void ExportTurnComponent(string battlePath, string outputPath, int index = 0)
     {
         using var source = ModelJson.ReadFixture(battlePath);

@@ -1202,6 +1202,8 @@ namespace MonsterTrain2Poju.Model
                 (OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, unit.Triggers[0], state.Context) ||
                  allowFirstHivemindCombat && HivemindTurnUpgrade.IsInfestedFirstBossMarkerOwner(state, unit)));
             string[] interactions = state.ExternalInteractions.Where(item =>
+                !state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
+                    HivemindTurnUpgrade.IsObservedSproutCarrier(state, unit)) &&
                 !((linkedTargetOnly || linkedMaximumPreview || infestedBossCombat) && item == "Outer train boss") &&
                 !((allowFreshHivemind || observedHivemindCombat) && state.Units.Any(unit => HivemindTurnUpgrade.MatchesRoomMarker(item, unit))) &&
                 !(infestedWaveCombat && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
@@ -1296,6 +1298,8 @@ namespace MonsterTrain2Poju.Model
                     return "Invalid retained status dictionary on unit " + unit.Id;
                 foreach (CombatStatus status in unit.Statuses)
                     if (!KnownStatuses.Contains(status.Id) && !EquipmentPoolGrantModel.CosmeticStatus(status) &&
+                        !(status.Id == HivemindTurnUpgrade.KillerStatusId &&
+                            HivemindTurnUpgrade.IsObservedSproutCarrier(state, unit, replacingUpgrade: allowFreshHivemind)) &&
                         !((allowFreshHivemind && status.Id == HivemindTurnUpgrade.StatusId &&
                             (HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status) ||
                              HivemindTurnUpgrade.IsInfestedOpeningOwner(unit, status))) ||
