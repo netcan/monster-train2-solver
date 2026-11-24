@@ -1215,10 +1215,7 @@ namespace MonsterTrain2Poju.Model
                 !(infestedDrawTurn > 0 && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
                     HivemindTurnUpgrade.IsInfestedDrawOwner(unit, infestedDrawTurn, afterRemoval: false, state.Context))) &&
                 !(scaledWavePhase && state.Units.Any(unit =>
-                    HivemindTurnUpgrade.Marker(unit) == item && (HivemindTurnUpgrade.IsScaledFirstWaveOwner(unit, state.Context) ||
-                        HivemindTurnUpgrade.IsScaledCarriedFeedOwner(unit, state.Context) ||
-                        HivemindTurnUpgrade.IsScaledPreviewFeedRecipient(state, unit) ||
-                        HivemindTurnUpgrade.IsScaledBossFeedOwner(state, unit))))).ToArray();
+                    HivemindTurnUpgrade.Marker(unit) == item && HivemindTurnUpgrade.IsScaledRoomMarkerOwner(state, unit)))).ToArray();
             if (interactions.Length > 0) return string.Join("; ", interactions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
             {

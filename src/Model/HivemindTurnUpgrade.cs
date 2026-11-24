@@ -163,6 +163,8 @@ namespace MonsterTrain2Poju.Model
                         IsScaledFirstWaveOwner(survivor, room.Context)) ||
                  room.Context.QueryFrame.Turn == 5 && IsAttackUpgrade(upgrade, 26)));
 
+        // An ordinary preview casualty leaves the existing attack upgrades on surviving holders.
+        // Sprout uses a separate immediate refresh and needs its own validated death path.
         internal static bool IsScaledRoomCombatDeath(RoomCombatState room, CombatUnit unit) =>
             room.ExternalInteractions.Contains(Marker(unit)) &&
             (room.RoomIndex == 1 && room.Context?.QueryFrame?.Turn == 3 &&
@@ -183,7 +185,12 @@ namespace MonsterTrain2Poju.Model
              room.RoomIndex == 2 && room.Context?.QueryFrame?.Turn == 6 &&
                 (unit.AssetKey == Infested && IsScaledFirstWaveOwner(unit, room.Context) ||
                  IsScaledCarriedFeedOwner(unit, room.Context) && unit.Status(StatusId)?.Stacks == 12) &&
-                unit.Modifiers!.Upgrades.Any(marker => IsAttackUpgrade(marker, 21)));
+                unit.Modifiers!.Upgrades.Any(marker => IsAttackUpgrade(marker, 21)) ||
+             room.Preview && unit.IsBoss == false && NoCapturedKiller(room) && IsScaledRoomMarkerOwner(room, unit));
+
+        internal static bool IsScaledRoomMarkerOwner(RoomCombatState room, CombatUnit unit) =>
+            IsScaledFirstWaveOwner(unit, room.Context) || IsScaledCarriedFeedOwner(unit, room.Context) ||
+            IsScaledPreviewFeedRecipient(room, unit) || IsScaledBossFeedOwner(room, unit);
         internal static bool IsScaledTurnFivePyreVictim(RoomCombatState room, CombatUnit unit) =>
             room.RoomIndex == 3 && room.Context?.QueryFrame?.Turn == 5 && unit.AssetKey == Infested &&
             IsScaledFirstWaveOwner(unit, room.Context) && unit.Modifiers!.Upgrades is [var upgrade] &&
