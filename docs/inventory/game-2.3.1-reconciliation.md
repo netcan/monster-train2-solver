@@ -13,12 +13,12 @@
 | inspect-inherited-code | 8 | 8 | 8 |
 | inspect-projection-normalization | 54 | 54 | 54 |
 | inspect-guard-links | 44 | 44 | 44 |
-| review-existing-code | 226 | 226 | 226 |
+| review-existing-code | 225 | 225 | 225 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 82 | 78 | 78 |
+| scoped-review-recorded | 83 | 79 | 79 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 85 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 86 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -101,6 +101,7 @@
 | RelicEffectPayCardCostWithPyreHealth | shared-path | The pinned preview-isolation witness checks affordable Ember, a four-health nonlethal Pyre payment, X-cost and one native OnHit callback. 31 plays and six EndTurns match independently. The prepared control cards are inserted at turn one. |
 | RelicEffectPersistMonsterHp | shared-path | The pinned Echoes owner matches paid deployment below and above the original health cap, native hit and heal writes to the source card, and lethal clearing. The unchanged opening battle matches 21 plays, seven EndTurns and both candidate frontiers. The later campaign save callback is outside the battle terminal capture. |
 | RelicEffectPreventMonstersDamagingHeroes | shared-path | The pinned Echoes owner supplies signed damage adjustment controls and a live Pyregel target. A friendly attacker leaves it at 45 HP and the attackerless hit lowers it to 44 HP. Full win matches 21 plays, seven EndTurns and both candidate frontiers. |
+| RelicEffectPurgeCardsUntilDeckLimitMet | shared-path | The controlled Equilibrius T3 witness uses the original permanent purge callbacks on a copy of a natural campaign checkpoint. The normal draw query stays at five for purge counts zero through four, becomes six at five, and stays six in the first ordinary round. The model matches all six captured values and the registered mutation order. The positive original witness covers the first threshold on tier three. |
 | RelicEffectPurgeStarterDeck | campaign-only | The exact Soul Savior owner purges and fills the starter deck during original run setup. The natural Dutiful Child win uses the captured resulting deck and passes 39 action and seven EndTurn comparisons with both candidate frontiers. |
 | RelicEffectRandomizeWaveOrder | shared-path | The original opening mutator resolves its permutation before deployment. Eleven native spawning stages cover a first-wave exchange and the authored final pair. A distinct original permutation with unchanged order passes the full 18-action and six-EndTurn chain with both candidate frontiers. |
 | RelicEffectRemoveStatusEffectOnSpawn | shared-path | The unchanged EggHatchRemoval owner orders Hatch removal before adding 30 Armor to the eligible Egg. Two positive births in the pinned 2.3.1 archive remove three Hatch and gain 35 Armor including five from SpawnWithArmor. All 12 recorded births and 32 independent branches per boundary match. The scene provides controlled Egg carriers and preserves the original relic definitions. |
@@ -139,10 +140,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `95d1375705dded9c7573e4a8f06725c5f9693e592848c452dae5338059f63736`。
-- Model: PDB 校验过的项目源码集合 `f44912c67782cae67c8a2a8f0f4d8c6496a373768d88a256998a4ee6c530559d`。
-- Probe: PDB 校验过的项目源码集合 `1f7d1847c8200f64b65bd6273f3fc8f0f0d9130eb328399abd693a02539c2b7a`。
-- ModelChecks: PDB 校验过的项目源码集合 `c19c68a6db6dcb1cd1157c7320e619cecc3a4db347ca5c13adef5d60bd4ae59d`。
+- 人工审查索引 SHA-256: `26ed22d111a9d66d222a4ae3b9665a52d3cecc8667c61a7b96df6cdcf76c9749`。
+- Model: PDB 校验过的项目源码集合 `07be99578490859f6b3636d67298fb957930323111e5b2ae9cc755841e66cdbd`。
+- Probe: PDB 校验过的项目源码集合 `ed5246e50a6e1032ad67617205c1e2c458cd92fccac0afc96c327a9478884ffb`。
+- ModelChecks: PDB 校验过的项目源码集合 `c93fd84acc56bc8ecaa9793dc2bac9a4a311d3b926647604681830159742298e`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
