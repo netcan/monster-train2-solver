@@ -633,6 +633,7 @@ param(
     [switch] $OriginalEndlessEnemyScalingWitness,
     [switch] $EndlessEnemyScalingAllWaves,
     [switch] $EndlessEnemyScalingWholeBattle,
+    [switch] $EndlessEnemyScalingControlledNextRing,
     [switch] $OriginalPactDrawWitness,
     [switch] $OriginalEntropyDrawWitness,
     [switch] $OriginalPactDrawBattle,
@@ -1058,11 +1059,16 @@ if ($OriginalEmbeddedRoomWitness) {
 if ($EndlessEnemyScalingWholeBattle -and !$EndlessEnemyScalingAllWaves) {
     throw 'EndlessEnemyScalingWholeBattle requires EndlessEnemyScalingAllWaves.'
 }
+if ($EndlessEnemyScalingControlledNextRing -and
+    (!$OriginalEndlessEnemyScalingWitness -or $EndlessEnemyScalingAllWaves -or !$InputProfile -or $BattleDistance -ne 0)) {
+    throw 'EndlessEnemyScalingControlledNextRing requires OriginalEndlessEnemyScalingWitness and the original post-victory InputProfile at BattleDistance 0.'
+}
 if ($EndlessEnemyScalingAllWaves -and (!$OriginalEndlessEnemyScalingWitness -or !$InputProfile -or $BattleDistance -ne 0)) {
     throw 'The Endless waves witness requires OriginalEndlessEnemyScalingWitness and the original post-victory InputProfile at BattleDistance 0.'
 }
 if ($OriginalEndlessEnemyScalingWitness) {
-    $witnessArguments = @('OriginalEndlessEnemyScalingWitness', 'EndlessEnemyScalingAllWaves', 'EndlessEnemyScalingWholeBattle', 'InputProfile', 'BattleDistance', 'Seed',
+    $witnessArguments = @('OriginalEndlessEnemyScalingWitness', 'EndlessEnemyScalingAllWaves', 'EndlessEnemyScalingWholeBattle',
+        'EndlessEnemyScalingControlledNextRing', 'InputProfile', 'BattleDistance', 'Seed',
         'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not $BinaryCapture -or (!$InputProfile -and $BattleDistance -ne 0) -or
@@ -3051,8 +3057,8 @@ if ($InputProfile) {
         if ($checkpointData.runType -cne 'Class' -or !$checkpointData.isEndless -or $checkpointData.isRegionRun) {
             throw 'Original Endless scaling InputProfile requires a native Class Endless checkpoint.'
         }
-        if ($EndlessEnemyScalingAllWaves -and !$nativeEndlessDestination) {
-            throw 'The Endless waves witness requires a checkpoint saved by the original post-victory Endless transition.'
+        if (($EndlessEnemyScalingAllWaves -or $EndlessEnemyScalingControlledNextRing) -and !$nativeEndlessDestination) {
+            throw 'This Endless witness requires a checkpoint saved by the original post-victory Endless transition.'
         }
         $endlessInputSignature = Get-OriginalSignature $checkpoint
     }
@@ -3327,6 +3333,7 @@ $environment = @{
     MT2_PROBE_ENDLESS_ENEMY_SCALING_WITNESS = $(if ($OriginalEndlessEnemyScalingWitness) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_ALL_WAVES = $(if ($EndlessEnemyScalingAllWaves) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_WHOLE_BATTLE = $(if ($EndlessEnemyScalingWholeBattle) { '1' } else { '0' })
+    MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_NEXT_RING = $(if ($EndlessEnemyScalingControlledNextRing) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_ENTROPY_DRAW = $(if ($OriginalEntropyDrawWitness) { '1' } else { '0' })
@@ -4530,14 +4537,18 @@ if ($OriginalEmbeddedRoomWitness) {
     return
 }
 if ($OriginalEndlessEnemyScalingWitness) {
-    $captureName = if ($EndlessEnemyScalingAllWaves) { 'endless-enemy-scaling-waves.mt2f' } else { 'endless-enemy-scaling.mt2f' }
+    $captureName = if ($EndlessEnemyScalingAllWaves) { 'endless-enemy-scaling-waves.mt2f' }
+        elseif ($EndlessEnemyScalingControlledNextRing) { 'endless-enemy-scaling-controlled-next-ring.mt2f' }
+        else { 'endless-enemy-scaling.mt2f' }
     $captureMarker = if ($EndlessEnemyScalingWholeBattle) { 'Original Endless enemy scaling terminal settlement captured.' }
         elseif ($EndlessEnemyScalingAllWaves) { 'Original Endless enemy scaling waves captured.' }
         else { 'Original Endless enemy scaling captured.' }
     $capturePath = Join-Path $profile $captureName
     $wholeBattlePath = Join-Path $profile 'full-battle.mt2f'
+    $controlledMarker = 'ENDLESS-ENEMY-SCALING-CONTROLLED-NEXT-RING OBSERVED loop=1 distance=1'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
         ($EndlessEnemyScalingWholeBattle -and -not (Test-Path -LiteralPath $wholeBattlePath -PathType Leaf)) -or
+        ($EndlessEnemyScalingControlledNextRing -and -not (Select-String -LiteralPath $unityLog -SimpleMatch $controlledMarker -Quiet)) -or
         -not (Select-String -LiteralPath $unityLog -SimpleMatch "DEPTH-PASS $captureMarker" -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore -or
         ($InputProfile -and (Get-OriginalSignature $checkpoint) -cne $endlessInputSignature)) {
@@ -4551,6 +4562,9 @@ if ($OriginalEndlessEnemyScalingWitness) {
         else {
             Write-Output "NATIVE-ENDLESS-ENEMY-SCALING-WAVES PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash) $($summary.Line)"
         }
+    }
+    elseif ($EndlessEnemyScalingControlledNextRing) {
+        Write-Output "NATIVE-ENDLESS-ENEMY-SCALING-CONTROLLED-NEXT-RING PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     }
     else {
         Write-Output "NATIVE-ENDLESS-ENEMY-SCALING PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
