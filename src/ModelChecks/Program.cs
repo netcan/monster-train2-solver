@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--original-endless-factors-only")
+{
+    using var archive = ModelJson.ReadFixture(args[1]);
+    OriginalEndlessFirstWaveChecks.Factors(archive.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--original-endless-first-wave-only")
 {
     using var transition = ModelJson.ReadFixture(args[1]);

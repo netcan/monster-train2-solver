@@ -3,6 +3,31 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalEndlessFirstWaveChecks
 {
+    internal static void Factors(FixtureValue archive)
+    {
+        Require(Text(archive, "GameVersion") == Game231FixtureCatalog.Version &&
+            Text(archive, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(archive, "Boundary") == "OriginalEndlessEnemyScalingFactors" &&
+            Number(archive, "RunLength") == 8 && archive.GetProperty("RngBefore").ContentEquals(archive.GetProperty("RngAfter")),
+            "Expected the pinned native factor queries with unchanged gameplay RNG.");
+        FixtureValue[] rows = archive.GetProperty("Factors").EnumerateArray().ToArray();
+        string[] fields = { "Attack", "Health", "Status", "BuffDamage", "Heal", "Damage" };
+        Require(rows.Length == 24 && Enumerable.Range(0, rows.Length).All(index =>
+            Number(rows[index], "Loop") == index / 8 + 1 && Number(rows[index], "Distance") == index % 8 &&
+            fields.All(field => rows[index].GetProperty(field).GetDouble() is >= 1 and < 1000)),
+            "Expected six native balance queries across each of the 24 loop/distance pairs.");
+        Require(rows[0].GetProperty("Health").GetDouble() == 1.5 &&
+            rows[1].GetProperty("Health").GetDouble() == 2 &&
+            rows[8].GetProperty("Damage").GetDouble() > rows[7].GetProperty("Damage").GetDouble(),
+            "Expected the measured early-ring health and the next-loop damage increase.");
+        var eligibility = archive.GetProperty("StatusEligibility").EnumerateArray()
+            .ToDictionary(row => Text(row, "Id")!, row => Flag(row, "ScalesInEndless"));
+        Require(eligibility.Count == 90 && eligibility.Count(entry => entry.Value) == 26 &&
+            eligibility["armor"] && eligibility["titanskin"] && eligibility["buff"] && !eligibility["relentless"],
+            "The calibrated status eligibility changed.");
+        Console.WriteLine("NATIVE-ENDLESS-FACTORS PASS: 24 original balance points, 90 status records and unchanged gameplay RNG.");
+    }
+
     internal static void Native(FixtureValue transition, FixtureValue natural, FixtureValue controlled)
     {
         foreach (FixtureValue item in new[] { transition, natural, controlled })
