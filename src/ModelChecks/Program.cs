@@ -9009,6 +9009,13 @@ if (args.Length == 1 && args[0] == "--relic-resources-pure")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--original-equilibrius-draw-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    RelicResourceChecks.NativeEquilibriusDraw(document.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--original-resource-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

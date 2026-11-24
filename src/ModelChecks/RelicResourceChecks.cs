@@ -1,8 +1,55 @@
 using System.Text.Json;
+using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
 internal static class RelicResourceChecks
 {
+    internal static void NativeEquilibriusDraw(FixtureValue root)
+    {
+        const string ownerId = "b7648a1e-47c3-4d52-a0ab-065079c7ae06";
+        Require(root.GetProperty("Schema").GetInt32() == 1 &&
+            root.GetProperty("Boundary").GetString() == "NativeEquilibriusT3Draw" &&
+            root.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            root.GetProperty("OwnerId").GetString() == ownerId && root.GetProperty("CombatTurn").GetInt32() == 1 &&
+            root.GetProperty("RemovedCards").GetArrayLength() == 5,
+            "Unexpected Equilibrius T3 native draw receipt.");
+
+        var relics = root.GetProperty("Relics").Deserialize<CombatRelicState[]>()!;
+        var resources = root.GetProperty("Resources").Deserialize<BattleResourceState>()!;
+        CombatRelicState owner = relics.Single(relic => relic.DataId == ownerId);
+        Require(RelicResourceModel.IsPurgeCountDrawOwner(owner) && relics.Where(relic => relic != owner)
+            .All(relic => relic.ResourceEffects?.All(effect => !effect.DrawMutationOrder.HasValue) != false),
+            "Expected Equilibrius as the only native registered draw mutation.");
+        var combat = owner.ResourceEffects!.Single();
+        Require(combat is { ParamInt: 5, ParamInt2: 4, Amount: 1, DrawValue: 1, DrawMutationOrder: >= 0 } &&
+            Draw(DrawContext(owner)).Value == root.GetProperty("CombatDraw").GetInt32(),
+            "The native registered positive Equilibrius draw was lost at the first ordinary turn.");
+
+        FixtureValue[] samples = root.GetProperty("Samples").EnumerateArray().ToArray();
+        Require(samples.Length == 6, "Expected the five observed permanent purges and their starting state.");
+        int deck = samples[0].GetProperty("Deck").GetInt32();
+        int baseDraw = samples[0].GetProperty("Draw").GetInt32();
+        for (int index = 0; index < samples.Length; index++)
+        {
+            FixtureValue sample = samples[index];
+            var effect = sample.GetProperty("Rule").Deserialize<RelicResourceEffect>()!;
+            int nativeDraw = sample.GetProperty("Draw").GetInt32();
+            int bonus = index / 5;
+            Require(sample.GetProperty("Count").GetInt32() == index && sample.GetProperty("Deck").GetInt32() == deck - index &&
+                sample.GetProperty("Value").GetDouble() == bonus && nativeDraw == baseDraw + bonus &&
+                effect.Amount == bonus && effect.DrawMutationOrder == combat.DrawMutationOrder,
+                "The original draw threshold or mutable-rule order differs.");
+            Require(Draw(DrawContext(owner.WithResourceEffects([effect]))).Value == nativeDraw,
+                "The modeled draw differs before the original battle.");
+        }
+        Console.WriteLine($"ORIGINAL-EQUILIBRIUS-T3-DRAW PASS: five native permanent purges, {baseDraw}→{baseDraw + 1} draw, first-turn registered resource.");
+
+        CombatContext DrawContext(CombatRelicState original) => new(
+            new([], [], [], UnityRng.Seed(13), 0, []), UnityRng.Seed(13), 0, 1, resources.MaxHandSize,
+            energyState: new(resources.MaxEnergy, 0, 0, "MonsterTurn", true), relics: [original], resources: resources);
+    }
+
     internal static void Run()
     {
         RelicForgeConservationChecks.Run();
