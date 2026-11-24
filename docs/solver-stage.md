@@ -75,6 +75,10 @@ pwsh -NoProfile -File scripts/Check-Game231SummonChoiceBattle.ps1 -SkipBuild -Re
 全部随机流、分数与两端状态键。求解验收入口对节点预算截断和 Relentless 导出
 各执行一次此项复放。
 
+2026-11-25 的求解定向验收在 `766e5f14` 上通过。两份新增的抽牌前顺序顾问归档各
+复放 16 次出牌和 5 次结束回合。确定性和概率搜索导出均通过新进程检查。
+[验收日志](../results/solver-completion-release-766e5f14.log)
+
 报告包装器另用原生 Relentless 放弃胜局定向复验通过；损坏检查器的两个故障
 输入均记录失败，第二项照常执行，最后正确返回失败，包含原生命令错误偏好
 开启的情况。原始八项执行时尚未添加报告的二进制哈希列，最终包装器单项报告
