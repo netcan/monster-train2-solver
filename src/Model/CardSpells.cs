@@ -2486,7 +2486,9 @@ namespace MonsterTrain2Poju.Model
             if (source.Context == null) return "A spell requires shared battle context.";
             if (effects.Any(effect => effect.Type == PyreAttackDamage))
             {
-                if (!fullTrain || selfUnitId <= 0 || source.Context.FindCard(sourceCardId)?.DataId != PyreStewardAbilityId ||
+                string? abilityId = sourceCardId > 0 ? source.Context.FindCard(sourceCardId)?.DataId :
+                    source.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == selfUnitId)?.Ability?.DataId;
+                if (!fullTrain || selfUnitId <= 0 || abilityId != PyreStewardAbilityId ||
                     effects.Any(effect => effect.Type == PyreAttackDamage &&
                         effect is not { Target: "Room", AllowEnemy: true, AllowPlayer: false, Value: 1, Range: null }))
                     return "Pyre-attack damage requires the original Pyre Steward ability and its activating unit.";
