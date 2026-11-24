@@ -43,12 +43,14 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<RelicConditionState> Conditions { get; }
         public int EnergyGain { get; }
         public int DrawCount { get; }
+        public bool? FirstSpawnLatched { get; }
+        public bool ShouldSerializeFirstSpawnLatched() => FirstSpawnLatched.HasValue;
         public RelicSpawnStatus(int effectIndex, bool targetPlayer, bool targetEnemy, IReadOnlyList<CombatStatus> statuses,
             string? requiredSubtype = null, bool subtypeIsNone = true, bool subtypeIsPyre = false,
             IReadOnlyList<string>? excludedSubtypes = null, int? restrictedRoom = null, int hpPercentAsStacks = 0,
             string sourceKind = "", bool requireGraft = false, IReadOnlyList<string>? characterAssetKeys = null,
             IReadOnlyList<RelicConditionState>? conditions = null, bool applyToTeam = false,
-            int energyGain = 0, int drawCount = 0)
+            int energyGain = 0, int drawCount = 0, bool? firstSpawnLatched = null)
         { EffectIndex = effectIndex; TargetPlayer = targetPlayer; TargetEnemy = targetEnemy;
             Statuses = Array.AsReadOnly(statuses.ToArray()); RequiredSubtype = requiredSubtype;
             SubtypeIsNone = subtypeIsNone; SubtypeIsPyre = subtypeIsPyre;
@@ -57,20 +59,45 @@ namespace MonsterTrain2Poju.Model
             ApplyToTeam = applyToTeam;
             CharacterAssetKeys = Array.AsReadOnly((characterAssetKeys ?? Array.Empty<string>()).ToArray());
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
-            EnergyGain = energyGain; DrawCount = drawCount; }
+            EnergyGain = energyGain; DrawCount = drawCount; FirstSpawnLatched = firstSpawnLatched; }
         internal RelicSpawnStatus WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicSpawnStatus(EffectIndex, TargetPlayer, TargetEnemy, Statuses, RequiredSubtype, SubtypeIsNone, SubtypeIsPyre,
                 ExcludedSubtypes, RestrictedRoom, HpPercentAsStacks, SourceKind, RequireGraft, CharacterAssetKeys, conditions,
-                ApplyToTeam, EnergyGain, DrawCount);
+                ApplyToTeam, EnergyGain, DrawCount, FirstSpawnLatched);
+        internal RelicSpawnStatus WithFirstSpawnLatched(bool latched) =>
+            new RelicSpawnStatus(EffectIndex, TargetPlayer, TargetEnemy, Statuses, RequiredSubtype, SubtypeIsNone, SubtypeIsPyre,
+                ExcludedSubtypes, RestrictedRoom, HpPercentAsStacks, SourceKind, RequireGraft, CharacterAssetKeys, Conditions,
+                ApplyToTeam, EnergyGain, DrawCount, latched);
     }
 
     public static class RelicSpawnStatusModel
     {
+        internal const string FirstSpawnEffect = "RelicEffectAddStatusEffectOnFirstSpawn";
+
+        private static bool IsOriginalFirstSpawnRule(CombatRelicState relic, RelicSpawnStatus rule)
+        {
+            int stacks = (relic.AssetKey, relic.DataId) switch
+            {
+                ("Enemy_FrontReanimationT2", "d5bc1611-0bd2-47c5-9d78-3280efbc8fbe") => 1,
+                ("Enemy_FrontReanimationT3", "a8202bfb-55f0-4630-a592-d60177796bf0") => 2,
+                _ => 0
+            };
+            return stacks != 0 && relic is { IsCovenant: false, DisallowedInPlacementPhase: false, EffectTypes: [FirstSpawnEffect] } &&
+                rule is { EffectIndex: 0, TargetPlayer: false, TargetEnemy: true, SubtypeIsNone: true, SubtypeIsPyre: false,
+                    RestrictedRoom: null, HpPercentAsStacks: 0, SourceKind: "", RequireGraft: false, ApplyToTeam: false,
+                    CharacterAssetKeys.Count: 0, Conditions.Count: 0, EnergyGain: 0, DrawCount: 0, FirstSpawnLatched: not null } &&
+                rule.Statuses is [{ Id: "undying", Stacks: var recordedStacks }] && recordedStacks == stacks &&
+                (stacks == 1
+                    ? rule.ExcludedSubtypes is [RelicAscensionHealModel.TreasureCollector, RelicAscensionHealModel.Boss]
+                    : rule.ExcludedSubtypes is [RelicAscensionHealModel.TreasureCollector, RelicAscensionHealModel.Boss, "SubtypesData_ChosenSpikes"]);
+        }
+
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
                 .Where(item => item.type == RelicModel.AddStatusOnSpawn || item.type == RelicModel.AddStatusPerDevotionOnSpawn || item.type == RelicModel.RemoveStatusOnSpawn ||
-                    item.type == RelicModel.AddStatusOnTeamSpawn || item.type == RelicModel.EnergyAndCardDrawOnUnitSpawned)
+                    item.type == RelicModel.AddStatusOnTeamSpawn || item.type == RelicModel.EnergyAndCardDrawOnUnitSpawned ||
+                    item.type == FirstSpawnEffect)
                 .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.SpawnStatuses?.Count > 0 ? "Unexpected relic spawn status definitions." : null;
             if (relic.IsCovenant == null || relic.DisallowedInPlacementPhase == null || relic.SpawnStatuses == null ||
@@ -87,6 +114,9 @@ namespace MonsterTrain2Poju.Model
                 bool teamEffect = effect == RelicModel.AddStatusOnTeamSpawn;
                 bool removal = effect == RelicModel.RemoveStatusOnSpawn;
                 bool firstImpBonus = effect == RelicModel.EnergyAndCardDrawOnUnitSpawned;
+                if ((effect == FirstSpawnEffect && !IsOriginalFirstSpawnRule(relic, rule)) ||
+                    (effect != FirstSpawnEffect && rule.FirstSpawnLatched.HasValue))
+                    return "Missing or changed original first-spawn reanimation definition or latch.";
                 if (effect == RelicModel.AddStatusPerDevotionOnSpawn &&
                     (relic.DataId != "ecb009cc-30c5-47ba-93dd-91b8eab5c78f" || relic.AssetKey != "MonolithDevotion" ||
                     relic.IsCovenant != false || relic.DisallowedInPlacementPhase != false || relic.EffectTypes.Count != 1 ||
@@ -127,6 +157,16 @@ namespace MonsterTrain2Poju.Model
 
         internal static CombatContext EndDuration(CombatContext context, string duration) =>
             RelicConditionModel.EndDuration(context, duration);
+
+        internal static CombatContext SetFirstSpawnLatch(CombatContext context, int relicIndex, bool latched)
+        {
+            CombatRelicState owner = context.Relics![relicIndex];
+            RelicSpawnStatus rule = owner.SpawnStatuses![0];
+            if (rule.FirstSpawnLatched == latched) return context;
+            CombatRelicState[] relics = context.Relics.ToArray();
+            relics[relicIndex] = owner.WithSpawnStatuses(new[] { rule.WithFirstSpawnLatched(latched) });
+            return context.WithRelics(relics);
+        }
 
         // A running character queue defers these children. A standalone birth can
         // settle the shared queue during each non-covenant pre/post-fire yield.
@@ -308,7 +348,8 @@ namespace MonsterTrain2Poju.Model
                     bool remove = relic.EffectTypes[effectIndex] == RelicModel.RemoveStatusOnSpawn;
                     bool firstImpBonus = relic.EffectTypes[effectIndex] == RelicModel.EnergyAndCardDrawOnUnitSpawned;
                     bool devotion = relic.EffectTypes[effectIndex] == RelicModel.AddStatusPerDevotionOnSpawn;
-                    if (relic.EffectTypes[effectIndex] != RelicModel.AddStatusOnSpawn && !devotion && !applyToTeam && !remove && !firstImpBonus) continue;
+                    bool firstSpawn = relic.EffectTypes[effectIndex] == FirstSpawnEffect;
+                    if (relic.EffectTypes[effectIndex] != RelicModel.AddStatusOnSpawn && !devotion && !applyToTeam && !remove && !firstImpBonus && !firstSpawn) continue;
                     int ruleIndex = relic.SpawnStatuses!.ToList().FindIndex(rule => rule.EffectIndex == effectIndex);
                     RelicSpawnStatus rule = relic.SpawnStatuses![ruleIndex];
                     RelicConditionEvaluation conditionEvaluation = RelicConditionModel.Evaluate(state.Context!, rule.Conditions);
@@ -317,6 +358,14 @@ namespace MonsterTrain2Poju.Model
                     if (!conditionEvaluation.Passed) continue;
                     CombatUnit? actor = state.Units.FirstOrDefault(unit => unit.Id == unitId);
                     if (actor == null) return Fail("Relic birth removal requires a retained native actor.");
+                    if (firstSpawn)
+                    {
+                        if (actor.Team != CombatTeam.Enemy || rule.FirstSpawnLatched == true ||
+                            rule.ExcludedSubtypes.Any(actor.Subtypes.Contains)) continue;
+                        if (state.Preview) return Fail("First-spawn reanimation requires a committed native enemy birth.");
+                        // The original latch advances even when a later status filter skips this actor.
+                        SetContext(SetFirstSpawnLatch(state.Context!, relicIndex, true));
+                    }
                     if (firstImpBonus)
                     {
                         bool bonusTeamMatches = actor.Team == CombatTeam.Player && rule.TargetPlayer ||

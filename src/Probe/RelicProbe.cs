@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using MonsterTrain2Poju.Model;
+using UnityEngine;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -698,6 +699,15 @@ namespace MonsterTrain2Poju.Probe
             var subtype = (SubtypeData)Field("characterSubtype");
             bool allowFromCard = (bool)Field("allowFromCard"), onlyFromCard = (bool)Field("onlyAllowedFromCard");
             bool removal = effect.GetType().Name == RelicModel.RemoveStatusOnSpawn;
+            bool? firstSpawnLatched = null;
+            if (effect is RelicEffectAddStatusEffectOnFirstSpawn && Application.version == "2.3.1" &&
+                typeof(RelicManager).Module.ModuleVersionId == new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d"))
+            {
+                var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+                if (!effect.CanApplyInPreviewMode && data.GetTargetMode() == TargetMode.FrontInRoom &&
+                    data.GetParamTrigger() == CharacterTriggerData.Trigger.OnSpawn)
+                    firstSpawnLatched = (bool)Field("firstWasSummonedThisTurn");
+            }
             return new RelicSpawnStatus(index, team.HasFlag(Team.Type.Monsters), team.HasFlag(Team.Type.Heroes),
                 ((StatusEffectStackData[])Field("statusEffects")).Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray(),
                 subtype?.Key, subtype == null || subtype.IsNone, subtype?.IsPyre == true,
@@ -705,7 +715,8 @@ namespace MonsterTrain2Poju.Probe
                 (bool)Field("restrictToRoom") ? (int?)Field("restrictedRoomIndex") : null, applyToTeam || removal ? 0 : (int)Field("hpPercentAsStacks"),
                 onlyFromCard ? "OnlyFromCard" : allowFromCard ? "" : "NoCard", !applyToTeam && !removal && (bool)Field("requireGraft"),
                 applyToTeam || removal ? System.Array.Empty<string>() : ((List<CharacterData>)Field("characterFilter"))
-                    .Select(character => character == null ? "<null>" : character.name).ToArray(), conditions, applyToTeam);
+                    .Select(character => character == null ? "<null>" : character.name).ToArray(), conditions, applyToTeam,
+                firstSpawnLatched: firstSpawnLatched);
         }
 
         internal static TriggerCountState? TriggerCounts(AllGameManagers managers)

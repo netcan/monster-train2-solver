@@ -130,6 +130,8 @@ namespace MonsterTrain2Poju.Model
             if (relic.IsCovenant != false) return false;
             if (RelicStatusStackModel.IsCalibratedBurnoutLossRelic(relic)) return true;
             if (RelicAscensionHealModel.IsOwner(relic)) return true;
+            if (relic.EffectTypes is [RelicSpawnStatusModel.FirstSpawnEffect])
+                return RelicSpawnStatusModel.Validate(relic) == null;
             // Equilibrius freezes its existing purge-count draw bonus through combat.
             if (RelicResourceModel.IsPurgeCountDrawOwner(relic)) return true;
             if (HivemindTurnUpgrade.IsSproutOwner(relic)) return true;

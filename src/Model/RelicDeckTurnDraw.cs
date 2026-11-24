@@ -45,7 +45,7 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsAfterDraw(string type) => type == Effect || type == RelicOccupiedFloorDrawModel.Effect ||
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.PrecachedPlayerClan ||
             type == RelicCardGenerationModel.ChampionCardAfterDraw || type == RelicAfterDrawSpawnModel.Effect ||
-            type == RelicHoldoverGrantModel.Effect;
+            type == RelicHoldoverGrantModel.Effect || type == RelicSpawnStatusModel.FirstSpawnEffect;
 
         internal static RelicResourceResult ApplyAfterDraw(CombatContext source, BattlePlayRules? definitions = null, TrainCombatState? train = null)
             => ApplyAfterDraw(source, definitions, ref train, null, out _);
@@ -68,56 +68,66 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = source;
             outcome = RoomOutcome.Exchanged;
             for (int ownerIndex = 0; ownerIndex < (source.Relics?.Count ?? 0); ownerIndex++)
-            foreach (RelicResourceEffect effect in source.Relics![ownerIndex].ResourceEffects ?? Array.Empty<RelicResourceEffect>())
             {
                 CombatRelicState owner = source.Relics![ownerIndex];
-                if (!IsAfterDraw(effect.Type)) continue;
-                if (effect.Type == RelicHoldoverGrantModel.Effect)
+                if (owner.EffectTypes.Contains(RelicSpawnStatusModel.FirstSpawnEffect))
                 {
-                    var applied = RelicHoldoverGrantModel.AfterDraw(context, owner, effect,
-                        train?.Rooms.Any(room => room.Preview) == true);
-                    if (!applied.Supported) return applied;
-                    context = applied.Context!;
+                    string? error = RelicSpawnStatusModel.Validate(owner);
+                    if (error != null) return Fail(error);
+                    if (train?.Rooms.Any(room => room.Preview) != true)
+                        context = RelicSpawnStatusModel.SetFirstSpawnLatch(context, ownerIndex, false);
                     continue;
                 }
-                if (effect.Type == RelicAfterDrawSpawnModel.Effect)
+                foreach (RelicResourceEffect effect in owner.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
                 {
-                    if (train == null) return Fail("After-draw unit birth requires the complete train.");
-                    var born = RelicAfterDrawSpawnModel.Apply(CardSpellModel.WithContext(train, context), owner, effect, definitions);
-                    if (!born.Supported) return Fail(born.UnsupportedReason!);
-                    train = born.State!;
-                    context = train.Context!;
-                    roomResults?.AddRange(born.RoomResults);
-                    if (born.Outcome != RoomOutcome.Exchanged)
+                    if (!IsAfterDraw(effect.Type)) continue;
+                    if (effect.Type == RelicHoldoverGrantModel.Effect)
                     {
-                        outcome = born.Outcome;
-                        return new RelicResourceResult(context, 0);
+                        var applied = RelicHoldoverGrantModel.AfterDraw(context, owner, effect,
+                            train?.Rooms.Any(room => room.Preview) == true);
+                        if (!applied.Supported) return applied;
+                        context = applied.Context!;
+                        continue;
                     }
-                    continue;
+                    if (effect.Type == RelicAfterDrawSpawnModel.Effect)
+                    {
+                        if (train == null) return Fail("After-draw unit birth requires the complete train.");
+                        var born = RelicAfterDrawSpawnModel.Apply(CardSpellModel.WithContext(train, context), owner, effect, definitions);
+                        if (!born.Supported) return Fail(born.UnsupportedReason!);
+                        train = born.State!;
+                        context = train.Context!;
+                        roomResults?.AddRange(born.RoomResults);
+                        if (born.Outcome != RoomOutcome.Exchanged)
+                        {
+                            outcome = born.Outcome;
+                            return new RelicResourceResult(context, 0);
+                        }
+                        continue;
+                    }
+                    if (effect.Type == RelicOccupiedFloorDrawModel.Effect)
+                    {
+                        if (train == null) return Fail("Enemy-occupied after-draw refresh requires the complete train.");
+                        var refreshed = RelicOccupiedFloorDrawModel.RefreshOne(CardSpellModel.WithContext(train, context),
+                            ownerIndex, effect.EffectIndex, "AfterDraw");
+                        if (!refreshed.Supported) return refreshed;
+                        context = refreshed.Context!;
+                        continue;
+                    }
+                    if (effect.Type == Effect)
+                    {
+                        RelicResourceResult drawn = Apply(context, definitions);
+                        if (!drawn.Supported) return drawn;
+                        context = drawn.Context!;
+                        continue;
+                    }
+                    CardGenerationResult generated = effect.Type == RelicCardGenerationModel.AfterDraw
+                        ? RelicCardGenerationModel.ApplyOne(context, owner.DataId, effect.EffectIndex)
+                        : effect.Type == RelicCardGenerationModel.PrecachedPlayerClan
+                            ? RelicCardGenerationModel.ApplyPrecachedPlayerClanOne(context, owner.DataId, effect.EffectIndex)
+                            : RelicCardGenerationModel.ApplyChampionCardAfterDrawOne(context, owner.DataId, effect.EffectIndex);
+                    if (!generated.Supported) return Fail(generated.UnsupportedReason!);
+                    context = generated.Context!;
                 }
-                if (effect.Type == RelicOccupiedFloorDrawModel.Effect)
-                {
-                    if (train == null) return Fail("Enemy-occupied after-draw refresh requires the complete train.");
-                    var refreshed = RelicOccupiedFloorDrawModel.RefreshOne(CardSpellModel.WithContext(train, context),
-                        ownerIndex, effect.EffectIndex, "AfterDraw");
-                    if (!refreshed.Supported) return refreshed;
-                    context = refreshed.Context!;
-                    continue;
-                }
-                if (effect.Type == Effect)
-                {
-                    RelicResourceResult drawn = Apply(context, definitions);
-                    if (!drawn.Supported) return drawn;
-                    context = drawn.Context!;
-                    continue;
-                }
-                CardGenerationResult generated = effect.Type == RelicCardGenerationModel.AfterDraw
-                    ? RelicCardGenerationModel.ApplyOne(context, owner.DataId, effect.EffectIndex)
-                    : effect.Type == RelicCardGenerationModel.PrecachedPlayerClan
-                        ? RelicCardGenerationModel.ApplyPrecachedPlayerClanOne(context, owner.DataId, effect.EffectIndex)
-                        : RelicCardGenerationModel.ApplyChampionCardAfterDrawOne(context, owner.DataId, effect.EffectIndex);
-                if (!generated.Supported) return Fail(generated.UnsupportedReason!);
-                context = generated.Context!;
             }
             return new RelicResourceResult(context, 0);
         }
