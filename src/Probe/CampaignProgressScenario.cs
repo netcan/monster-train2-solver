@@ -7,6 +7,9 @@ using System.Reflection;
 using System.Security.Cryptography;
 using BepInEx.Logging;
 using HarmonyLib;
+#if DEVELOPMENT_PROBE
+using MonsterTrain2Poju.Capture;
+#endif
 using MonsterTrain2Poju.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -51,6 +54,11 @@ namespace MonsterTrain2Poju.Probe
         private bool nativeLost;
         private bool? runWon;
         private bool runReturned;
+#if DEVELOPMENT_PROBE
+        private readonly bool observeEndless = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_OBSERVE_ENDLESS") == "1";
+        private bool endlessClicked;
+        private float endlessDeadline;
+#endif
         private readonly bool completeDefeat;
         private readonly HashSet<string> declinedUpgrades = new HashSet<string>();
         private readonly HashSet<string> auditedMerchantOffers = new HashSet<string>();
@@ -140,7 +148,15 @@ namespace MonsterTrain2Poju.Probe
                 ObserveStoryProgression(save, afterEndGame: false);
                 Finish(true, "Native story progression observed without starting or resuming a run."); return;
             }
-            if (runReturned && runWon.HasValue && !LoadingScreen.IsWorking() &&
+            bool finishAtGameOver = true;
+#if DEVELOPMENT_PROBE
+            if (observeEndless && runReturned && runWon.HasValue)
+            {
+                finishAtGameOver = false;
+                if (ObserveEndlessTransition(save, screens)) return;
+            }
+#endif
+            if (finishAtGameOver && runReturned && runWon.HasValue && !LoadingScreen.IsWorking() &&
                 screens.GetTopScreen() is ScreenName.GameOver or ScreenName.Unlock)
             {
                 ObserveStoryProgression(save, afterEndGame: true);
@@ -979,6 +995,45 @@ namespace MonsterTrain2Poju.Probe
                 battles = save.GetBattleRecords().Select(battle => new { battle.battleIndex, battle.loopIndex,
                     won = battle.WonBattle(), battle.bossHPRemaining, battle.turnsLasted }).ToList() });
         }
+#if DEVELOPMENT_PROBE
+        private bool ObserveEndlessTransition(SaveManager save, ScreenManager screens)
+        {
+            if (runWon != true || Application.version != "2.3.1" ||
+                typeof(SaveManager).Module.ModuleVersionId != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d"))
+                throw new InvalidOperationException("Expected the verified original Class victory before continuing as Endless.");
+            if (endlessDeadline == 0) endlessDeadline = Time.realtimeSinceStartup + 45f;
+            if (Time.realtimeSinceStartup >= endlessDeadline)
+                throw new TimeoutException("The original Endless button or first battle intro did not settle within 45 seconds.");
+            if (LoadingScreen.IsWorking()) return true;
+            if (!endlessClicked)
+            {
+                if (screens.GetTopScreen() != ScreenName.GameOver) return false;
+                if (screens.GetScreen(ScreenName.GameOver) is GameOverScreen gameOver &&
+                    save.GetPotentialEndlessSaveData() != null)
+                    endlessClicked = Click(Field<GameUISelectableButton>(gameOver, "endlessButton"), "native-endless-button");
+                return true;
+            }
+            if (!screens.GetScreenActive(ScreenName.BattleIntro)) return true;
+            RunState run = save.GetRunState();
+            ScenarioData original = save.GetCurrentScenarioData();
+            if (!save.IsEndlessRun || save.GetRunType() != RunType.Class || save.InTestScenario || SaveManager.WasDevCheatUsed ||
+                run.GetLoopIndex() != 1 || run.GetCurrentDistance() != 0 || original == null)
+                throw new InvalidOperationException("The original Endless button did not enter the stock first loop.");
+            var evidence = new
+            {
+                Schema = 1, Boundary = "NativeEndlessTransition", GameVersion = Application.version,
+                GameModuleMvid = typeof(SaveManager).Module.ModuleVersionId,
+                Scenario = original.name, Loop = run.GetLoopIndex(), Distance = run.GetCurrentDistance(), RunLength = save.GetRunLength(),
+                RunType = save.GetRunType().ToString(), save.IsEndlessRun, save.InTestScenario, SaveManager.WasDevCheatUsed
+            };
+            using (var archive = NativeFixtureCapture.Capture(evidence))
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "native-endless-transition.mt2f")))
+                archive.Write(output);
+            Record("native-endless-intro", evidence);
+            Finish(true, "Native Endless first battle intro captured after the original victory.");
+            return true;
+        }
+#endif
         [HarmonyPatch(typeof(GameStateManager), nameof(GameStateManager.EndGame))]
         private static class RunOutcomePatch
         {

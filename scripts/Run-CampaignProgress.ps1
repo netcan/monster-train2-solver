@@ -11,6 +11,7 @@ param(
     [string] $BattleReplay = '',
     [switch] $RegionRun,
     [switch] $CompleteDefeat,
+    [switch] $ObserveEndlessAfterVictory,
     [string[]] $ExcludeUpgradeTrait = @(),
     [switch] $SkipMerchantPurchases,
     [string] $PreferMerchantUpgrade = '',
@@ -46,6 +47,10 @@ $saveName = if ($RegionRun) { 'save-regionRun.json' } else { 'save-singlePlayer.
 $relativeSavePath = 'saves/' + $saveName
 if ($CompleteDefeat -and (-not $BattleReplay -or -not $InputProfile)) {
     throw 'CompleteDefeat requires a settled native BattleReplay and its original InputProfile.'
+}
+if ($ObserveEndlessAfterVictory -and (-not $BattleReplay -or -not $InputProfile -or $StopBeforeRing -ne 9 -or
+    $CompleteDefeat -or $RegionRun -or $CaptureBeforeMap)) {
+    throw 'ObserveEndlessAfterVictory requires a settled Class Ring 8 victory replay and its original BattleIntro profile.'
 }
 if ($NativeBuildRoot -and -not $SkipBuild) {
     throw 'NativeBuildRoot requires prebuilt native binaries with SkipBuild.'
@@ -135,6 +140,11 @@ if ($BattleReplay) {
         if ($sourceRoot.GetProperty('NativeWon').GetBoolean() -ne (-not $CompleteDefeat) -or -not $sourceRoot.GetProperty('TerminalEffectsSettled').GetBoolean() -or
             @('CaptureFailures', 'Mismatches', 'Unsupported', 'Pending').Where({ $sourceRoot.GetProperty($_).GetInt32() -ne 0 }).Count -gt 0) {
             throw 'Campaign continuation needs the declared settled native outcome with all four failure counters zero; defeat requires CompleteDefeat.'
+        }
+        if ($ObserveEndlessAfterVictory -and ($inputSave.runType -cne 'Class' -or $inputSave.isEndless -or
+            $inputSave.runState.numBattlesCompleted -ne 7 -or $sourceRoot.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
+            $sourceRoot.GetProperty('RollingDecisions').GetArrayLength() -notin (1..50))) {
+            throw 'The original Endless transition requires seven prior wins and a pinned 2.3.1 finale with at most 50 recorded inputs.'
         }
         $playerValue = [MonsterTrain2Poju.Fixtures.FixtureValue]::new()
         if ($sourceDocument.RootElement.TryGetProperty('PlayerAdvisor', [ref]$playerValue) -and
@@ -265,6 +275,7 @@ if ($InputProfile) { $settings.MT2_PROBE_RESUME_RUN = '1' }
 if ($BattleReplay) {
     $settings.MT2_PROBE_SCENARIO = 'native-replay'
     $settings.MT2_PROBE_CAMPAIGN_AFTER_REPLAY = '1'
+    if ($ObserveEndlessAfterVictory) { $settings.MT2_PROBE_CAMPAIGN_OBSERVE_ENDLESS = '1' }
     $settings.MT2_PROBE_CAMPAIGN_COMPLETE_DEFEAT = $(if ($CompleteDefeat) { '1' } else { '0' })
     $settings.MT2_PROBE_BATTLE_DISTANCE = [string]$inputSave.runState.distance
     $settings.MT2_PROBE_FULL_BATTLE = '1'
@@ -341,6 +352,16 @@ if ($RegionRun -and $passed) {
     }
 }
 $runOutcome = @($audit | Where-Object kind -EQ 'run-outcome')
+$endlessEvidence = $null
+if ($ObserveEndlessAfterVictory -and $passed) {
+    $path = Join-Path $profile 'native-endless-transition.mt2f'
+    $button = @($audit | Where-Object kind -CEQ 'native-endless-button')
+    $intro = @($audit | Where-Object kind -CEQ 'native-endless-intro')
+    $passed = $runOutcome.Count -eq 1 -and $runOutcome[0].data.won -and $runOutcome[0].data.battlesWon -eq 8 -and
+        $button.Count -eq 1 -and $intro.Count -eq 1 -and $runOutcome[0].index -lt $button[0].index -and
+        $button[0].index -lt $intro[0].index -and (Test-Path -LiteralPath $path -PathType Leaf)
+    if ($passed) { $endlessEvidence = $path }
+}
 if ($DraftRelic -and $passed) {
     $selection = @($audit | Where-Object { $_.kind -eq 'draft' -and $_.data.requestedRelic -ceq $DraftRelic })
     $grant = @($audit | Where-Object kind -EQ 'draft-relic-granted')
@@ -434,6 +455,7 @@ $summary = [pscustomobject]@{ Profile = $profile; NativePassed = $passed; ExitCo
     NativeVictoryType = $(if ($runOutcome.Count -eq 1) { $runOutcome[0].data.victoryType } else { $null });
     OriginalFilesUnchanged = $unchanged; Events = $audit.Count; BattlesWon = @($audit | Where-Object { $_.kind -eq 'battle-outcome' -and $_.data.won }).Count;
     FinalSaveSHA256 = $(if (Test-Path -LiteralPath $savePath) { (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash } else { $null }) }
+if ($ObserveEndlessAfterVictory) { $summary | Add-Member -NotePropertyName NativeEndlessTransition -NotePropertyValue $endlessEvidence }
 $summary | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-summary.json')
 $summary | ConvertTo-Json -Compress
 if (-not $passed) { throw "Native campaign did not complete: $profile" }
