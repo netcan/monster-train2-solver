@@ -120,6 +120,9 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsObservedScaledWaveDeath(RoomCombatState room, CombatUnit unit, int sourceCardId) =>
             (sourceCardId == 0 && unit.RegisteredStatus("hivemindkiller") == null &&
                 room.Units.Any(owner => owner.Id == unit.Id && IsScaledRoomCombatDeath(room, owner))) ||
+            (room is { RoomIndex: 2, Preview: false } && room.Context?.QueryFrame?.Turn == 4 &&
+                room.Context.FindCard(sourceCardId)?.DataId == "8de281af-ab9a-4d3d-ac5f-89cd43ff6c84" &&
+                IsScaledRoomCombatDeath(room, unit)) ||
             (room is { RoomIndex: 0, Preview: false } && room.Context?.QueryFrame?.Turn == 2 &&
                 room.Context.FindCard(sourceCardId)?.DataId == "87e45427-921e-45d3-b4c4-9c156a83cedf" &&
                 unit.AssetKey == Hunter && IsScaledFirstWaveOwner(unit, room.Context) &&
