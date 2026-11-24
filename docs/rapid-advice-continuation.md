@@ -80,7 +80,7 @@ metadata; delivery uses the exact accepted player payload above.
 
 ## Native rapid continuation on game 2.3.1
 
-The release advisor accepted two deployment plays while the verification of the first play was held on its worker thread. The panel showed its pending state between plays. Releasing the worker produced one publication and left the search counter at four. The new plan starts from the settled native decision, and offline replay matches all 26 remaining steps and the final score.
+The second deployment play was accepted while the advisor worker was still verifying the first. The panel showed its pending state between plays. Releasing the worker produced one publication and left the search counter at four. The new plan starts from the settled native decision, and offline replay matches all 26 remaining steps and the final score.
 
 The worker barrier runs in the development probe. The isolated run used the release advisor and verified the original save and settings hashes. [Native rapid continuation](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rapid/native-rapid-continuation.mt2f)
 
