@@ -1390,9 +1390,11 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 隔离实例通过原版无尽循环入口进入第 1 轮，记录了首波三个原版敌军的出生回调。
 两名重装敌人由 3 攻、90 血变为 5 攻、120 血，侍僧由 0 攻、30 血变为 0 攻、120 血。
 之后从第八环原版检查点复放 48 个输入并获胜，经原版胜利按钮进入无尽。接续该存档采样后，
-同样的三个出生回调、六个原版倍率和回调前后随机流逐项通过。后续波次预测待验证。
+同样的三个出生回调、六个原版倍率和回调前后随机流逐项通过。顾问通过读取原版倍率和角色基准值，
+对同一原版首波重现了完整部署结束回合，还匹配了扩大的战后伤害、增益和治疗。超出已校准的出生类型会截断预测。
 [原版胜利入口](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-victory-transition.mt2f) ·
 [原版无尽首波](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-victory-first-wave.mt2f) ·
+[原版首波预测对照](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-victory-projected-first-wave.mt2f) ·
 [受控无尽首波](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-first-wave.mt2f)
 
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后

@@ -39,7 +39,7 @@ namespace MonsterTrain2Poju.Probe
             return new RelicStatusAttackModifier(index, (string)Field("statusId"),
                 ((Team.Type)Field("team")).ToString(), (int)Field("multiplier"));
         }
-        private static List<RelicState> Current(AllGameManagers managers)
+        internal static List<RelicState> Current(AllGameManagers managers)
         {
             var relics = new List<RelicState>();
             AccessTools.Method(typeof(RelicManager), "GetCurrentRelics").Invoke(managers.GetRelicManager(), new object[] { relics });

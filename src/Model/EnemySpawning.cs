@@ -23,15 +23,17 @@ namespace MonsterTrain2Poju.Model
         public EnemyBirthStatAdjustment? BirthStats { get; }
         public string? TreasureOriginalId { get; }
         public bool ShouldSerializeTreasureOriginalId() => TreasureOriginalId != null;
+        public EndlessEnemyBirthStats? EndlessBirth { get; }
+        public bool ShouldSerializeEndlessBirth() => EndlessBirth != null;
         // Archive hydration uses the sole public constructor. Keep the older
         // entry point for the existing friend assemblies that capture units.
         internal EnemyDefinition(CombatUnit unit, bool ascends, bool loops, IReadOnlyList<string> externalInteractions, bool companionBoss = false)
             : this(unit, ascends, loops, externalInteractions, companionBoss, null) { }
         public EnemyDefinition(CombatUnit unit, bool ascends, bool loops, IReadOnlyList<string> externalInteractions, bool companionBoss,
-            EnemyBirthStatAdjustment? birthStats, string? treasureOriginalId = null)
+            EnemyBirthStatAdjustment? birthStats, string? treasureOriginalId = null, EndlessEnemyBirthStats? endlessBirth = null)
         {
             Unit = unit; Ascends = ascends; Loops = loops; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
-            CompanionBoss = companionBoss; BirthStats = birthStats; TreasureOriginalId = treasureOriginalId;
+            CompanionBoss = companionBoss; BirthStats = birthStats; TreasureOriginalId = treasureOriginalId; EndlessBirth = endlessBirth;
         }
         internal CombatUnit Create(int id, bool applyBirthStats = true) => new CombatUnit(id, Unit.AssetKey, CombatTeam.Enemy,
             checked(Unit.BaseAttack + (applyBirthStats ? BirthStats?.Attack ?? 0 : 0)), checked(Unit.Health + (applyBirthStats ? BirthStats?.Health ?? 0 : 0)),
@@ -165,7 +167,7 @@ namespace MonsterTrain2Poju.Model
                 if (definitions.Count > 0 && context?.QueryFrame?.SelectedRoomIndex != null)
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: 0));
                 bool enteredPyre = false;
-                var entered = new List<int>();
+                var entered = new List<(int UnitId, EnemyDefinition Definition)>();
                 foreach (EnemyDefinition definition in definitions.Reverse())
                 {
                     string? error = Validate(definition, context, allowFreshHivemind: firstWaveHivemind || secondWaveHivemind || infestedWave || scaledWave);
@@ -185,12 +187,12 @@ namespace MonsterTrain2Poju.Model
                     error = Initialize(unit, roomIndex, enteredDuringCreation: true);
                     if (error != null) return Unsupported(error);
                     enteredPyre |= roomIndex == pyre;
-                    entered.Add(unit.Id);
+                    entered.Add((unit.Id, definition));
                 }
                 // Native creates and enters the entire chosen group before any OnSpawn runs.
-                foreach (int unitId in entered)
+                foreach (var entry in entered)
                 {
-                    string? error = SpawnTriggers(unitId);
+                    string? error = SpawnTriggers(entry.UnitId, entry.Definition.EndlessBirth);
                     if (error != null) return Unsupported(error);
                     if (Terminal(outcome)) return Finish();
                 }
@@ -396,13 +398,14 @@ namespace MonsterTrain2Poju.Model
                 return drained ? null : error;
             }
 
-            string? SpawnTriggers(int unitId)
+            string? SpawnTriggers(int unitId, EndlessEnemyBirthStats? endlessBirth = null)
             {
                 int index = Array.FindIndex(rooms, room => room.Any(unit => unit.Id == unitId));
                 if (index < 0) return null; // An earlier group trigger can remove a later entrant.
                 RoomCombatState original = source.Train.Rooms[index];
-                RoomCombatResult relics = RelicSpawnStatusModel.CharacterAdded(new RoomCombatState(index, original.Deployment,
-                    rooms[index], original.ExternalInteractions, context, original.Preview, original.ActiveCompanionBossIds), unitId, 0, false);
+                RoomCombatResult relics = RelicSpawnStatusModel.CharacterAddedWithPending(new RoomCombatState(index, original.Deployment,
+                    rooms[index], original.ExternalInteractions, context, original.Preview, original.ActiveCompanionBossIds),
+                    unitId, 0, false, null, null, endlessBirth);
                 if (!relics.Supported) return relics.UnsupportedReason;
                 ImportRoom(EnchantmentWorldModel.Sync(relics.State!)); callbacks.AddRange(relics.PendingCallbacks);
                 int actorIndex = rooms[index].FindIndex(actor => actor.Id == unitId);

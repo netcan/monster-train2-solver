@@ -1,4 +1,5 @@
 using MonsterTrain2Poju.Fixtures;
+using MonsterTrain2Poju.Model;
 
 internal static class OriginalEndlessFirstWaveChecks
 {
@@ -45,6 +46,19 @@ internal static class OriginalEndlessFirstWaveChecks
                         "Scaled actor differs for " + checkpoint + " " + field);
         }
         Console.WriteLine("NATIVE-ENDLESS-FIRST-WAVE PASS: original victory transition, six factor queries, three births and unchanged callback RNG.");
+    }
+
+    internal static void Forecast(FixtureValue archive)
+    {
+        Require(Text(archive, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(archive, "Boundary") == "OriginalEndlessEnemyScaling" &&
+            !Flag(archive.GetProperty("Scenario"), "ControlledFirstLoop"), "Expected the original Endless first battle.");
+        BattleTurnState deployment = archive.GetProperty("Deployment").Deserialize<BattleTurnState>()!;
+        BattleTurnResult advanced = BattleTurnModel.EndTurn(deployment);
+        Require(advanced.Supported, advanced.UnsupportedReason ?? "The original first wave must be supported.");
+        RecordedBattleChecks.RecordedBoundary(advanced.State!, archive.GetProperty("FirstDecision"),
+            terminal: false, "original Endless first wave", trackPreviewPosition: true);
+        Console.WriteLine("NATIVE-ENDLESS-FORECAST PASS: complete deployment successor and original first-wave RNG.");
     }
 
     private static int Number(FixtureValue value, string field) => value.GetProperty(field).GetInt32();

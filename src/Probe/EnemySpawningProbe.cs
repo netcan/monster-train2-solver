@@ -89,6 +89,7 @@ namespace MonsterTrain2Poju.Probe
             var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);
             var spawnCovenants = save.GetCovenantsForSpawnPattern();
             int[] waveIndices = RandomizedWaveProbe.CaptureIndices(managers, pattern, waves.Count, spawnCovenants, interactions);
+            var endless = EndlessEnemyBirthStatsProbe.Capture(managers);
             var selectedGroups = new List<int>();
             EnemyWave[] definitions = waveIndices.Select(index =>
             {
@@ -99,7 +100,7 @@ namespace MonsterTrain2Poju.Probe
                 // GetCharacters resolves modeled Covenant spawn definitions before
                 // Definition captures their native stats, statuses and triggers.
                 return new EnemyWave(groups.Select(group => new EnemyGroup(group.GetCharacters(
-                    spawnCovenants, save, save.GetGeneratedBoss()).Select(WaveDefinition).ToArray())).ToArray());
+                    spawnCovenants, save, save.GetGeneratedBoss()).Select(data => WaveDefinition(data, endless)).ToArray())).ToArray());
             }).ToArray();
 #if DEVELOPMENT_PROBE
             if (canonicalReferences && interactions.Count == 0)
@@ -189,11 +190,11 @@ namespace MonsterTrain2Poju.Probe
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions, data.IsCompanionBoss());
         }
 
-        private static EnemyDefinition WaveDefinition(CharacterData data)
+        private static EnemyDefinition WaveDefinition(CharacterData data, Func<CharacterData, CombatUnit, EndlessEnemyBirthStats?>? endless = null)
         {
             EnemyDefinition raw = Definition(data);
             return new EnemyDefinition(raw.Unit, raw.Ascends, raw.Loops, raw.ExternalInteractions, raw.CompanionBoss,
-                TrueFinalBossCovenantScenario.CaptureWaveStats(data));
+                TrueFinalBossCovenantScenario.CaptureWaveStats(data), endlessBirth: endless?.Invoke(data, raw.Unit));
         }
 
         internal static CombatTrigger TriggerDefinition(CharacterTriggerData trigger, List<string> interactions)

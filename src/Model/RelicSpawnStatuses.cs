@@ -176,17 +176,18 @@ namespace MonsterTrain2Poju.Model
             => CharacterAddedWithPending(source, unitId, fromCardId, onlyCovenants, null, null);
         internal static RoomCombatResult CharacterAddedWithPending(RoomCombatState source, int unitId, int fromCardId, bool onlyCovenants,
             Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainCallbacks,
-            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? prior)
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? prior, EndlessEnemyBirthStats? endlessBirth = null)
         {
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return Fail(error);
             // Native dispatches this owner only on enemy CharacterAdded. The
             // notification can also be reached by a hero copied during a play.
             if (!onlyCovenants && source.Context?.Relics?.Any(RelicModel.IsOriginalEndlessEnemyBirth) == true &&
-                source.Units.Any(unit => unit.Id == unitId && unit.Team == CombatTeam.Enemy))
+                endlessBirth == null && source.Units.Any(unit => unit.Id == unitId && unit.Team == CombatTeam.Enemy))
                 return Fail(UnsupportedEndlessEnemyBirth);
             if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0 ||
                 relic.EffectTypes.Contains(RelicPersistentMonsterHealthModel.Effect) ||
+                endlessBirth != null && RelicModel.IsOriginalEndlessEnemyBirth(relic) ||
                 RelicSkullCollectorsModel.IsOriginal(relic) ||
                 relic.EffectTypes.Contains(RelicPyreAbilityCooldownModel.Effect) ||
                 relic.EffectTypes.Contains(RelicPyreResurrectionModel.Effect) || relic.EffectTypes.Contains(RelicOccupiedFloorDrawModel.Effect) || relic.EffectTypes.Contains(RelicPileSpawnUpgradeModel.Effect) || relic.EffectTypes.Contains(RelicSpawnStatusScalingModel.Effect) ||
@@ -211,6 +212,14 @@ namespace MonsterTrain2Poju.Model
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
                     relic = state.Context!.Relics![relicIndex];
+                    if (relic.EffectTypes[effectIndex] == RelicModel.EndlessEnemyBirthEffect &&
+                        state.Units.FirstOrDefault(unit => unit.Id == unitId && unit.Team == CombatTeam.Enemy) is CombatUnit enemy)
+                    {
+                        CombatUnit? scaled = endlessBirth?.Apply(enemy);
+                        if (scaled == null) return Fail(UnsupportedEndlessEnemyBirth);
+                        state = state.WithUnits(state.Units.Select(unit => unit.Id == unitId ? scaled : unit).ToArray());
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicPyreAbilityCooldownModel.Effect)
                     {
                         state = RelicPyreAbilityCooldownModel.Apply(state, unitId);
