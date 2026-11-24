@@ -1419,6 +1419,11 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 90 种状态中有 26 种带无尽缩放资格，查询前后确定性随机流一致。
 [原版倍率归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-balance-factors.mt2f)
 
+在原版胜利后的隔离存档上调用原版换轮入口，进入受控第 2 轮首环。完整部署后继匹配五次出生。
+两名 Horde 的死亡腐化从 3 层增至 15 层，重装敌人的战后自伤和增攻缩放为 200 和 20，
+其 1 层多重攻击与出生回调随机流一致。
+[第 2 轮首波归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-first-wave.mt2f)
+
 三阶原版 Silver 灵魂的薪火升级由 `SaveManager.BattleComplete` 在战斗终局快照之后调用，
 同一灵魂的额外奖励在战后生成。顾问识别原版灵魂和完整有序效果列表，并在下一场读取薪火的实际数值。
 该边界经过原版目录与调用链核对，三阶灵魂的实际战后升级仍待实机对照。

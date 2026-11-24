@@ -90,17 +90,19 @@ internal static class OriginalEndlessFirstWaveChecks
     {
         FixtureValue scenario = archive.GetProperty("Scenario");
         string? boundary = Text(archive, "Boundary");
+        int loop = Number(scenario, "Loop"), distance = Number(scenario, "Distance");
         Require(Text(archive, "GameModuleMvid") == Game231FixtureCatalog.Module &&
-            !Flag(scenario, "ControlledFirstLoop") && Number(scenario, "Loop") == 1 &&
-            (boundary == "OriginalEndlessEnemyScaling" && Number(scenario, "Distance") == 0 ||
-                boundary == "OriginalEndlessEnemyScalingControlledNextRing" && Number(scenario, "Distance") is 1 or 2),
+            !Flag(scenario, "ControlledFirstLoop") && (boundary, loop, distance) is
+                ("OriginalEndlessEnemyScaling", 1, 0) or
+                ("OriginalEndlessEnemyScalingControlledNextRing", 1, 1 or 2) or
+                ("OriginalEndlessEnemyScalingControlledLoop2", 2, 0),
             "Expected one of the pinned original Endless opening waves.");
         BattleTurnState deployment = archive.GetProperty("Deployment").Deserialize<BattleTurnState>()!;
         BattleTurnResult advanced = BattleTurnModel.EndTurn(deployment);
         Require(advanced.Supported, advanced.UnsupportedReason ?? "The original first wave must be supported.");
         RecordedBattleChecks.RecordedBoundary(advanced.State!, archive.GetProperty("FirstDecision"),
             terminal: false, "original Endless first wave", trackPreviewPosition: true);
-        if (Number(scenario, "Distance") == 1)
+        if (distance == 1)
         {
             var births = archive.GetProperty("Births").EnumerateArray().ToArray();
             Require(births.Length == 4 && births.All(row => row.GetProperty("Before").GetProperty("Rng").ContentEquals(
@@ -112,7 +114,7 @@ internal static class OriginalEndlessFirstWaveChecks
                 enchanter.Status("titanskin")?.Stacks == 30 && enemies.Count(actor => actor.Status("titanskin")?.Stacks == 10) == 3,
                 "Original starting statuses and aura recipients must match.");
         }
-        if (Number(scenario, "Distance") == 2)
+        if (distance == 2)
         {
             var births = archive.GetProperty("Births").EnumerateArray().ToArray();
             Require(births.Select(row => (Text(row, "AssetKey"), Number(row.GetProperty("After"), "Attack"),
@@ -135,6 +137,17 @@ internal static class OriginalEndlessFirstWaveChecks
                     before.GetProperty("Rng").ContentEquals(after.GetProperty("Rng")),
                     "The live Arkion callback must record the ordered before/after stats and unchanged RNG.");
             }
+        }
+        if (loop == 2)
+        {
+            var births = archive.GetProperty("Births").EnumerateArray().ToArray();
+            Require(Text(scenario, "Scenario") == "TestEndless_Level1Battle1" &&
+                births.Select(row => (Text(row, "AssetKey"), Number(row.GetProperty("After"), "Attack"),
+                    Number(row.GetProperty("After"), "Health"))).SequenceEqual(new[] {
+                        ("HordeT2_DeathAddsCorruption", 24, 60), ("HordeT2_DeathAddsCorruption", 24, 60),
+                        ("HeavyT1_LoseHealthOnMove_Chosen", 32, 1867), ("AttackerT1_Spearman", 40, 60), ("AttackerT1_Spearman", 40, 60)
+                    }) && births.All(row => row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("After").GetProperty("Rng"))),
+                "Expected all five original Loop 2 births and unchanged callback RNG.");
         }
         Console.WriteLine("NATIVE-ENDLESS-FORECAST PASS: complete deployment successor and original first-wave RNG.");
     }
