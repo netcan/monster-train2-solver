@@ -563,7 +563,17 @@ internal static partial class CardCoverageInventory
             Require(new FileInfo(path).Length == long.Parse(row[4], CultureInfo.InvariantCulture) && Hash(path).Equals(row[5], StringComparison.OrdinalIgnoreCase), "Fixture manifest integrity failed: " + archive);
             using var fixture = FixtureDocument.Read(path);
             FixtureValue battle = fixture.RootElement;
-            Require(Text(battle, "GameModuleMvid") == GameModule, "Fixture has a different game module: " + archive);
+            string module = Text(battle, "GameModuleMvid");
+            string version = Text(battle, "GameVersion");
+            // The shared regression catalog also registers current-build battles.
+            // Keep their evidence out of the frozen legacy card inventory.
+            if (module == CurrentGameModule)
+            {
+                Require(version == CurrentVersion, "Fixture has a mismatched game version: " + archive);
+                continue;
+            }
+            Require(module == GameModule, "Fixture has a different game module: " + archive);
+            Require(version == "2.2.1", "Fixture has a mismatched game version: " + archive);
             string[] counterErrors = BattleCounters.Select(name => !battle.TryGetProperty(name, out FixtureValue value) || value.ValueKind != FixtureKind.Number ? name + "=absent" :
                 value.GetInt32() != 0 ? name + "=" + value.GetInt32().ToString(CultureInfo.InvariantCulture) : "").Where(error => error != "").ToArray();
             if (counterErrors.Length > 0)
