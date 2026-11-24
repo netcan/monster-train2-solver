@@ -20,6 +20,7 @@ param(
     [switch] $AdvisorOffRoute,
     [switch] $AdvisorRapidContinuation,
     [switch] $AdvisorRestart,
+    [switch] $AdvisorUndo,
     [switch] $AdvisorMixPrompt,
     [switch] $RollingAdvice,
     [switch] $ContinueToNextRing,
@@ -1412,13 +1413,13 @@ if ($AdvisorOffRoute -or $AdvisorRapidContinuation) {
         throw 'AdvisorOffRoute and AdvisorRapidContinuation each need a fresh binary PlayerAdvisor rolling test without scenario controls.'
     }
 }
-if ($AdvisorRestart) {
-    $allowed = @('AdvisorRestart', 'PlayerAdvisor', 'RollingAdvice', 'BinaryCapture', 'InputProfile',
+if ($AdvisorRestart -or $AdvisorUndo) {
+    $allowed = @('AdvisorRestart', 'AdvisorUndo', 'PlayerAdvisor', 'RollingAdvice', 'BinaryCapture', 'InputProfile',
         'PlannerWholeBattle', 'PlannerSearchWorkers', 'PlannerTimeLimitMs', 'GameSpeed',
         'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
-    if (-not ($PlayerAdvisor -and $RollingAdvice -and $BinaryCapture -and $InputProfile) -or
+    if (($AdvisorRestart -and $AdvisorUndo) -or -not ($PlayerAdvisor -and $RollingAdvice -and $BinaryCapture -and $InputProfile) -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
-        throw 'AdvisorRestart requires a stock Ring 1 InputProfile and binary PlayerAdvisor rolling mode.'
+        throw 'Select AdvisorRestart or AdvisorUndo with a stock Ring 1 InputProfile and binary PlayerAdvisor rolling mode.'
     }
     $Policy = 'units-spells-and-junk'
 }
@@ -2965,7 +2966,7 @@ $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-wor
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
-if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorMixPrompt -or
+if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorMixPrompt -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalZarielPainWitness -or $OriginalZarielDevotionWitness -or $OriginalEmbeddedRoomWitness -or $OriginalEndlessEnemyScalingWitness -or $EndlessEnemyScalingFactorBatch -or
@@ -3054,7 +3055,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     if ($OriginalEntropyDrawWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Entropy draw requires the pinned 2.3.1 game module.'
     }
-    if (($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorMixPrompt) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+    if (($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorMixPrompt) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "The player advisor observation requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
     if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -3292,9 +3293,9 @@ if ($InputProfile) {
         throw 'Original opening cohorts require a standard native first-battle checkpoint.'
     }
     if ($CapturePlayerDeploymentOnly) { $deploymentInputSignature = Get-OriginalSignature $checkpoint }
-    if ($AdvisorRestart) {
+    if ($AdvisorRestart -or $AdvisorUndo) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or $checkpointData.wasDevCheatUsed -ne $false) {
-            throw 'AdvisorRestart requires an unmodified standard Class checkpoint.'
+            throw 'Advisor restoration requires an unmodified standard Class checkpoint.'
         }
         $restartInputSignature = Get-OriginalSignature $checkpoint
     }
@@ -3457,6 +3458,7 @@ $environment = @{
     MT2_PROBE_ADVISOR_OFF_ROUTE = $(if ($AdvisorOffRoute) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_RAPID_CONTINUATION = $(if ($AdvisorRapidContinuation) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_RESTART = $(if ($AdvisorRestart) { '1' } else { '0' })
+    MT2_PROBE_ADVISOR_UNDO = $(if ($AdvisorUndo) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_MIX_PROMPT = $(if ($AdvisorMixPrompt) { '1' } else { '0' })
     MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_SEED = "$Seed"
@@ -4460,12 +4462,14 @@ if ($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorMixPrompt) {
         Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } | ConvertTo-Json
     return
 }
-if ($AdvisorRestart) {
-    $capturePath = Join-Path $profile 'player-advisor-restart.mt2f'
+if ($AdvisorRestart -or $AdvisorUndo) {
+    $captureName = if ($AdvisorUndo) { 'player-advisor-undo.mt2f' } else { 'player-advisor-restart.mt2f' }
+    $marker = if ($AdvisorUndo) { 'Player Advisor restored original turn after undo.' } else { 'Player Advisor restored original deployment after restart.' }
+    $capturePath = Join-Path $profile $captureName
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
-        -not (Select-String -LiteralPath $unityLog -SimpleMatch 'DEPTH-PASS Player Advisor restored original deployment after restart.' -Quiet) -or
+        -not (Select-String -LiteralPath $unityLog -SimpleMatch "DEPTH-PASS $marker" -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $restartInputSignature) {
-        throw "Player Advisor restart observation failed. Inspect $unityLog"
+        throw "Player Advisor restoration observation failed. Inspect $unityLog"
     }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; InputProfileUnchanged=$true;
         Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } | ConvertTo-Json

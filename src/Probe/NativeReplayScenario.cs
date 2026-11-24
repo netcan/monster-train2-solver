@@ -1011,16 +1011,17 @@ namespace MonsterTrain2Poju.Probe
                 rollingJudgesScales.Tick(managers, combat, cards, log)) return;
             if (stage == Stage.Restarting)
             {
-                if (save.IsInRestartBattleMode || !Ready(managers, save, combat, cards) ||
-                    combat!.GetTurnCount() != initialTurn)
+                if (save.IsInRestartBattleMode || (PlayerAdvisorProbe.ObserveUndo && (save.IsInUndoMode || replay.IsPlayingBackAReplay())) ||
+                    !Ready(managers, save, combat, cards) || combat!.GetTurnCount() != initialTurn + PlayerAdvisorProbe.RestoreTurn)
                 {
                     return;
                 }
 #if DEVELOPMENT_PROBE
-                if (PlayerAdvisorProbe.ObserveRestart)
+                if (PlayerAdvisorProbe.ObserveRestart || PlayerAdvisorProbe.ObserveUndo)
                 {
                     if (PlayerAdvisorProbe.TryCaptureRestart(managers))
-                        Finish(true, "Player Advisor restored original deployment after restart.");
+                        Finish(true, PlayerAdvisorProbe.ObserveUndo ? "Player Advisor restored original turn after undo." :
+                            "Player Advisor restored original deployment after restart.");
                     return;
                 }
 #endif
@@ -1204,15 +1205,23 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
-            if (fullBattle && PlayerAdvisorProbe.ObserveRestart)
+            if (fullBattle && (PlayerAdvisorProbe.ObserveRestart || PlayerAdvisorProbe.ObserveUndo))
             {
-                if (PlayerAdvisorProbe.RestartPaymentStarted)
+                if (PlayerAdvisorProbe.ObserveUndo && combat!.GetTurnCount() == 0)
+                    AdvanceTurn(combat);
+                else if (PlayerAdvisorProbe.RestartPaymentStarted)
                 {
                     if (PlayerAdvisorProbe.TryRestartAfterPayment(managers, FullBattleTrace.Active!))
                         Enter(Stage.Restarting, 180f);
                 }
-                else if (PlayerAdvisorProbe.TryPrepareRestartPayment(managers, FullBattleTrace.Active!, out pendingPlay))
-                    PlayPendingPolicyCard(managers, cards!);
+                else
+                {
+                    var trace = FullBattleTrace.Active!;
+                    if (PlayerAdvisorProbe.ObserveUndo && trace.ObservedTurns.Single().Actual == null)
+                        trace.CompleteEndTurn(RoomOutcome.Exchanged);
+                    if (PlayerAdvisorProbe.TryPrepareRestartPayment(managers, trace, out pendingPlay))
+                        PlayPendingPolicyCard(managers, cards!);
+                }
                 return;
             }
             if (fullBattle && OriginalBattleSetupWitness.Enabled)

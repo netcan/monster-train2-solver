@@ -7,6 +7,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using MonsterTrain2Poju.Model;
 using MonsterTrain2Poju.Fixtures;
+using MonsterTrain2Poju.NativeCasePlans;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -23,13 +24,17 @@ namespace MonsterTrain2Poju.Probe
         internal static bool ObserveEndlessLoop2Handoff => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_HANDOFF") == "1";
         internal static bool ObserveEndlessLoop2FirstEndTurn => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_FIRST_END_TURN") == "1";
         internal static bool ObserveRestart => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_RESTART") == "1";
+        internal static bool ObserveUndo => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_UNDO") == "1";
         internal static bool RestartPaymentStarted => restartOpening != null;
+        internal static int RestoreTurn => ObserveUndo ? 1 : 0;
         private static BattleTurnState? restartOpening;
         private static BattleAdvice? restartInitialAdvice, restartPaidAdvice;
         private static BattleActionProbe.Record? restartInput;
         private static long restartGeneration, restartSearches;
         private static int restartPublications, restartCount, runRestartCount;
         private static bool restartRetired;
+        private static BattleTurnProbe.Record? undoFirstEndTurn;
+        private static int undoCount, runUndoCount, undoOpeningEntries, undoPaidEntries, undoTrim;
         internal static bool EndlessLoop2HandoffStarted => loop2OriginalAdvice != null;
         private static string? loop2DeploymentStamp;
         private static BattleAdvice? loop2OriginalAdvice;
@@ -228,21 +233,33 @@ namespace MonsterTrain2Poju.Probe
             var combat = managers.GetCombatManager();
             var save = managers.GetSaveManager();
             Require(save.GetRunType() == RunType.Class && save.GetCurrentDistance() == 0 && !save.IsEndlessRun &&
-                save.GetCovenants().Count == 0 && combat.IsPlacementPhase && combat.GetTurnCount() == 0 &&
-                save.GetNumRestartsPerBattle() != 0 && trace.ObservedActionCount == 0 && trace.ObservedTurns.Count == 0,
-                "restart requires the original Covenant 0 Ring 1 deployment");
+                save.GetCovenants().Count == 0 && combat.GetTurnCount() == RestoreTurn &&
+                combat.IsPlacementPhase == !ObserveUndo && trace.ObservedActionCount == 0 &&
+                trace.ObservedTurns.Count == RestoreTurn &&
+                (ObserveUndo ? save.GetNumUndosPerTurn() == -1 && !save.IsUndoDisabledByMutator() : save.GetNumRestartsPerBattle() != 0),
+                "restoration requires the original Covenant 0 Ring 1 decision");
             if (!TryReadRestartPublication(out var opening, out var initialAdvice)) return false;
 
             CardManager cards = managers.GetCardManager();
             RoomManager rooms = managers.GetRoomManager();
             int selected = rooms.GetSelectedRoom();
+            if (ObserveUndo)
+            {
+                undoFirstEndTurn = trace.ObservedTurns.Single();
+                Require(undoFirstEndTurn is { Difference: null, Actual: not null, ActualOutcome: RoomOutcome.Exchanged } &&
+                    undoFirstEndTurn.Predicted.Supported && undoFirstEndTurn.Before.Spawn.Turn == 0,
+                    "the original deployment EndTurn must settle exactly before the undo control");
+                undoOpeningEntries = save.GetReplayData().GetReplayEntries().Count;
+                Require(save.GetReplayData().GetNumUndoEntriesToRemoveFromEnd() == 0,
+                    "the ordinary turn already contains native replay entries");
+            }
             RoomState room = rooms.GetRoom(selected);
             SpawnPoint drop = room.GetFirstEmptyMonsterPoint()
-                ?? throw new InvalidOperationException("The original deployment room has no empty position.");
+                ?? throw new InvalidOperationException("The selected original room has no empty monster position.");
             CardState card = cards.GetHand().FirstOrDefault(candidate => candidate.GetCardType() == CardType.Monster &&
                 candidate.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(), room) > 0 &&
                 cards.CanPlayHandCard(candidate, selected, drop, null, null, out _))
-                ?? throw new InvalidOperationException("No original paid unit is legal on the selected deployment floor.");
+                ?? throw new InvalidOperationException("No original paid unit is legal on the selected floor.");
             action = new PlayCardAction(trace.CardId(card), selected, playerPosition: drop.GetIndexInRoom());
             restartOpening = opening;
             restartInitialAdvice = initialAdvice;
@@ -251,16 +268,18 @@ namespace MonsterTrain2Poju.Probe
 
         internal static bool TryRestartAfterPayment(AllGameManagers managers, FullBattleTrace trace)
         {
-            Require(trace.ObservedActionCount == 1 && trace.ObservedTurns.Count == 0, "expected exactly one original paid input");
+            Require(trace.ObservedActionCount == 1 && trace.ObservedTurns.Count == RestoreTurn, "expected exactly one original paid input");
             BattleActionProbe.Record input = trace.ObservedActions.Single();
             Require(input.Actual != null && input.ActualOutcome == RoomOutcome.Exchanged && input.Predicted.Supported &&
-                input.Difference == null && input.Before.Energy > input.Actual.Energy,
-                "the original paid deployment did not settle as predicted");
+                input.Difference == null && input.Before.Energy > input.Actual.Energy &&
+                input.Before.Spawn.Train.Context!.Cards.Hand.Any(card => card.InstanceId == input.Action.CardInstanceId) &&
+                !input.Actual.Spawn.Train.Context!.Cards.Hand.Any(card => card.InstanceId == input.Action.CardInstanceId),
+                "the original paid input did not settle as predicted");
             if (!TryReadRestartPublication(out var paidRoot, out var paidAdvice)) return false;
-            Require(paidRoot!.Energy == input.Actual!.Energy && paidRoot.Spawn.Train.Rooms
-                .SelectMany(room => room.Units).Count(unit => unit.Team == CombatTeam.Player && !unit.IsPyre) == 1 &&
+            Require(paidRoot!.Energy == input.Actual!.Energy && paidRoot.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Count(unit => unit.Team == CombatTeam.Player && !unit.IsPyre) == 1 &&
                 !ReferenceEquals(restartInitialAdvice, paidAdvice) && Get<long>("DiagnosticCardInputs") == 1,
-                "the accepted deployment did not reach a distinct published root");
+                "the accepted card did not reach a distinct published root");
 
             var save = managers.GetSaveManager();
             restartInput = input;
@@ -268,12 +287,23 @@ namespace MonsterTrain2Poju.Probe
             restartGeneration = GetGeneration();
             restartSearches = SearchCount;
             restartPublications = PublicationCount;
-            restartCount = save.GetReplayData().GetNumRestartsUsedThisBattle();
-            runRestartCount = save.GetReplayData().GetNumRestartsUsedThisRun();
-            save.RestartBattle();
+            var replay = save.GetReplayData();
+            restartCount = replay.GetNumRestartsUsedThisBattle();
+            runRestartCount = replay.GetNumRestartsUsedThisRun();
+            if (ObserveUndo)
+            {
+                undoCount = replay.GetNumUndosUsedThisTurn();
+                runUndoCount = replay.GetNumUndosUsedThisRun();
+                undoPaidEntries = replay.GetReplayEntries().Count;
+                undoTrim = replay.GetNumUndoEntriesToRemoveFromEnd();
+                Require(undoTrim == 1 && undoPaidEntries - undoTrim == undoOpeningEntries,
+                    "undo would not preserve the original replay prefix through the first EndTurn");
+                save.UndoTurn();
+            }
+            else save.RestartBattle();
             restartRetired = CurrentIsNull() && Field<BattleAdvice?>("displayed") == null &&
                 Field<int>("tentativeSteps") == 0 && GetGeneration() > restartGeneration;
-            Require(restartRetired, "the original restart left the paid advice visible or reusable");
+            Require(restartRetired, "the original restore left the paid advice visible or reusable");
             return true;
         }
 
@@ -285,34 +315,72 @@ namespace MonsterTrain2Poju.Probe
             using var restoredKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
             string openingKey = restoredKeys.Key(restartOpening!);
             string restoredKey = restoredKeys.Key(restored!);
-            Require(openingKey == restoredKey, "restart did not restore the original deployment and RNG: " +
-                UnitPlayModelProbe.FirstDifference(JObject.FromObject(restartOpening!), JObject.FromObject(restored!), "$"));
-            Require(restartRetired && replay.GetNumRestartsUsedThisBattle() == restartCount + 1 &&
-                replay.GetNumRestartsUsedThisRun() == runRestartCount + 1 && GetGeneration() > restartGeneration &&
+            string? difference = ObserveUndo ? UndoDecisionComparison.Difference(restartOpening!, restored!) :
+                openingKey == restoredKey ? null :
+                UnitPlayModelProbe.FirstDifference(JObject.FromObject(restartOpening!), JObject.FromObject(restored!), "$");
+            if (ObserveUndo && difference != null)
+            {
+                using var diagnostic = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new
+                {
+                    Schema = 1, EvidenceKind = "NativeAdvisorUndoRootMismatch", GameVersion = Application.version,
+                    GameModuleMvid = typeof(CardState).Module.ModuleVersionId, FirstEndTurn = undoFirstEndTurn,
+                    Opening = restartOpening, OpeningPublication = restartInitialAdvice!.Root, Input = restartInput,
+                    PaidPublication = restartPaidAdvice!.Root, Restored = restored, RestoredPublication = advice!.Root,
+                    OpeningComparisonKey = openingKey, RestoredComparisonKey = restoredKey,
+                    ReplayEntriesAtOpening = undoOpeningEntries, ReplayEntriesBeforeUndo = undoPaidEntries,
+                    ReplayEntriesAfterUndo = replay.GetReplayEntries().Count, UndoEntriesToTrim = undoTrim
+                });
+                using var path = System.IO.File.Create(System.IO.Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                    "player-advisor-undo-root-mismatch.mt2f"));
+                diagnostic.Write(path);
+            }
+            Require(difference == null && (ObserveUndo || openingKey == restoredKey),
+                "the original decision and RNG were not restored: " + difference);
+            int addedRestarts = ObserveUndo ? 0 : 1;
+            Require(restartRetired && replay.GetNumRestartsUsedThisBattle() == restartCount + addedRestarts &&
+                replay.GetNumRestartsUsedThisRun() == runRestartCount + addedRestarts && GetGeneration() > restartGeneration &&
                 SearchCount > restartSearches && PublicationCount > restartPublications &&
                 !advice!.ReusedContinuation && !advice.ReusedSelection && !ReferenceEquals(restartPaidAdvice, advice) &&
                 Get<long>("DiagnosticCardInputs") == 1,
-                "a new searched publication or one exact original restart was missing");
+                "a new searched publication or one exact native restore was missing");
 
-            using var document = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new
+            var receipt = new Dictionary<string, object?>
             {
-                Schema = 1, EvidenceKind = "NativeAdvisorRestart", GameVersion = Application.version,
-                GameModuleMvid = typeof(CardState).Module.ModuleVersionId, Scenario = save.GetCurrentScenarioData()?.name,
-                Assembly = type!.Assembly.GetName().Name, Version = type.Assembly.GetName().Version?.ToString(),
-                Opening = restartOpening, OpeningPublication = restartInitialAdvice!.Root, OpeningRootKey = restartInitialAdvice.RootKey,
-                OpeningFirstStep = restartInitialAdvice.Plan.Steps[0], Input = restartInput,
-                PaidPublication = restartPaidAdvice!.Root, PaidRootKey = restartPaidAdvice.RootKey,
-                PriorPublicationRetired = restartRetired, Restored = restored, RestoredPublication = advice.Root,
-                RestoredRootKey = advice.RootKey, RestoredFirstStep = advice.Plan.Steps[0],
-                RestartCountBefore = restartCount, RestartCountAfter = replay.GetNumRestartsUsedThisBattle(),
-                RunRestartCountBefore = runRestartCount, RunRestartCountAfter = replay.GetNumRestartsUsedThisRun(),
-                GenerationBefore = restartGeneration, GenerationAfter = GetGeneration(),
-                SearchesBefore = restartSearches, SearchesAfter = SearchCount,
-                PublicationsBefore = restartPublications, PublicationsAfter = PublicationCount,
-                AcceptedCardInputs = Get<long>("DiagnosticCardInputs"), Failures = Get<int>("Failures"), PurityFailures = Get<int>("PurityFailures")
-            });
+                ["Schema"] = 1, ["EvidenceKind"] = ObserveUndo ? "NativeAdvisorUndo" : "NativeAdvisorRestart",
+                ["GameVersion"] = Application.version, ["GameModuleMvid"] = typeof(CardState).Module.ModuleVersionId,
+                ["Scenario"] = save.GetCurrentScenarioData()?.name, ["Assembly"] = type!.Assembly.GetName().Name,
+                ["Version"] = type.Assembly.GetName().Version?.ToString(), ["Opening"] = restartOpening,
+                ["OpeningPublication"] = restartInitialAdvice!.Root, ["OpeningRootKey"] = restartInitialAdvice.RootKey,
+                ["OpeningFirstStep"] = restartInitialAdvice.Plan.Steps[0], ["Input"] = restartInput,
+                ["PaidPublication"] = restartPaidAdvice!.Root, ["PaidRootKey"] = restartPaidAdvice.RootKey,
+                ["PriorPublicationRetired"] = restartRetired, ["Restored"] = restored, ["RestoredPublication"] = advice.Root,
+                ["RestoredRootKey"] = advice.RootKey, ["RestoredFirstStep"] = advice.Plan.Steps[0],
+                ["RestartCountBefore"] = restartCount, ["RestartCountAfter"] = replay.GetNumRestartsUsedThisBattle(),
+                ["RunRestartCountBefore"] = runRestartCount, ["RunRestartCountAfter"] = replay.GetNumRestartsUsedThisRun(),
+                ["GenerationBefore"] = restartGeneration, ["GenerationAfter"] = GetGeneration(),
+                ["SearchesBefore"] = restartSearches, ["SearchesAfter"] = SearchCount,
+                ["PublicationsBefore"] = restartPublications, ["PublicationsAfter"] = PublicationCount,
+                ["AcceptedCardInputs"] = Get<long>("DiagnosticCardInputs"), ["Failures"] = Get<int>("Failures"),
+                ["PurityFailures"] = Get<int>("PurityFailures")
+            };
+            if (ObserveUndo)
+            {
+                int afterEntries = replay.GetReplayEntries().Count;
+                Require(replay.GetNumUndosUsedThisTurn() == undoCount + 1 && replay.GetNumUndosUsedThisRun() == runUndoCount + 1 &&
+                    afterEntries == undoOpeningEntries, "undo did not retain the original end-of-deployment replay prefix");
+                receipt["FirstEndTurn"] = undoFirstEndTurn;
+                receipt["UndoCountBefore"] = undoCount;
+                receipt["UndoCountAfter"] = replay.GetNumUndosUsedThisTurn();
+                receipt["RunUndoCountBefore"] = runUndoCount;
+                receipt["RunUndoCountAfter"] = replay.GetNumUndosUsedThisRun();
+                receipt["ReplayEntriesAtOpening"] = undoOpeningEntries;
+                receipt["ReplayEntriesBeforeUndo"] = undoPaidEntries;
+                receipt["ReplayEntriesAfterUndo"] = afterEntries;
+                receipt["UndoEntriesToTrim"] = undoTrim;
+            }
+            using var document = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(receipt);
             using var output = System.IO.File.Create(System.IO.Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
-                "player-advisor-restart.mt2f"));
+                ObserveUndo ? "player-advisor-undo.mt2f" : "player-advisor-restart.mt2f"));
             document.Write(output);
             return true;
         }
@@ -327,10 +395,10 @@ namespace MonsterTrain2Poju.Probe
             advice = Advice;
             using var keys = new BattleStateKeys();
             string key = keys.Key(root);
-            Require(root.Spawn.Turn == 0 && key == advice.RootKey && keys.Key(advice.Root) == key &&
+            Require(root.Spawn.Turn == RestoreTurn && key == advice.RootKey && keys.Key(advice.Root) == key &&
                 session.MatchesCurrentRoot(root) && (bool)Call("ReadyFor", root)! && advice.Plan.Steps.Count > 0 &&
                 Field<Text>("body").isActiveAndEnabled && Get<int>("Failures") == 0 && Get<int>("PurityFailures") == 0,
-                "the displayed recommendation did not match the independently captured native placement");
+                "the displayed recommendation did not match the independently captured native decision");
             return true;
         }
 

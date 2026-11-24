@@ -486,10 +486,10 @@ if (args.Length == 2 && args[0] == "--native-savior-champion-only")
     OriginalSaviorChampionChecks.Native(fixture.RootElement);
     return;
 }
-if (args.Length == 2 && args[0] == "--native-advisor-restart-only")
+if (args.Length == 2 && args[0] is "--native-advisor-restart-only" or "--native-advisor-undo-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    NativeAdvisorRestartChecks.Native(fixture.RootElement);
+    NativeAdvisorRestartChecks.Native(fixture.RootElement, undo: args[0] == "--native-advisor-undo-only");
     return;
 }
 if (args.Length == 2 && args[0] == "--native-little-fade-endless-only")

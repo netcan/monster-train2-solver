@@ -31,6 +31,12 @@ and restored the opening hand, combat state and RNG. The restored opening matche
 publication with the preview copy allocator excluded. A fresh search supplied new advice.
 [Restart observation](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/native-restart-restored-deployment.mt2f)
 
+Original Undo Turn also passed in the first ordinary turn after a one-Ember deployment.
+Undo removed one replay entry, retired the current advice immediately and restored the hand,
+units and RNG. The comparison matched reconstructed cards by pile position and units by
+physical position, then checked the remaining state fields and the newly published advice.
+[Undo observation](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/native-undo-restored-first-turn.mt2f)
+
 On 2026-11-21 the current Windows build completed a rolling player-advisor battle in an isolated
 2.3.1 instance (seed 424242, one search worker, 1,000 ms per recommendation). The production
 advisor published 27 recommendations. The driver sent 18 card plays and seven EndTurn inputs
