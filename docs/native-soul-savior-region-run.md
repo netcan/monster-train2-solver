@@ -52,3 +52,9 @@ pwsh -File scripts/Run-CampaignProgress.ps1 -RegionRun -StopBeforeRing 4 -Native
 复放楼层切换触发的预览，并比较完整后继状态、随机流与预览副本编号。
 [首领败局](../tests/compatibility/game-2.3.1/mechanics/dutiful-armor/natural-region-run-defeat.mt2f) ·
 [首领胜局](../tests/compatibility/game-2.3.1/mechanics/dutiful-armor/natural-region-run-win.mt2f)
+
+`SoulSavior_R1_Battle_HealOnShiftHeavy` 已用原版胜局验证普通战斗的完整后继。原版采样包含 36 次出牌、
+4 次主动技能和 7 次结束回合，以薪火 50 生命获胜。收割者登场后沿用已有的全塔位移流程。
+连续回放按原版采样时序补跑了结束回合前的预览，16 条独立分支和两类候选均通过。
+归档保留首次采样时旧模型的 37 项未支持计数，当前模型的复验使用同一份二进制。
+[普通战斗胜局](../tests/compatibility/game-2.3.1/mechanics/region-run-harvester/native-win.mt2f)
