@@ -91,22 +91,29 @@ namespace MonsterTrain2Poju.Probe
             }
 
             BattleTurnState after = trace.CaptureDecision();
-            if (sample is not { Completed: true, Coefficient: 1, Pain: StartingPain } ||
-                sample.ActorId != action!.ActivatorUnitId || sample.TargetId != action.TargetUnitId ||
-                sample.Requested != sample.Pain ||
-                sample.TargetHealthAfter != Math.Max(0, sample.TargetHealthBefore - sample.Requested) ||
-                before.Energy != after.Energy)
-                throw new InvalidOperationException("Original Zariel damage did not settle as the paid Tier I pain-scaled ability.");
+            int paidCost = ability!.GetLastPlayedCost();
+            bool paid = paidCost == 0 && before.Energy == after.Energy;
+            bool observedScaling = sample is { Completed: true, Coefficient: 1, Pain: StartingPain } &&
+                sample.ActorId == action!.ActivatorUnitId && sample.TargetId == action.TargetUnitId &&
+                sample.Requested == sample.Pain;
+            bool observedDamage = sample is { Completed: true, Requested: int requested } &&
+                sample.TargetArmorAfter == Math.Max(0, sample.TargetArmorBefore - requested) &&
+                sample.TargetHealthAfter == Math.Max(0, sample.TargetHealthBefore - Math.Max(0, requested - sample.TargetArmorBefore));
             using var document = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, Boundary, GameVersion = Application.version, GameModuleMvid = Module,
                 Authored = authored, DeploymentBefore = beforeDeployment, Deployment = deployment, DeploymentAfter = afterDeployment,
-                StartingPain,
+                StartingPain, PaidCost = paidCost, Paid = paid, ObservedScaling = observedScaling, ObservedDamage = observedDamage,
                 Before = before, Action = action, After = after, Damage = sample
             });
-            using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "zariel-pain-tier1.mt2f"));
-            document.Write(stream);
-            log.LogInfo($"ORIGINAL-ZARIEL-PAIN OBSERVED pain={sample.Pain} damage={sample.Requested} target={sample.TargetId}");
+            using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "zariel-pain-tier1.mt2f")))
+                document.Write(stream);
+            log.LogInfo($"ORIGINAL-ZARIEL-PAIN OBSERVED complete={sample?.Completed} actor={sample?.ActorId}/{action?.ActivatorUnitId} " +
+                $"target={sample?.TargetId}/{action?.TargetUnitId} pain={sample?.Pain} coefficient={sample?.Coefficient} " +
+                $"damage={sample?.Requested} hp={sample?.TargetHealthBefore}->{sample?.TargetHealthAfter} " +
+                $"armor={sample?.TargetArmorBefore}->{sample?.TargetArmorAfter} cost={paidCost} energy={before.Energy}->{after.Energy}");
+            if (!paid || !observedScaling || !observedDamage)
+                throw new InvalidOperationException($"Original Zariel Tier I settlement differed: paid={paid}, scaling={observedScaling}, damage={observedDamage}.");
             return true;
         }
 
@@ -157,9 +164,11 @@ namespace MonsterTrain2Poju.Probe
             public int TargetId { get; set; }
             public int Pain { get; set; }
             public int Coefficient { get; set; }
-            public int Requested { get; set; }
+            public int? Requested { get; set; }
             public int TargetHealthBefore { get; set; }
             public int TargetHealthAfter { get; set; }
+            public int TargetArmorBefore { get; set; }
+            public int TargetArmorAfter { get; set; }
             public bool TargetDestroyed { get; set; }
             public bool Completed { get; set; }
         }
@@ -182,13 +191,14 @@ namespace MonsterTrain2Poju.Probe
                 var target = parameters.targets.Single();
                 sample = new DamageSample { ActorId = trace.UnitId(actor), TargetId = trace.UnitId(target),
                     Pain = actor.GetStatusEffectStacks("pain"), Coefficient = effect.GetParamInt(),
-                    TargetHealthBefore = target.GetHP() };
+                    TargetHealthBefore = target.GetHP(), TargetArmorBefore = target.GetStatusEffectStacks("armor") };
                 observing = true;
                 try
                 {
                     while (native.MoveNext()) yield return native.Current;
                     sample.TargetDestroyed = target.IsDestroyed;
                     sample.TargetHealthAfter = sample.TargetDestroyed ? 0 : target.GetHP();
+                    sample.TargetArmorAfter = sample.TargetDestroyed ? 0 : target.GetStatusEffectStacks("armor");
                     sample.Completed = true;
                 }
                 finally { observing = false; (native as IDisposable)?.Dispose(); }
