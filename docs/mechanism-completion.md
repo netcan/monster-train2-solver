@@ -1428,6 +1428,9 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 同层前排 Shardsoul Carver 获得 15 层腐化。16 个完整结算快照与模型逐项匹配。
 [第 2 轮付费击杀归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-horde-death.mt2f)
 
+从部署到原版败局的整战包含 14 次出牌及 4 次 EndTurn。连续后继、终局、随机流和出牌／结束回合候选均通过。
+[第 2 轮原版败局](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-defeat.mt2f)
+
 三阶原版 Silver 灵魂的薪火升级由 `SaveManager.BattleComplete` 在战斗终局快照之后调用，
 同一灵魂的额外奖励在战后生成。顾问识别原版灵魂和完整有序效果列表，并在下一场读取薪火的实际数值。
 Silver T1、T2、T3 分别用两份真实胜局后的隔离存档调用原版调度器。三阶各观察到一次生命分支和一次攻击分支，
