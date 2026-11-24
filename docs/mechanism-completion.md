@@ -1425,6 +1425,13 @@ GrimFlight 验收程序已就绪，正向运行需要原版客户端确认 Punis
 [整战阶段报告](../results/recorded-chain-triage-20261125-022422-c0ec996b/report.tsv) ·
 [阶段求解日志](../results/solver-completion-20261125-advisor-boundaries.log)
 
+`aac6ea21` 的整战阶段复放通过 501 场，其中 482 场连续复放、19 场分段复放。
+八路并行复放共核对 7,734 次战斗操作和 2,985 次结束回合，失败为 0。
+同一版本的求解验收通过跨回合搜索、串并行对照及 2,875 份归档登记。覆盖清单确认
+601 张收藏卡均有定义匹配的原版出牌，236 件收藏遗物均有按效果顺序匹配的原版在场记录。
+[整战阶段报告](../results/recorded-chain-triage-20261125-042106-0de57402/report.tsv) ·
+[阶段求解日志](../results/solver-completion-20261125-aac6ea21.log)
+
 2.3.1 原版 `DoubleStatusEffects` 已接入共享状态层数管线。原版 SpikePotion 支付 1 余烬，
 使火车乘务员获得 20 层尖刺，完整出牌后继和随机流通过复放。七项查询对照覆盖冷却、无目标、
 永久升级、延迟加法和转移来源。四项原版移除调用依次将尖刺从 20 变为 18、14、10、12，
