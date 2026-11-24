@@ -89,8 +89,8 @@ namespace MonsterTrain2Poju.Model
             if (unit == null) return Fail("Missing percentage birth unit.");
             if (RelicLateAttackModel.Validate(unit) is string lateError) return Fail(lateError);
             string team = unit.Team == CombatTeam.Player ? "Monsters" : "Heroes";
-            bool subtype = rule.SubtypeKey.Length == 0 ? unit.Team != CombatTeam.Player || !unit.IsPyre :
-                unit.Subtypes.Contains(rule.SubtypeKey) && (!rule.SubtypeIsPyre || unit.Team != CombatTeam.Player || unit.IsPyre);
+            bool subtype = OriginalAllSubtypesModel.MatchesCharacter(unit.Team, unit.IsPyre, unit.Subtypes,
+                rule.SubtypeKey, rule.SubtypeIsPyre, OriginalAllSubtypesModel.Active(source.Context, source.Deployment));
             if (!BirthApplies(rule, team, subtype)) return Match(source);
             CombatUnit changed;
             if (rule.Health)

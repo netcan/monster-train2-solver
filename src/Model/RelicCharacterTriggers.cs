@@ -115,8 +115,9 @@ namespace MonsterTrain2Poju.Model
             bool character = rule.CharacterAssetKeys.Count == 0
                 ? (actor.Team == CombatTeam.Player ? rule.SourcePlayer : rule.SourceEnemy)
                 : rule.CharacterAssetKeys.Contains(actor.AssetKey, StringComparer.Ordinal);
-            bool subtype = rule.SubtypeIsNone ? actor.Team == CombatTeam.Enemy || !actor.IsPyre : actor.Subtypes.Contains(rule.RequiredSubtype!) &&
-                (actor.Team == CombatTeam.Enemy || rule.SubtypeIsPyre == actor.IsPyre);
+            bool subtype = OriginalAllSubtypesModel.MatchesCharacter(actor.Team, actor.IsPyre, actor.Subtypes,
+                rule.SubtypeIsNone ? null : rule.RequiredSubtype, rule.SubtypeIsPyre,
+                OriginalAllSubtypesModel.Active(state.Context, state.Deployment));
             if (!evaluated.Passed || !character || !subtype || state.Preview || rule.Triggers.Count == 0) return Match(state);
             if (!actor.NextTriggerId.HasValue) return Fail("Missing native trigger allocation for relic installation.");
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();

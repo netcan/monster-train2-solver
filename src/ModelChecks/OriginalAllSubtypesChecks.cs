@@ -79,6 +79,18 @@ internal static class OriginalAllSubtypesChecks
                 sacrificeCandidates.Supported && sacrificeCandidates.UnitIds.Contains(row.ActorId) == wildcard &&
                 CardSpellModel.TestCount(train, damageByKills, new CardTargets([row.ActorId])) == (wildcard ? 1 : 0),
                 "Target filters and sacrifice callbacks must apply the captured native character subtype matching.");
+
+            var healthRule = new RelicPercentageStat(0, 100, true, "Monsters", Fungus, multiplier: 2f);
+            var health = RelicPercentageStatModel.Apply(room, row.ActorId, healthRule);
+            CombatUnit original = Actor(row.Phase, row.ActorId);
+            var deathTrigger = new CombatTrigger("OnDeath", false, false, false, 1, []);
+            var triggerRule = new RelicCharacterTriggers(0, true, false, [deathTrigger], false, Fungus, subtypeIsNone: false);
+            var trigger = RelicCharacterTriggerModel.Apply(room, row.ActorId, triggerRule);
+            Require(health.Supported && health.State!.Units.Single(unit => unit.Id == row.ActorId).MaxHealth ==
+                (wildcard ? original.MaxHealth * 2 : original.MaxHealth), "Percentage stats did not use the native subtype query on birth.");
+            Require(wildcard ? trigger.UnsupportedReason?.Contains(OriginalAllSubtypesModel.Effect) == true :
+                trigger.Supported && trigger.State!.Units.Single(unit => unit.Id == row.ActorId).Triggers.Count == original.Triggers.Count,
+                "Trigger installation must reach room validation only when the native subtype query matches: " + trigger.UnsupportedReason);
         }
 
         DeckRow[] deck = root.GetProperty("Deck").Deserialize<DeckRow[]>()!;
