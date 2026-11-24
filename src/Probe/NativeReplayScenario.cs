@@ -4215,6 +4215,9 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                 else if (OriginalRandomJustCauseWitness.Enabled)
                     pendingPlay = BattleActionModel.ChooseUnitAndJunkPlay(decision);
+                else if (OriginalEndlessEnemyScalingWitness.AllWaves)
+                    pendingPlay = BattleActionModel.ChooseUnitSpellAndJunkPlay(decision,
+                        card => card.DataId != OriginalBrokenMemoriesScenario.CardId);
 #endif
                 else
                 {
