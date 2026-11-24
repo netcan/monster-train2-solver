@@ -1363,6 +1363,11 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 两次击杀治疗将薪火生命从 77 依次恢复至 79、80。模拟在延迟死亡回调前保留跨层治疗，完整技能后继和随机流与原版一致。
 [技能专项归档](../tests/compatibility/game-2.3.1/mechanics/pyre-steward-damage/native-first-activation.mt2f)
 
+两档原版敌方首次出生复生分别赋予 1 层和 2 层复生。同一回合后续敌人跳过，抽牌后原版重置触发标记。
+两档各自通过 3 个出生阶段和连续两个结束回合的完整复放。每次实际授予推进一次 Battle RNG，跳过和重置保持随机流。
+[一层复生对照](../tests/compatibility/game-2.3.1/mechanics/front-reanimation/native-tier2-settled.mt2f) ·
+[两层复生对照](../tests/compatibility/game-2.3.1/mechanics/front-reanimation/native-tier3-settled.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，

@@ -376,6 +376,14 @@ if (args.Length is 2 or 3 && args[0] == "--native-skull-collectors-only" &&
     SkullCollectorsChecks.Native(fixture.RootElement, observeOnly: args.Length == 3);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--native-front-reanimation-only" &&
+    (args.Length == 2 || args[2] is "--observe-only" or "--whole-turns"))
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalFrontReanimationChecks.Native(fixture.RootElement,
+        observeOnly: args.Length == 3 && args[2] == "--observe-only", wholeTurns: args.Length == 3 && args[2] == "--whole-turns");
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-second-floor-enemy-opening-only")
 {
     SecondFloorEnemyOpeningChecks.Native(args[1]);
