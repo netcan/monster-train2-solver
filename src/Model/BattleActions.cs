@@ -1639,7 +1639,8 @@ namespace MonsterTrain2Poju.Model
                         : effect.Type == "FreezeCard" ? CardFreezeModel.EligibleCards(context, action.CardInstanceId, out error)
                         : effect.Type == "DuplicateCard" ? CardDuplicateModel.EligibleCards(context, effect, action.CardInstanceId, out error)
                         : CardRecursionModel.EligibleCards(context.Cards, context.OtherPiles, effect, source.PlayRules,
-                            action.CardInstanceId, out error, context.CardRegistry);
+                            action.CardInstanceId, out error, context.CardRegistry,
+                            OriginalAllSubtypesModel.Active(context, deployment: source.Spawn.Turn == 0));
                 if (error != null || eligible.Count == 0)
                 {
                     foreach (PlayCardAction branch in Expand(choiceIndex + 1)) yield return branch;

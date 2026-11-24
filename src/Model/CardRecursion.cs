@@ -37,7 +37,7 @@ namespace MonsterTrain2Poju.Model
     {
         public static IReadOnlyList<int> EligibleCards(CardCycleState cards, IReadOnlyList<CardPileState>? otherPiles,
             CardActionEffect effect, BattlePlayRules? definitions, int sourceCardId, out string? error,
-            IReadOnlyList<CardInstanceState>? cardRegistry = null)
+            IReadOnlyList<CardInstanceState>? cardRegistry = null, bool allSubtypes = false)
         {
             error = Validate(effect, otherPiles, cards);
             if (error != null) return Array.Empty<int>();
@@ -79,7 +79,7 @@ namespace MonsterTrain2Poju.Model
                         error = "Recursion card filtering cannot resolve card " + card.InstanceId + ": " + exception.Message;
                         return Array.Empty<int>();
                     }
-                    if (!CardUpgradeMaskModel.FilterCard(effect.Recursion.CardFilter, maskCard)) continue;
+                    if (!CardUpgradeMaskModel.FilterCard(effect.Recursion.CardFilter, maskCard, allSubtypes)) continue;
                 }
                 eligible.Add(card.InstanceId);
             }
@@ -88,12 +88,13 @@ namespace MonsterTrain2Poju.Model
 
         public static CardRecursionResult Apply(CardCycleState cards, IReadOnlyList<CardPileState>? otherPiles,
             UnityRng battleRng, CardActionEffect effect, BattlePlayRules? definitions, int sourceCardId, int maxHandSize,
-            IReadOnlyList<int>? selectedCardIds = null, IReadOnlyList<CardInstanceState>? cardRegistry = null, int? drawCount = null)
+            IReadOnlyList<int>? selectedCardIds = null, IReadOnlyList<CardInstanceState>? cardRegistry = null, int? drawCount = null,
+            bool allSubtypes = false)
         {
             if (effect.Recursion?.SelectionMode == "RandomToRoomUntilCapacityFull")
                 return new CardRecursionResult(null, null, null, "Room recursion requires the complete train birth transition.");
             IReadOnlyList<int> eligible = EligibleCards(cards, otherPiles, effect, definitions, sourceCardId,
-                out string? error, cardRegistry);
+                out string? error, cardRegistry, allSubtypes);
             if (error != null) return new CardRecursionResult(null, null, null, error);
             if (maxHandSize < cards.Hand.Count) return new CardRecursionResult(null, null, null, "Invalid hand size.");
             int[] selected;

@@ -20,7 +20,8 @@ namespace MonsterTrain2Poju.Model
             if (context.Relics?.Any(RelicModel.HasCombatEffects) == true)
                 return Fail("Room recursion with relic birth and discard callbacks requires native calibration.");
             IReadOnlyList<int> eligible = CardRecursionModel.EligibleCards(context.Cards, context.OtherPiles,
-                effect, definitions, sourceCardId, out string? error, context.CardRegistry);
+                effect, definitions, sourceCardId, out string? error, context.CardRegistry,
+                OriginalAllSubtypesModel.Active(context, deployment: context.QueryFrame?.Turn == 0));
             if (error != null) return Fail(error);
             if (eligible.Count == 0) return Result();
             bool refreshDetachedCardStatistics = context.Statistics?.StoredCards != null &&

@@ -297,6 +297,17 @@ internal static class CardRecursionChecks
             definitions, 50, out error, maskRegistry);
         CardRecursionResult filteredDeck = CardRecursionModel.Apply(cards, piles, cards.Rng, filteredChoice,
             definitions, 50, 4, [3], maskRegistry);
+        var monsterMask = new CardUpgradeMaskRule(cardType: "Monster", subtypes: new UpgradeMaskContent<string>(required: ["SubtypesData_FunGuy"]));
+        var monsterChoice = new CardActionEffect("Recursion", "Exhaust", 1, false, false, [],
+            recursion: new CardRecursionRule("ChooseToDeck", "Invalid", "", false, false, true, false, monsterMask));
+        var nativeSubtypeTargets = CardRecursionModel.EligibleCards(cards, piles, monsterChoice, definitions, 50, out error, maskRegistry);
+        var wildcardSubtypeTargets = CardRecursionModel.EligibleCards(cards, piles, monsterChoice, definitions, 50,
+            out string? wildcardError, maskRegistry, allSubtypes: true);
+        var wildcardRecursion = CardRecursionModel.Apply(cards, piles, cards.Rng, monsterChoice, definitions, 50, 4,
+            [2], maskRegistry, allSubtypes: true);
+        Require(error == null && wildcardError == null && nativeSubtypeTargets.Count == 0 && wildcardSubtypeTargets.SequenceEqual([2]) &&
+            wildcardRecursion.Supported && wildcardRecursion.RestoredCardIds.SequenceEqual([2]) && wildcardRecursion.BattleRng?.Equals(cards.Rng) == true,
+            "The original all-unit subtype effect skips recursion mask subtype conditions while preserving card type and selection RNG.");
         IReadOnlyList<int> missingMaskMetadata = CardRecursionModel.EligibleCards(cards, piles, filteredChoice,
             definitions, 50, out string? missingMaskError);
         CardActionEffect filtered = new("Recursion", "Exhaust", 1, false, false, [],
