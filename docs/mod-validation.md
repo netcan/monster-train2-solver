@@ -37,6 +37,12 @@ units and RNG. The comparison matched reconstructed cards by pile position and u
 physical position, then checked the remaining state fields and the newly published advice.
 [Undo observation](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/native-undo-restored-first-turn.mt2f)
 
+The original deployment confirmation was tested in an isolated Covenant 0 run where the champion
+warning had yet to appear. Canceling the dialog kept the same published advice, search count and
+exact battle state and RNG. The next End Turn produced one journal entry, retired the prior advice
+and published a new verified decision on turn one. Independent replay matched the entire successor.
+[End Turn observation](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/native-end-turn-confirmation.mt2f)
+
 The Windows package at source `ff8da324` was tested using the three DLLs extracted from
 the ZIP. The installed 2.3.1 build loaded the Advisor in an isolated profile, captured
 the original deployment, and reproduced the archived Undo observation byte for byte.

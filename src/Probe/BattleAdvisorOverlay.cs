@@ -868,7 +868,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static void InstallAdvisorPatches(Harmony harmony)
         {
-            foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(EndTurnPatch), typeof(RecordedBattleInputPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch), typeof(MutationPatch),
+            foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(RecordedBattleInputPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch), typeof(MutationPatch),
                 typeof(ElixirDraftSetupPatch), typeof(ElixirDraftApplyPatch), typeof(ElixirDraftSkipPatch) })
                 harmony.CreateClassProcessor(patch).Patch();
         }
@@ -1047,30 +1047,23 @@ namespace MonsterTrain2Poju.Probe
                 catch (Exception error) { Active?.ShowMessage("正在核对局面…"); Active?.log.LogWarning("POJU-TENTATIVE-DISPLAY " + error.Message); }
             }
         }
-        [HarmonyPatch(typeof(BattleHud), "EndTurn")]
-        private static class EndTurnPatch
-        {
-            private static void Prefix()
-            {
-                if (Active != null && !Active.capturing && (Active.tentativeSteps > 0 || Active.pendingCardChoice != null || Active.HasPendingElixirChoice) &&
-                    AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
-                    Active.ShowMessage("正在核对局面…");
-                NativeAction(reason: "end-turn");
-            }
-        }
         [HarmonyPatch(typeof(ReplayManager), nameof(ReplayManager.RecordEntry))]
         private static class RecordedBattleInputPatch
         {
             // The game records accepted inputs before starting their effects.
             private static void Postfix(ReplayManager __instance, ReplayEntry replayEntryNew)
             {
-                if (replayEntryNew is ReplayEntryEndTurn)
+                bool endTurn = replayEntryNew is ReplayEntryEndTurn;
+                if (!endTurn && replayEntryNew.GetType().Name != "ReplayEntryMonolithDevote") return;
+                if (Active is not { IsNativeBattleInput: true } overlay) return;
+                if (endTurn)
                 {
-                    Active?.RecordDiagnosticEndTurn();
+                    if (!__instance.IsPlayingBackAReplay()) overlay.RecordDiagnosticEndTurn();
+                    if (overlay.tentativeSteps > 0 || overlay.pendingCardChoice != null || overlay.HasPendingElixirChoice)
+                        overlay.ShowMessage("正在核对局面…");
+                    overlay.InvalidateState(true, "end-turn");
                     return;
                 }
-                if (replayEntryNew.GetType().Name != "ReplayEntryMonolithDevote" ||
-                    Active is not { IsNativeBattleInput: true } overlay) return;
                 if (!__instance.IsPlayingBackAReplay()) overlay.RecordDiagnosticDevote();
                 overlay.ShowMessage("正在核对局面…");
                 overlay.InvalidateState(true, "devote");

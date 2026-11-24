@@ -492,6 +492,12 @@ if (args.Length == 2 && args[0] is "--native-advisor-restart-only" or "--native-
     NativeAdvisorRestartChecks.Native(fixture.RootElement, undo: args[0] == "--native-advisor-undo-only");
     return;
 }
+if (args.Length == 2 && args[0] == "--native-advisor-end-turn-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    NativeAdvisorEndTurnChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-little-fade-endless-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

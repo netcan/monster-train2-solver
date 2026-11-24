@@ -996,6 +996,10 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("The original Loop 2 first EndTurn opened an unexpected dialog.");
 #endif
                 DialogScreen? dialog = screen.GetScreen(ScreenName.Dialog) as DialogScreen;
+#if DEVELOPMENT_PROBE
+                if (PlayerAdvisorProbe.ObserveEndTurnConfirmation && stage == Stage.Battle && dialog != null &&
+                    PlayerAdvisorProbe.TryCancelEndTurnConfirmation(managers!, dialog)) return;
+#endif
                 if (dialog != null && ReplayRelentlessChoices.TryHandle(dialog, log)) return;
                 if (dialog?.GetButton1() != null)
                 {
@@ -1208,6 +1212,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && PlayerAdvisorProbe.ObserveEndTurnConfirmation)
+            {
+                if (PlayerAdvisorProbe.TryCaptureEndTurnConfirmation(managers, FullBattleTrace.Active!))
+                    Finish(true, PlayerAdvisorProbe.EndTurnConfirmationPass);
+                return;
+            }
             if (fullBattle && (PlayerAdvisorProbe.ObserveRestart || PlayerAdvisorProbe.ObserveUndo))
             {
                 if (PlayerAdvisorProbe.ObserveUndo && combat!.GetTurnCount() == 0)

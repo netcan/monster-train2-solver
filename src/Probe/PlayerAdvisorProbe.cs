@@ -191,6 +191,7 @@ namespace MonsterTrain2Poju.Probe
             log = BepInEx.Logging.Logger.CreateLogSource("PlayerAdvisorAcceptance");
             AdvisorCaptureProfileProbe.Install(assembly, log);
             if (AdvisorPresentationProbe.Enabled) AdvisorPresentationProbe.Install(type!, advisor!, log);
+            if (ObserveEndTurnConfirmation) InstallEndTurnConfirmationObserver();
             if (RollingAdviceScenario.OffRouteEnabled)
                 new Harmony("netcan.poju.off-route-acceptance").Patch(AccessTools.Method(type, "CompleteCardInput"),
                     postfix: new HarmonyMethod(typeof(PlayerAdvisorProbe), nameof(ObserveOffRouteInput)));
@@ -387,7 +388,7 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
-        private static bool TryReadRestartPublication(out BattleTurnState? root, out BattleAdvice? advice)
+        private static bool TryReadRestartPublication(out BattleTurnState? root, out BattleAdvice? advice, int? expectedTurn = null)
         {
             root = null;
             advice = null;
@@ -397,7 +398,7 @@ namespace MonsterTrain2Poju.Probe
             advice = Advice;
             using var keys = new BattleStateKeys();
             string key = keys.Key(root);
-            Require(root.Spawn.Turn == RestoreTurn && key == advice.RootKey && keys.Key(advice.Root) == key &&
+            Require(root.Spawn.Turn == (expectedTurn ?? RestoreTurn) && key == advice.RootKey && keys.Key(advice.Root) == key &&
                 session.MatchesCurrentRoot(root) && (bool)Call("ReadyFor", root)! && advice.Plan.Steps.Count > 0 &&
                 Field<Text>("body").isActiveAndEnabled && Get<int>("Failures") == 0 && Get<int>("PurityFailures") == 0,
                 "the displayed recommendation did not match the independently captured native decision");
