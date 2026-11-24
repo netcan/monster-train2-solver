@@ -38,7 +38,8 @@ namespace MonsterTrain2Poju.Probe
                 null or "" or "0" => 0,
                 "1" => 1,
                 "2" => 2,
-                _ => throw new InvalidOperationException("Expected zero, one or two RegionRun alternate EndTurns.")
+                "3" => 3,
+                _ => throw new InvalidOperationException("Expected zero to three RegionRun alternate EndTurns.")
             };
             string[] values = (Environment.GetEnvironmentVariable("MT2_PROBE_REGION_ALTERNATE_ACTION") ?? "").Split(',');
             if (values.Length != 4 || values.Any(value => !int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out _)))
@@ -114,6 +115,7 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("The native RegionRun alternate recorded an unexpected EndTurn count.");
             var endTurn = CaptureEndTurn(0);
             var secondEndTurn = CaptureEndTurn(1);
+            var thirdEndTurn = CaptureEndTurn(2);
             using var document = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, Boundary = "NativeRegionRunAlternate", NativeCompleted = true,
@@ -124,6 +126,7 @@ namespace MonsterTrain2Poju.Probe
                 row.Action, row.Before, row.Actual, row.ActualOutcome,
                 EndTurn = endTurn.Decision, EndTurnPhases = endTurn.Phases,
                 SecondEndTurn = secondEndTurn.Decision, SecondEndTurnPhases = secondEndTurn.Phases,
+                ThirdEndTurn = thirdEndTurn.Decision, ThirdEndTurnPhases = thirdEndTurn.Phases,
                 trace.CaptureFailures, trace.Pending
             });
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "region-run-alternate.mt2f");

@@ -133,7 +133,7 @@ param(
     [string] $RegionAlternateSource = '',
     [string] $RegionAlternate = '',
     [switch] $RegionAlternateEndTurn,
-    [ValidateRange(1, 2)][int] $RegionAlternateEndTurnCount,
+    [ValidateRange(1, 3)][int] $RegionAlternateEndTurnCount,
     [switch] $OriginalEquilibriusDrawWitness,
     [switch] $OriginalSproutWitness,
     [ValidateRange(1, 3)] [int] $OriginalSproutTier = 1,
@@ -4921,7 +4921,7 @@ if ($RegionAlternateSource) {
             $alternate.GetProperty('Before').ValueKind -ne 'Object' -or $alternate.GetProperty('Actual').ValueKind -ne 'Object') {
             throw "Native RegionRun alternate receipt differs from the requested observation; inspect $unityLog"
         }
-        foreach ($field in @('EndTurn', 'SecondEndTurn') | Select-Object -First $regionAlternateTurns) {
+        foreach ($field in @('EndTurn', 'SecondEndTurn', 'ThirdEndTurn') | Select-Object -First $regionAlternateTurns) {
             $endTurn = $alternate.GetProperty($field)
             if ($endTurn.ValueKind -ne 'Object' -or $endTurn.GetProperty('Before').ValueKind -ne 'Object' -or
                 $endTurn.GetProperty('Actual').ValueKind -ne 'Object' -or
