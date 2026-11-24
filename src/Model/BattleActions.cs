@@ -434,6 +434,8 @@ namespace MonsterTrain2Poju.Model
                 if (currentRoom >= 0 && currentRoom != action.RoomIndex &&
                     source.PlayRules?.Rooms.Any(room => room.RoomIndex == action.RoomIndex) == true)
                 {
+                    BattleActionResult? cooldown = UnitAbilityModel.CheckCooldownBeforeFocus(source, action);
+                    if (cooldown != null) return cooldown;
                     // Native ability activation focuses its room, then refreshes
                     // combat preview after the play. It does not run a second
                     // preview merely for this preceding focus change.

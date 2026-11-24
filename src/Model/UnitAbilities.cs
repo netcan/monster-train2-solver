@@ -6,6 +6,24 @@ namespace MonsterTrain2Poju.Model
 {
     public static class UnitAbilityModel
     {
+        internal static BattleActionResult? CheckCooldownBeforeFocus(BattleTurnState source, PlayCardAction action)
+        {
+            if (action.ActivatorRoomIndex.HasValue || source.Spawn.Train.Context is not CombatContext context)
+                return null;
+            CombatUnit? actor = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .FirstOrDefault(unit => unit.Id == action.ActivatorUnitId);
+            if (actor is not { Health: > 0, Ability: { HasAbility: true, CardCreation: { } creation } ability } ||
+                !IsCoolingDown(actor) || source.PlayRules?.Cards.Any(rule =>
+                    rule.DataId == ability.DataId && rule.Ability?.Kind == "Unit") != true)
+                return null;
+            AbilityCardResult cached = AbilityCardModel.Get(context, creation);
+            // Use normal validation for the declined action, without focusing another room.
+            return cached.Supported && cached.Card!.InstanceId == action.CardInstanceId
+                ? Activate(source, action) : null;
+        }
+
+        private static bool IsCoolingDown(CombatUnit actor) => actor.Status("cooldown") != null;
+
         public static BattleActionResult Activate(BattleTurnState source, PlayCardAction action)
         {
             TrainCombatState train = source.Spawn.Train;
@@ -37,7 +55,7 @@ namespace MonsterTrain2Poju.Model
             if (source.Spawn.NextUnitId <= 0 || train.Rooms.SelectMany(room => room.Units)
                 .Any(unit => unit.Id <= 0 || unit.Id >= source.Spawn.NextUnitId || unit.Size < 0))
                 return Unsupported("Invalid ability unit identity allocation or size.");
-            if (roomAbility ? roomState!.Cooldown > 0 : actor!.Status("cooldown") != null) return Illegal("The ability is cooling down.");
+            if (roomAbility ? roomState!.Cooldown > 0 : IsCoolingDown(actor!)) return Illegal("The ability is cooling down.");
             if (actorRoom!.Deployment || source.Spawn.Turn == 0) return Illegal("Unit abilities cannot activate during deployment.");
             string abilityId = roomAbility ? roomState!.DataId : actor!.Ability!.DataId;
             CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == abilityId);
