@@ -2407,7 +2407,8 @@ namespace MonsterTrain2Poju.Model
                         if (remaining.Remove(partner)) shifted.Add(partner);
                     }
                     context = context.WithBattleRng(rng).WithSpawnPoints(physical);
-                    OrderPhysicalUnits();
+                    // The rearrangement refresh also closes gaps on the opposite side.
+                    if (!CenterAfterSummon()) return;
                     context = ConduitModel.Order(context, source.RoomIndex, CurrentRoom().Units);
                     SelectNotificationRoom(source.RoomIndex);
                     if (unsupportedReason != null) return;
