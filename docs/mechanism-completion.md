@@ -1378,6 +1378,14 @@ Windows 包通过隔离验收后，阶段回放核对全部 489 场已结算战�
 GrimFlight 验收程序已就绪，正向运行需要原版客户端确认 Punished DLC 已安装且本局启用。
 [求解验收日志](../results/solver-completion-release-2cf96e48.log) · [GrimFlight 验收说明](summon-choice-battle.md#正版-dlc-环境中的顾问交接)
 
+同日以 `49423b7e` 再次执行阶段验收。497 场已结算战斗全部通过，其中 478 场连续复放、
+19 场分段复放，共核对 7,714 次战斗操作与 2,964 次结束回合，失败为 0。
+阶段求解验收核对了 2,875 份二进制归档的注册及哈希，并确认 601 张卡牌均有定义匹配的原版出牌，
+236 件收藏遗物均有按原版效果顺序匹配的在场记录。供奉及 GrimFlight 的玩家界面正向验收仍需
+已安装并启用 Punished DLC 的原版战役环境。
+[整战阶段报告](../results/recorded-chain-triage-20261125-022422-c0ec996b/report.tsv) ·
+[阶段求解日志](../results/solver-completion-20261125-advisor-boundaries.log)
+
 2.3.1 原版 `DoubleStatusEffects` 已接入共享状态层数管线。原版 SpikePotion 支付 1 余烬，
 使火车乘务员获得 20 层尖刺，完整出牌后继和随机流通过复放。七项查询对照覆盖冷却、无目标、
 永久升级、延迟加法和转移来源。四项原版移除调用依次将尖刺从 20 变为 18、14、10、12，
