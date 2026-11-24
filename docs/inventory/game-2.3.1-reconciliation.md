@@ -11,14 +11,14 @@
 | known-gap | 1 | 1 | 1 |
 | inspect-no-code-link | 5 | 5 | 5 |
 | inspect-inherited-code | 1 | 1 | 1 |
-| inspect-projection-normalization | 55 | 55 | 55 |
+| inspect-projection-normalization | 54 | 54 | 54 |
 | inspect-guard-links | 43 | 43 | 43 |
 | review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 114 | 110 | 110 |
+| scoped-review-recorded | 115 | 111 | 111 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 117 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 118 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -90,6 +90,7 @@
 | RelicEffectDamagePyreOnMerchantPurchase | input-only | Native MerchantScreen.TryPurchase and merchant reward completion call ApplyPyreDamageForMerchantPurchaseIfNecessary. The HP change and its relic notifications settle during the purchase. A later battle reads the resulting health and relic state. |
 | RelicEffectDisableRoomPreview | shared-path | The pinned NoCombatPreviews mutator disables the native room forecast across all recorded decision states. The original win matches 21 plays, seven EndTurns, both candidate frontiers and 16 independent branches. Verified by --native-disabled-room-preview-only and the recorded battle checks. |
 | RelicEffectDrawCardAfterEachClanPlayed | shared-path | Pinned two-round control verifies seven paid cards, first distinct clan pairing each turn, no repeat bonus and two native resets. The unchanged opening win matches 39 plays, seven EndTurns and both candidate frontiers. |
+| RelicEffectEndlessScalingOnSpawn | shared-path | Original victory and controlled entries reach the same loop-one opening wave. The addon projects native baseline values and balance queries for the three observed births, including fixed damage, buff and heal values. The complete first EndTurn and RNG match. Other birth shapes and later-loop providers remain guarded. |
 | RelicEffectExtraSpawnsFirstUnitPerTurn | shared-path | Original DoubleUnits queries match across deployment, ordinary turns, a triggered hatch and deck-scaled Funguy. Additional grafted Hall births, first-unit shield and room Armor each have a pinned original control. The checked consumers preserve native allocation order and RNG. |
 | RelicEffectForceBonusEnemyCovenant | shared-path | The unchanged RandomizeWaveOrder mutator supplies the pinned Covenant02_BattlesNewEnemies definition. Native group resolution and spawning match for the scoped Rank 0 owner. Mixed or changed Covenant configurations retain guards. |
 | RelicEffectGrantRewardStartOfRun | input-only | Native SaveManager.SetupRun invokes ApplyStartOfRunRelicEffects and RelicManager.ApplyStartOfRunCardEffects, which copies these entries into the opening reward queue. The settled battle uses the resulting deck and run resources. |
@@ -171,10 +172,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `f1b3e5f50f29cbc0cfc8e876ef85ded744960ed3002f24bd495a7d2bc786b2cb`。
-- Model: PDB 校验过的项目源码集合 `1a8d8a0148319c188b7073008806d8dfa6fe84a4a60912848779e60849a0bfe5`。
-- Probe: PDB 校验过的项目源码集合 `ee848828e29d115a03f32640f19340ec80d8888685b364e9ee3b7c81bfe0cc6a`。
-- ModelChecks: PDB 校验过的项目源码集合 `fa794c23af0cd291e86930e20b01af99b06cfc4cb56abfd3d0036b93d081721b`。
+- 人工审查索引 SHA-256: `5fa56e1a3ee296ef7b383f4e8e0650b79da5a43311e0c6dbd1568c6f1000f7d0`。
+- Model: PDB 校验过的项目源码集合 `970c52c311d5708c19659e634ac1ad6706d7f425753c3a411f3c4b79a6e19ddd`。
+- Probe: PDB 校验过的项目源码集合 `3668b16b993ddaea5d482a7a5e3077e97ddda969d7d104e238495324bce565a9`。
+- ModelChecks: PDB 校验过的项目源码集合 `e652f370cde673b6ae67728f7712327bf3c95ec3b1a63fafa363a478afcd9a44`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
