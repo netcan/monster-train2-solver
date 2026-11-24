@@ -86,3 +86,21 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 `
 直接出牌。冠军的其他升级路径，重复施放中的多次独立选择、物理槽全满、
 预演跳过、克隆／复活／其他遗物组合及玩家实局顾问交互仍需分别校准。
 新版 614 张卡／236 件遗物整体复验及完整战斗模拟仍未完成，新增遗物整局仍为 12/12。
+
+## 正版 DLC 环境中的顾问交接
+
+在已安装并启用 Punished DLC 的原版战役中取得任一 GrimFlight 等级，并在下一场进入部署前保留
+战前存档。把原版检查点复制到工作区 `.probe-runs` 的直接子目录。预检读取
+`saves/save-singlePlayer.json`，核对战前阶段、存档中的 DLC 选项、冠军和升级，并输出
+战斗距离、技能等级与存档 SHA-256。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231SummonChoiceBattle.ps1 `
+    -AdvisorCheckpoint .probe-runs/<checkpoint>
+```
+
+正版验收还需由已登录的原版游戏确认安装和本局启用状态。使用发布包中的三个 DLL，从该检查点部署
+冠军，等待顾问建议使用 GrimFlight，并按建议选择落点。在同层有空物理站位且无碎片时，原版
+召唤弹窗应显示与建议定义唯一匹配的选项名称和实际序号。确认原版选项后，提示应消失，结算状态
+和 RNG 应与该步预测相同。随后核对下一条建议的起点。现有 `-OriginalSummonChoice` 是开发场景，
+其历史归档的原版平台标识为未安装。正版弹窗与发布版顾问的配对证据仍待采集。
