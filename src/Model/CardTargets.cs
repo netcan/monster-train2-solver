@@ -159,7 +159,7 @@ namespace MonsterTrain2Poju.Model
                     point.RoomIndex == room.RoomIndex && point.Index < self.Index).ToArray();
             }
             if (effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.TargetSubtype.Length > 0)
-                candidates = candidates.Where(unit => unit.Subtypes.Contains(effect.TargetSubtype)).ToArray();
+                candidates = candidates.Where(unit => OriginalAllSubtypesModel.MatchesCharacter(unit, effect.TargetSubtype, allSubtypes)).ToArray();
             if (effect.Target == "RandomInRoom")
                 return Random(candidates, room.Context, isTesting, room.Preview && room.Context?.IsolatedBattlePreview == true);
             if (effect.Target == "RoomHealTargets")
@@ -233,9 +233,11 @@ namespace MonsterTrain2Poju.Model
             if (result.Supported && effect.Target == "RandomInRoom")
                 result = new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == id && !PyreBaneModel.ExcludedFromRoomMode(unit, effect.Target))).ToArray());
-            return result.Supported && effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.TargetSubtype.Length > 0
-                ? new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
-                    .Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.TargetSubtype))).ToArray()) : result;
+            if (!result.Supported || effect.Type != "Sacrifice" || effect.Target != "RandomInRoom" || effect.TargetSubtype.Length == 0)
+                return result;
+            bool allSubtypes = OriginalAllSubtypesModel.Active(train.Context, deployment: train.Rooms.Any(room => room.Deployment));
+            return new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
+                .Any(unit => unit.Id == id && OriginalAllSubtypesModel.MatchesCharacter(unit, effect.TargetSubtype, allSubtypes))).ToArray());
         }
 
         private static bool MatchesFilters(CardActionEffect effect, CombatUnit unit, bool dropOverride, bool allSubtypes, ref string? error)

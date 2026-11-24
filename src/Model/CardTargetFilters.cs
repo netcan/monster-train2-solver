@@ -52,7 +52,7 @@ namespace MonsterTrain2Poju.Model
             }
             return true;
 
-            bool SubtypeMatches(string subtype) => allSubtypes ? OriginalAllSubtypesModel.MatchesCharacter(unit, subtype) :
+            bool SubtypeMatches(string subtype) => allSubtypes ? OriginalAllSubtypesModel.MatchesCharacter(unit, subtype, allSubtypes) :
                 subtype.Length == 0 ? !unit.IsPyre : unit.Subtypes.Contains(subtype);
         }
     }

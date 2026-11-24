@@ -17,8 +17,9 @@ namespace MonsterTrain2Poju.Model
         internal static bool Active(CombatContext? context, bool deployment) => context?.Relics?.Any(relic =>
             IsOwner(relic) && (!deployment || relic.DisallowedInPlacementPhase == false)) == true;
 
-        internal static bool MatchesCharacter(CombatUnit unit, string subtype) =>
-            MatchesCharacter(unit.Team, unit.IsPyre, unit.Subtypes, subtype, subtype == Pyre, allSubtypes: true);
+        internal static bool MatchesCharacter(CombatUnit unit, string subtype, bool allSubtypes) => allSubtypes
+            ? MatchesCharacter(unit.Team, unit.IsPyre, unit.Subtypes, subtype, subtype == Pyre, allSubtypes: true)
+            : unit.Subtypes.Contains(subtype);
 
         internal static bool MatchesCharacter(CombatTeam team, bool isPyre, IReadOnlyList<string> rawSubtypes,
             string? subtype, bool pyreSubtype, bool allSubtypes)

@@ -1545,10 +1545,11 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "DamageByUnitsKilled")
                 {
+                    bool allSubtypes = OriginalAllSubtypesModel.Active(state.Context, deployment: state.Rooms.Any(room => room.Deployment));
                     CombatUnit[] collected = state.Rooms.SelectMany(room => room.Units)
                         .Where(unit => targets.UnitIds.Contains(unit.Id)).ToArray();
                     int[] sacrificeIds = collected.Where(unit => unit.Team == CombatTeam.Player &&
-                        unit.Subtypes.Contains(effect.TargetSubtype) && unit.IsBoss != true && !unit.IsPyre &&
+                        OriginalAllSubtypesModel.MatchesCharacter(unit, effect.TargetSubtype, allSubtypes) && unit.IsBoss != true && !unit.IsPyre &&
                         unit.BumpRules?.OuterBoss != true).Select(unit => unit.Id).ToArray();
                     int[] heroIds = collected.Where(unit => unit.Team == CombatTeam.Enemy).Select(unit => unit.Id).ToArray();
                     int damage = unchecked(sacrificeIds.Length * effect.Value);
@@ -3146,6 +3147,7 @@ namespace MonsterTrain2Poju.Model
                 if (room == null || rule == null) return new CardTargets(Array.Empty<int>(), "Spawn-or-status requires the selected room rule.");
                 if (rule.IsPyre || !rule.Enabled || rule.SummonBlocked) return new CardTargets(Array.Empty<int>());
                 if (effect.Filters == null) return new CardTargets(Array.Empty<int>(), "Spawn-or-status requires its subtype filter metadata.");
+                bool allSubtypes = OriginalAllSubtypesModel.Active(state.Context, room.Deployment);
                 IEnumerable<CombatUnit> candidates = room.Units.Where(unit => unit.Team == CombatTeam.Player);
                 if (positions != null)
                     candidates = candidates.OrderBy(unit => positions.TryGetValue(unit.Id, out int position) ? position : int.MaxValue);
@@ -3154,7 +3156,7 @@ namespace MonsterTrain2Poju.Model
                     if (unit.IsPyre || unit.Health <= 0 && (unit.Status("undying")?.Stacks ?? 0) <= 0 ||
                         unit.DeathState?.IsBeingRemoved == true || unit.DeathState?.IsDestroyed == true || unit.DeathState?.IsDespawned == true)
                         continue;
-                    if (effect.Filters.Subtype.Length > 0 && !unit.Subtypes.Contains(effect.Filters.Subtype)) continue;
+                    if (effect.Filters.Subtype.Length > 0 && !OriginalAllSubtypesModel.MatchesCharacter(unit, effect.Filters.Subtype, allSubtypes)) continue;
                     if (!unit.IsBoss.HasValue) return new CardTargets(Array.Empty<int>(), "Spawn-or-status requires captured boss classification.");
                     if (unit.IsBoss.Value) continue;
                     return new CardTargets(new[] { unit.Id });
@@ -3291,8 +3293,10 @@ namespace MonsterTrain2Poju.Model
         private static bool PassesTargetSubtype(TrainCombatState source, CardActionEffect effect, CardTargets targets)
         {
             if (effect.Type != "Kill" || effect.TargetSubtype.Length == 0) return true;
+            bool allSubtypes = OriginalAllSubtypesModel.Active(source.Context, deployment: source.Rooms.Any(room => room.Deployment));
             CombatUnit[] units = source.Rooms.SelectMany(room => room.Units).ToArray();
-            return targets.UnitIds.All(id => units.Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.TargetSubtype)));
+            return targets.UnitIds.All(id => units.Any(unit => unit.Id == id &&
+                OriginalAllSubtypesModel.MatchesCharacter(unit, effect.TargetSubtype, allSubtypes)));
         }
 
         private static bool? PyreAlive(TrainCombatState state, bool fullTrain)
@@ -3439,9 +3443,12 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "RemoveEquipment")
                 return state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) && unit.EquipmentCards?.Count > 0);
             if (effect.Type == "DamageByUnitsKilled")
+            {
+                bool allSubtypes = OriginalAllSubtypesModel.Active(state.Context, deployment: state.Rooms.Any(room => room.Deployment));
                 return state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) &&
-                    unit.Team == CombatTeam.Player && unit.Subtypes.Contains(effect.TargetSubtype) && unit.IsBoss != true &&
+                    unit.Team == CombatTeam.Player && OriginalAllSubtypesModel.MatchesCharacter(unit, effect.TargetSubtype, allSubtypes) && unit.IsBoss != true &&
                     !unit.IsPyre && unit.BumpRules?.OuterBoss != true);
+            }
             return !AttackChange(effect) ? targets.UnitIds.Count : state.Rooms.SelectMany(room => room.Units)
                 .Count(unit => targets.UnitIds.Contains(unit.Id) && (unit.IsPyre || unit.CanAttack));
         }

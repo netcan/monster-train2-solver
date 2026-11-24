@@ -70,10 +70,15 @@ internal static class OriginalAllSubtypesChecks
             var requiredFungus = CardTargetModel.Collect(room, Effect("DropTargetCharacter", Fungus, []), [], CombatTeam.Player, position);
             var excludedFungus = CardTargetModel.Collect(train, room.RoomIndex, Effect("Tower", "", [Fungus]), []);
             var requiredHorde = CardTargetModel.Collect(room, Effect("Room", Horde, []), []);
+            var sacrifice = new CardActionEffect("Sacrifice", "RandomInRoom", 1, false, true, [], targetSubtype: Fungus);
+            var damageByKills = new CardActionEffect("DamageByUnitsKilled", "Room", 1, true, true, [], targetSubtype: Fungus);
+            var sacrificeCandidates = CardTargetModel.RandomCandidates(train, room.RoomIndex, sacrifice);
             Require(requiredFungus.Supported && requiredFungus.UnitIds.Contains(row.ActorId) == wildcard &&
                 excludedFungus.Supported && excludedFungus.UnitIds.Contains(row.ActorId) != wildcard &&
-                requiredHorde.Supported && !requiredHorde.UnitIds.Contains(row.ActorId),
-                "Drop, tower, and room filters must apply the captured native character subtype matching.");
+                requiredHorde.Supported && !requiredHorde.UnitIds.Contains(row.ActorId) &&
+                sacrificeCandidates.Supported && sacrificeCandidates.UnitIds.Contains(row.ActorId) == wildcard &&
+                CardSpellModel.TestCount(train, damageByKills, new CardTargets([row.ActorId])) == (wildcard ? 1 : 0),
+                "Target filters and sacrifice callbacks must apply the captured native character subtype matching.");
         }
 
         DeckRow[] deck = root.GetProperty("Deck").Deserialize<DeckRow[]>()!;
