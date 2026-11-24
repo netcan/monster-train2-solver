@@ -1201,6 +1201,13 @@ namespace MonsterTrain2Poju.Probe
                     Finish(true, "Original Ascend healing trial captured.");
                 return;
             }
+            if (fullBattle && OriginalFrontReanimationWitness.Enabled)
+            {
+                if (OriginalFrontReanimationWitness.Tick(FullBattleTrace.Active!, managers,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original first-spawn reanimation component captured.");
+                return;
+            }
             if (fullBattle && OriginalSkullCollectorsWitness.Enabled)
             {
                 if (OriginalSkullCollectorsWitness.Tick(FullBattleTrace.Active!, managers, log,

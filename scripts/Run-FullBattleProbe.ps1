@@ -609,6 +609,7 @@ param(
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalSecondFloorEnemyOpening,
     [switch] $OriginalHealOnAscendWitness,
+    [ValidateSet('Tier2', 'Tier3')] [string] $OriginalFrontReanimationWitness = '',
     [switch] $OriginalRandomizedWavesBattle,
     [switch] $OriginalDisabledRoomPreviewBattle,
     [switch] $OriginalMoreTreasureUnitsBattle,
@@ -1070,13 +1071,14 @@ if ($OriginalSecondFloorEnemyOpening) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
 }
-if ($OriginalHealOnAscendWitness) {
-    $healArguments = @('OriginalHealOnAscendWitness', 'InputProfile', 'BattleDistance',
+if ($OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness) {
+    $healArguments = @('OriginalHealOnAscendWitness', 'OriginalFrontReanimationWitness', 'InputProfile', 'BattleDistance',
         'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 1 -or
+        ($OriginalHealOnAscendWitness -and $OriginalFrontReanimationWitness) -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $healArguments }).Count) {
-        throw 'Original Ascend healing witness requires a stock Ring 2 checkpoint and binary capture.'
+        throw 'Select one original Sin witness with a stock Ring 2 checkpoint and binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -2729,7 +2731,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
-    $OriginalHealOnAscendWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
+    $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
     $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
@@ -2753,8 +2755,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     if ($OriginalFecundityOnCast -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Fecundity paid cast requires the pinned 2.3.1 game module.'
     }
-    if ($OriginalHealOnAscendWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
-        throw 'Original Ascend healing trial requires the pinned 2.3.1 game module.'
+    if (($OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness) -and
+        $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original Sin witnesses require the pinned 2.3.1 game module.'
     }
     if ($OriginalSkullCollectorsWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original SkullCollectors requires the pinned 2.3.1 game module.'
@@ -2955,11 +2958,16 @@ if ($InputProfile) {
         }
         $secondFloorInputSignature = Get-OriginalSignature $checkpoint
     }
-    if ($OriginalHealOnAscendWitness) {
+    if ($OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
             $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 1 -or
             $checkpointData.startingConditions.ascensionLevel -ne 0) {
-            throw 'Original Ascend healing witness requires a standard native Rank 0 Ring 2 checkpoint.'
+            throw 'Original Sin witnesses require a standard native Rank 0 Ring 2 checkpoint.'
+        }
+        if ($OriginalFrontReanimationWitness -and ($checkpointData.gameSequence -ne 6 -or
+            $checkpointData.runState.distance -ne 1 -or @($checkpointData.startingConditions.mutators).Count -ne 0 -or
+            @($checkpointData.startingConditions.covenants).Count -ne 0)) {
+            throw 'First-spawn reanimation requires an original Ring 2 BattleIntro with no configured Mutators or Covenants.'
         }
         $healInputSignature = Get-OriginalSignature $checkpoint
     }
@@ -3208,6 +3216,7 @@ $environment = @{
     MT2_PROBE_ORIGINAL_RANDOMIZED_WAVES = $(if ($OriginalRandomizedWavesBattle) { '1' } else { '0' })
     MT2_PROBE_SECOND_FLOOR_ENEMY_OPENING = $(if ($OriginalSecondFloorEnemyOpening) { '1' } else { '0' })
     MT2_PROBE_HEAL_ON_ASCEND = $(if ($OriginalHealOnAscendWitness) { '1' } else { '0' })
+    MT2_PROBE_FRONT_REANIMATION = $OriginalFrontReanimationWitness
     MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_MORE_TREASURE_UNITS = $(if ($OriginalMoreTreasureUnitsBattle) { '1' } else { '0' })
     MT2_PROBE_SKULL_COLLECTORS = $(if ($OriginalSkullCollectorsWitness) { [string]$SkullCollectorsTier } else { '0' })
@@ -4253,6 +4262,16 @@ if ($OriginalSecondFloorEnemyOpening) {
         throw "Original second-floor enemy opening capture failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-SECOND-FLOOR-ENEMY-OPENING PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalFrontReanimationWitness) {
+    $capturePath = Join-Path $profile 'front-reanimation.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original first-spawn reanimation component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $healInputSignature) {
+        throw "Original first-spawn reanimation witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-FRONT-REANIMATION PASS tier=$OriginalFrontReanimationWitness trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalHealOnAscendWitness) {
