@@ -139,7 +139,7 @@ namespace MonsterTrain2Poju.Model
             // setup, unit triggers, birth, or before-draw resources. The
             // ordinary relic validator still checks their captured payloads.
             if (IndependentSoulSaviorRelic(relic)) return true;
-            if (RelicModel.IsOriginalSilverPostBattleOwner(relic)) return true;
+            if (RelicModel.IsOriginalSilverPostBattleOwner(relic) || RelicModel.IsOriginalBattleSetupOwner(relic)) return true;
             if (GoldRewardModel.IsOriginalMultiplier(relic)) return true;
             // The original Hoard reward observes Pyre damage and settles after
             // combat. It has no moon change or CardUpdated callback.

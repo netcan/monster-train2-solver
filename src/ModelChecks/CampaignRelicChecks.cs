@@ -44,6 +44,16 @@ internal static class CampaignRelicChecks
                 RelicModel.Validate(new[] { Owner(key, [.. silverEffects, "UncalibratedCombatCallback"]) }) != null,
                 "Only original Silver souls with their exact post-battle effects are compatible with battle search.");
         }
+        foreach (var (id, key, effect) in new[] {
+            (RelicModel.ChampionReplacementId, "ChampionReplacement", "RelicEffectReplaceChampion"),
+            (RelicModel.ForceTrialId, "TimeForTrials", "RelicEffectModifyTrial") })
+        {
+            CombatRelicState Owner(IReadOnlyList<string> effects) =>
+                new(id, key, effects, isCovenant: false, disallowedInPlacementPhase: false);
+            Require(RelicModel.Validate(new[] { Owner([effect]) }) == null &&
+                RelicModel.Validate(new[] { Owner([effect, "UncalibratedCombatCallback"]) }) != null,
+                "An original setup mutator must retain its exact effect list.");
+        }
         foreach (var owner in Owners.Skip(4))
         {
             CombatRelicState[] relics = [new CombatRelicState(owner.Id, owner.Key, [owner.Type],

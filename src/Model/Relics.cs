@@ -322,6 +322,15 @@ namespace MonsterTrain2Poju.Model
                 ("354e6614-8b05-4933-bd24-97a41fc63061", "SilverT2") or
                 ("44e74028-4548-4f36-911d-cdf4dd821511", "SilverT3");
 
+        internal const string ChampionReplacementId = "8bf5c01f-cd2a-46d2-8ba5-c4f594bf2753";
+        internal const string ForceTrialId = "77e682d9-0167-40bb-b8c7-e9ffd49065bb";
+        internal static bool IsOriginalBattleSetupOwner(CombatRelicState relic) => relic is
+        {
+            IsCovenant: false, DisallowedInPlacementPhase: false
+        } && (relic.DataId, relic.AssetKey, relic.EffectTypes) is
+            (ChampionReplacementId, "ChampionReplacement", ["RelicEffectReplaceChampion"]) or
+            (ForceTrialId, "TimeForTrials", ["RelicEffectModifyTrial"]);
+
         internal const string SoulSaviorStarterDeckId = "28d887c8-4fe3-4c55-a92e-90cd4b1baa25";
         internal const string SoulSaviorStarterDeckKey = "SoulSavior_StarterDeck";
         internal static bool IsSoulSaviorStarterDeck(CombatRelicState relic) => relic is
@@ -376,6 +385,8 @@ namespace MonsterTrain2Poju.Model
                     if (IsSoulSaviorStarterDeck(relic)) continue;
                     // BattleComplete and post-battle reward generation run after the combat terminal snapshot.
                     if (IsOriginalSilverPostBattleOwner(relic)) continue;
+                    // The initial deck and active trial effects are already in the battle snapshot.
+                    if (IsOriginalBattleSetupOwner(relic)) continue;
                     if (effect == DominionDeckUpgradeModel.Effect && DominionDeckUpgradeModel.IsOriginalOwner(relic)) continue;
                     if (effect == GoldRewardModel.MultiplierEffect && GoldRewardModel.IsOriginalMultiplier(relic) &&
                         relics.Count(owner => owner.DataId == relic.DataId) == 1) continue;

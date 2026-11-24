@@ -42,6 +42,7 @@ namespace MonsterTrain2Poju.Probe
             return save.GetCovenants().Count == 0 && save.GetMutators().Count > 0 &&
                 save.GetMutators().All(owner => OriginalStartRoomAttachmentScenario.SupportsInfernoMutator(owner, save) ||
                     DominionDeckUpgradeProbe.Matches(owner) ||
+                    SupportsBattleSetup(owner) ||
                     SupportsEmbeddedRooms(owner) ||
                     RelicProbe.SupportsStatusMultiplier(owner) ||
                     RelicResourceProbe.SupportsGoldRewardMultiplier(owner) ||
@@ -112,6 +113,11 @@ namespace MonsterTrain2Poju.Probe
             owner.GetEffects() is [RelicEffectPurgeStarterDeck, RelicEffectAddCardSetStartOfRun] &&
             owner.GetSourceRelicData().GetEffects() is [var purge, var add] &&
             purge.GetEffectConditions().Count == 0 && add.GetEffectConditions().Count == 0 && add.GetParamInt() == 1;
+
+        private static bool SupportsBattleSetup(MutatorState owner) => !owner.DisallowedInPlacementPhase &&
+            (owner.GetRelicDataID(), owner.GetAssetName(), owner.GetEffects()) is
+                (RelicModel.ChampionReplacementId, "ChampionReplacement", [RelicEffectReplaceChampion]) or
+                (RelicModel.ForceTrialId, "TimeForTrials", [RelicEffectModifyTrial { ForceTrialActive: true }]);
 
         private static bool SupportsSecondFloorEnemyOpening(MutatorState owner, SaveManager save) =>
             owner.GetRelicDataID() == RelicSecondFloorEnemyOpeningModel.OwnerId &&
