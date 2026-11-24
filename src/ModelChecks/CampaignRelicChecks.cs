@@ -70,6 +70,46 @@ internal static class CampaignRelicChecks
         }
         Console.WriteLine("CAMPAIGN-RELIC-CHECKS PASS: upgrade slot bounds/types, all-cost merchant rounding/discount exclusions, ordered trial gold and capped hoard acquisition/removal.");
     }
+    internal static void GoldMultiplierNative(string path)
+    {
+        using var document = ModelJson.ReadFixture(path);
+        FixtureValue root = document.RootElement;
+        Require(root.GetProperty("Schema").GetInt32() == 1 &&
+            root.TryGetProperty("Boundary", out FixtureValue boundary) && boundary.GetString() == "OriginalGoldRewardMultiplier" &&
+            root.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d",
+            "Gold multiplier evidence schema, boundary or module differs.");
+
+        FixtureValue owner = root.GetProperty("Owner"), reward = root.GetProperty("Reward");
+        float multiplier = root.GetProperty("Multiplier").GetSingle();
+        string? variant = root.GetProperty("Variant").GetString();
+        CombatRelicState roster = new(owner.GetProperty("Id").GetString()!, owner.GetProperty("Key").GetString()!,
+            owner.GetProperty("Effects").Deserialize<string[]>()!, isCovenant: false,
+            disallowedInPlacementPhase: owner.GetProperty("DisallowedInPlacementPhase").GetBoolean());
+        Require(GoldRewardModel.IsOriginalMultiplier(roster) && owner.GetProperty("Conditions").GetInt32() == 0 &&
+            multiplier == GoldRewardModel.OriginalMultiplier(roster.DataId, roster.AssetKey) &&
+            ((variant == "Double" && multiplier == 2f) || (variant == "Half" && multiplier == 0.5f)) &&
+            RelicModel.Validate([roster]) == null, "Original gold multiplier owner or rule differs.");
+
+        int amount = reward.GetProperty("Amount").GetInt32(), cost = Int("Cost");
+        int expected = GoldRewardModel.Adjust(amount, multiplier: multiplier);
+        Require(!string.IsNullOrEmpty(reward.GetProperty("Id").GetString()) &&
+            !string.IsNullOrEmpty(reward.GetProperty("Key").GetString()) &&
+            amount >= 10 && !reward.GetProperty("ApplyTrialDataModifiers").GetBoolean() &&
+            Int("Baseline") == GoldRewardModel.Adjust(amount) && expected != Int("Baseline") &&
+            Int("Adjusted") == expected && Int("GoldGranted") - Int("GoldBefore") == expected &&
+            Int("Grants") == 1 && Int("Completions") == 1, "Native stock gold grant differs from the reward calculation.");
+        Require(cost == 3 && Int("RawIncome") == amount && Int("RawCost") == -cost &&
+            Int("Debit") == -cost && Int("GoldAfter") == Int("GoldGranted") - cost,
+            "Native non-reward income or actual cost was scaled.");
+        FixtureValue before = root.GetProperty("RngBefore");
+        Require(before.GetProperty("Battle").GetArrayLength() == 4 && before.GetProperty("Rewards").GetArrayLength() == 4 &&
+            before.ContentEquals(root.GetProperty("RngAfter")), "Native gold grant or debit changed deterministic RNG.");
+        Console.WriteLine($"ORIGINAL-GOLD-REWARD-MULTIPLIER CHECK PASS: {variant}, grant={expected}, cost={cost}.");
+
+        int Int(string property) => root.GetProperty(property).GetInt32();
+    }
+
     internal static void Native(string path)
     {
         using var document = ModelJson.ReadFixture(path);

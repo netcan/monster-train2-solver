@@ -100,7 +100,7 @@ namespace MonsterTrain2Poju.Probe
             }
         }
 
-        private static float ReadGoldRewardMultiplier(SaveManager save) =>
+        internal static float ReadGoldRewardMultiplier(SaveManager save) =>
             ((MutableRules)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(save))
                 .GetRule(MutableRules.Condition.GoldRewardMultiplier, 1f);
 

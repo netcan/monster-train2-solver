@@ -8735,6 +8735,11 @@ if (args.Length == 2 && args[0] == "--campaign-relics-only")
     CampaignRelicChecks.Native(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-gold-reward-multiplier-only")
+{
+    CampaignRelicChecks.GoldMultiplierNative(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-spell-play-thresholds-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

@@ -664,6 +664,9 @@ param(
     [ValidateSet('energy-first', 'heal-first')][string] $BeforeDrawOrder = 'energy-first',
     [ValidateSet(2, 3)][int] $RelentlessDrawTier = 2,
     [switch] $CampaignRelicCalibration,
+
+    [ValidateSet('Double', 'Half')]
+    [string] $OriginalGoldRewardMultiplier = '',
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
     [switch] $CampaignBattleResourceCalibration,
@@ -961,6 +964,14 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($NativeBuildRoot -and -not $SkipBuild) {
     throw 'NativeBuildRoot requires prebuilt native binaries with SkipBuild.'
+}
+if ($OriginalGoldRewardMultiplier) {
+    $allowed = @('OriginalGoldRewardMultiplier', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot',
+        'SkipBuild', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'Original gold reward multiplier requires an isolated stock opening and binary capture.'
+    }
+    $Policy = 'units-spells-and-junk'
 }
 if ($OriginalEntropyDrawWitness) {
     $entropyArguments = @('OriginalEntropyDrawWitness', 'InputProfile', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
@@ -2836,7 +2847,8 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
     $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
-    $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness -or $OriginalDominionMothersRemnantWitness) {
+    $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness -or
+    $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2851,6 +2863,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($OriginalDominionMothersRemnantWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Dominion paid-copy witness requires the pinned 2.3.1 native module.'
+    }
+    if ($OriginalGoldRewardMultiplier -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original gold reward multiplier requires the pinned 2.3.1 native module.'
     }
     if (($OriginalThikDeckChange -or $OriginalThikBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Thik capture requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -3395,6 +3410,7 @@ $environment = @{
     MT2_PROBE_PERCENTAGE_STATS_BATCH = $(if ($PercentageStatsMechanism) { '1' } else { '0' })
     MT2_PROBE_LATE_ATTACK_BATCH = $(if ($LateAttackMechanism) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_GOLD_MULTIPLIER = $(if ($OriginalGoldRewardMultiplier -eq 'Double') { 'Double' } elseif ($OriginalGoldRewardMultiplier) { 'Half' } else { '' })
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_BATTLE_RESOURCES = $(if ($CampaignBattleResourceCalibration) { '1' } else { '0' })
@@ -4323,6 +4339,16 @@ if ($CapturePlayerDeploymentOnly) {
     [pscustomobject]@{ Profile=$profile; NativeDeploymentCaptured=$true; InputProfileUnchanged=$true;
         OriginalFilesUnchanged=$true; Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } |
         ConvertTo-Json
+    return
+}
+if ($OriginalGoldRewardMultiplier) {
+    $capturePath = Join-Path $profile 'original-gold-reward-multiplier.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original gold reward multiplier grant captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original gold reward multiplier grant failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-GOLD-REWARD-MULTIPLIER PASS variant=$OriginalGoldRewardMultiplier trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalDominionMothersRemnantWitness) {

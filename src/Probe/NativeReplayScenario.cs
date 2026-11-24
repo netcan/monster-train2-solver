@@ -1134,6 +1134,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && CampaignRelicCalibration.GoldMultiplierEnabled)
+            {
+                CampaignRelicCalibration.CaptureGoldMultiplier(managers);
+                Finish(true, "Original gold reward multiplier grant captured.");
+                return;
+            }
             if (fullBattle && OriginalEquilibriusDrawWitness.Enabled)
             {
                 if (OriginalEquilibriusDrawWitness.Tick(managers, () => AdvanceTurn(combat!, record: false)))

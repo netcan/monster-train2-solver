@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using HarmonyLib;
 using MonsterTrain2Poju.Capture;
+using MonsterTrain2Poju.Model;
 using Newtonsoft.Json.Linq;
 
 namespace MonsterTrain2Poju.Probe
@@ -123,6 +124,76 @@ namespace MonsterTrain2Poju.Probe
                 document.Write(stream);
         }
         private static void Set(object target, string field, object? value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
+#if DEVELOPMENT_PROBE
+        internal static bool GoldMultiplierEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_GOLD_MULTIPLIER"));
+
+        internal static void CaptureGoldMultiplier(AllGameManagers managers)
+        {
+            const string Archive = "original-gold-reward-multiplier.mt2f";
+            SaveManager save = managers.GetSaveManager();
+            Guid module = typeof(SaveManager).Module.ModuleVersionId;
+            if (UnityEngine.Application.version != "2.3.1" || module != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") ||
+                save.PreviewMode || save.InTestScenario || save.GetCurrentDistance() != 0 ||
+                save.GetCovenants().Count != 0 || save.GetMutators().Count != 0 ||
+                RelicResourceProbe.ReadGoldRewardMultiplier(save) != 1f)
+                throw new InvalidOperationException("Expected a fresh original 2.3.1 reward state.");
+
+            string variant = Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_GOLD_MULTIPLIER")!;
+            float expected = variant switch { "Double" => 2f, "Half" => 0.5f, _ => throw new InvalidOperationException("Unknown gold multiplier case.") };
+            AllGameData data = save.GetAllGameData();
+            MutatorData owner = data.GetAllMutatorData().Single(candidate =>
+                GoldRewardModel.OriginalMultiplier(candidate.GetID(), candidate.name) == expected);
+            if (!save.IsDlcAvailableWhenStartingRun(owner.GetRequiredDLC()))
+                throw new InvalidOperationException("Original gold multiplier mutator is unavailable.");
+            var rewards = (List<GrantableRewardData>)AccessTools.Field(typeof(AllGameData), "rewardDatas").GetValue(data);
+            var amountField = AccessTools.Field(typeof(GoldRewardData), "_amount");
+            GoldRewardData reward = rewards.OfType<GoldRewardData>().First(candidate =>
+                !candidate.ApplyTrialDataModifiers && (int)amountField.GetValue(candidate) >= 10);
+            int amount = (int)amountField.GetValue(reward);
+
+            int goldBefore = save.GetGold();
+            int baseline = save.GetAdjustedGoldAmount(amount, isReward: true);
+            JObject rngBefore = RngStates();
+            save.AddMutator(owner);
+            MutatorState active = save.GetMutators().Single();
+            float multiplier = RelicResourceProbe.ReadGoldRewardMultiplier(save);
+            if (active.GetRelicDataID() != owner.GetID() || !RelicResourceProbe.SupportsGoldRewardMultiplier(active) || multiplier != expected)
+                throw new InvalidOperationException("Native gold mutator did not install its original rule.");
+
+            int adjusted = save.GetAdjustedGoldAmount(amount, isReward: true);
+            int grants = 0, completions = 0;
+            reward.GrantReward(new GrantableRewardData.GrantParams
+            {
+                coreGameManagers = managers.GetGameRunManagers(), source = GrantableRewardData.Source.Battle,
+                rewardGrantedCallback = _ => grants++, interactionCompleteCallback = () => completions++
+            });
+            int goldGranted = save.GetGold();
+            const int Cost = 3;
+            int rawIncome = save.GetAdjustedGoldAmount(amount, isReward: false);
+            int rawCost = save.GetAdjustedGoldAmount(-Cost, isReward: true);
+            int debit = save.AdjustGold(-Cost);
+            int goldAfter = save.GetGold();
+            JObject rngAfter = RngStates();
+            if (grants != 1 || completions != 1 || goldGranted - goldBefore != adjusted || adjusted == baseline ||
+                rawIncome != amount || rawCost != -Cost || debit != -Cost || goldAfter != goldGranted - Cost ||
+                !JToken.DeepEquals(rngBefore, rngAfter))
+                throw new InvalidOperationException("Original reward grant, raw spend or RNG boundary differed.");
+
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, Boundary = "OriginalGoldRewardMultiplier", GameVersion = UnityEngine.Application.version, GameModuleMvid = module,
+                Variant = variant, Owner = new { Id = active.GetRelicDataID(), Key = active.GetAssetName(),
+                    active.DisallowedInPlacementPhase, Effects = active.GetEffects().Select(effect => effect.GetType().Name).ToArray(),
+                    Conditions = owner.GetEffects().Single().GetEffectConditions().Count },
+                Reward = new { Id = reward.GetID(), Key = reward.name, Amount = amount, reward.ApplyTrialDataModifiers },
+                Multiplier = multiplier, Baseline = baseline, Adjusted = adjusted, GoldBefore = goldBefore,
+                GoldGranted = goldGranted, GoldAfter = goldAfter, Cost, RawIncome = rawIncome, RawCost = rawCost,
+                Debit = debit, Grants = grants, Completions = completions, RngBefore = rngBefore, RngAfter = rngAfter
+            });
+            using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, Archive));
+            document.Write(stream);
+        }
+#endif
         private static JObject RngStates()
         {
             var result = new JObject();
