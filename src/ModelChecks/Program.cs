@@ -9222,6 +9222,11 @@ if (args.Length == 2 && args[0] == "--recorded-frontier-diagnose")
     if (!BattleSearchChecks.DiagnoseRecordedFrontiers(document.RootElement, choiceBudget: 64)) Environment.ExitCode = 1;
     return;
 }
+if (args.Length == 3 && args[0] == "--native-region-alternate-only")
+{
+    RegionRunAlternateChecks.Native(args[1], args[2]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--choose-discard-only")
 {
     using var choiceDocument = ModelJson.ReadFixture(args[1]);

@@ -63,3 +63,7 @@ pwsh -File scripts/Run-CampaignProgress.ps1 -RegionRun -StopBeforeRing 4 -Native
 同一二进制归档从开局连续复放 42 次出牌或技能和 8 次结束回合，完整后继、随机流、16 条独立分支均匹配。
 全部已录决策点的出牌与结束回合候选通过严格检查。复验保留首次采样时旧模型的 65 项未支持计数。
 [第二地区败局](../tests/compatibility/game-2.3.1/mechanics/region-run-titanskin/native-defeat.mt2f)
+
+同一检查点另采集了第 5 回合把 Gravity 改投到上层 Heavy 的路线。在该次出牌结算后，原版直接进入下一回合。
+第 6 回合有七名 Hivemind 持有者，层数合计 29，七名单位的攻击缓存均为 +29。替换出牌和结束回合的完整后继及随机流均匹配。
+[原版备选路线](../tests/compatibility/game-2.3.1/mechanics/region-run-titanskin/native-gravity-alternate.mt2f)
