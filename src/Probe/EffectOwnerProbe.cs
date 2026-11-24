@@ -17,7 +17,17 @@ namespace MonsterTrain2Poju.Probe
 
         internal static void Capture(FullBattleTrace trace, AllGameManagers managers)
         {
-            string effectType = RequestedType ?? throw new InvalidOperationException("Missing effect owner query type.");
+            string[] effectTypes = (RequestedType ?? throw new InvalidOperationException("Missing effect owner query type.")).Split(',');
+            if (effectTypes.Length > 8 || effectTypes.Any(type => type.Length is 0 or > 128 ||
+                type.Any(character => !char.IsLetterOrDigit(character) && character is not ('_' or '.'))) ||
+                effectTypes.Distinct(StringComparer.Ordinal).Count() != effectTypes.Length)
+                throw new InvalidOperationException("Expected one to eight distinct card effect class names.");
+            foreach (string effectType in effectTypes)
+                Capture(trace, managers, effectType, effectTypes.Length == 1 ? "effect-owners.mt2f" : $"effect-owners-{effectType}.mt2f");
+        }
+
+        private static void Capture(FullBattleTrace trace, AllGameManagers managers, string effectType, string archiveName)
+        {
             if (TypeNameCache.GetType(effectType) is not Type implementation || !typeof(ICardEffect).IsAssignableFrom(implementation))
                 throw new InvalidOperationException("Expected an installed card effect type: " + effectType);
 
@@ -27,6 +37,7 @@ namespace MonsterTrain2Poju.Probe
             var cards = definition.GetAllCardData();
             var characters = definition.GetAllCharacterData();
             var upgrades = definition.GetAllCardUpgradeData();
+            var souls = definition.GetAllSoulDatas().Where(soul => soul.GetSoulCardUpgrade() != null).ToArray();
             var relics = RelicCatalogProbe.OriginalOwners(definition).ToArray();
             var counts = new Dictionary<string, int>(StringComparer.Ordinal);
             JToken before = JToken.FromObject(trace.CaptureDecision());
@@ -52,9 +63,11 @@ namespace MonsterTrain2Poju.Probe
             }
             foreach (CardUpgradeData upgrade in upgrades.OrderBy(upgrade => upgrade.GetID(), StringComparer.Ordinal))
             {
-                ScanCardTriggers("Upgrade", upgrade, "CardTriggers", upgrade.GetCardTriggerUpgrades());
-                ScanCharacterTriggers("Upgrade", upgrade, "CharacterTriggers", upgrade.GetCharacterTriggerUpgrades());
-                ScanRoomModifiers("Upgrade", upgrade, "RoomModifiers", upgrade.GetRoomModifierUpgrades());
+                ScanUpgrade("Upgrade", upgrade, "", upgrade);
+            }
+            foreach (SoulData soul in souls.OrderBy(soul => soul.GetID(), StringComparer.Ordinal))
+            {
+                ScanUpgrade("SoulUpgrade", soul, "SoulCardUpgrade.", soul.GetSoulCardUpgrade());
             }
             foreach (var owner in relics.OrderBy(owner => owner.Collection, StringComparer.Ordinal)
                 .ThenBy(owner => owner.Data.GetID(), StringComparer.Ordinal))
@@ -79,11 +92,18 @@ namespace MonsterTrain2Poju.Probe
                 GameVersion = Application.version, GameModuleMvid = typeof(CardEffectData).Assembly.ManifestModule.ModuleVersionId,
                 FrameBefore = frame, FrameAfter = Time.frameCount, RngBefore = rngBefore, RngAfter = rngAfter,
                 DecisionUnchanged = decisionUnchanged, Definitions = new { Cards = cards.Count, Characters = characters.Count,
-                    Upgrades = upgrades.Count, Relics = relics.Length }, MatchCount = matchCount,
+                    Upgrades = upgrades.Count, Relics = relics.Length, SoulUpgrades = souls.Length }, MatchCount = matchCount,
                 MatchesTruncated = matchCount > maximumRows, MatchCounts = counts, Matches = matches
             });
-            using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "effect-owners.mt2f"));
+            using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, archiveName));
             archive.Write(output);
+
+            void ScanUpgrade(string kind, GameData owner, string path, CardUpgradeData upgrade)
+            {
+                ScanCardTriggers(kind, owner, path + "CardTriggers", upgrade.GetCardTriggerUpgrades());
+                ScanCharacterTriggers(kind, owner, path + "CharacterTriggers", upgrade.GetCharacterTriggerUpgrades());
+                ScanRoomModifiers(kind, owner, path + "RoomModifiers", upgrade.GetRoomModifierUpgrades());
+            }
 
             void Scan(string kind, GameData owner, string path, string? trigger, IEnumerable<CardEffectData>? effects)
             {

@@ -596,7 +596,7 @@ param(
     [switch] $PreviewReferences,
     [switch] $RelicCatalog,
     [switch] $CardCatalog,
-    [ValidatePattern('^[A-Za-z_][A-Za-z0-9_.]{0,127}$')]
+    [ValidatePattern('^[A-Za-z_][A-Za-z0-9_.]{0,127}(?:,[A-Za-z_][A-Za-z0-9_.]{0,127}){0,7}$')]
     [string] $EffectOwnerType,
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalLoseMoneyOnHitWitness,
@@ -1361,6 +1361,10 @@ if ($EffectOwnerType) {
     if ($Policy -ne 'no-cards' -or -not $BinaryCapture -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $effectOwnerArguments }).Count -gt 0) {
         throw 'EffectOwnerType uses the no-cards definition profile and binary capture.'
+    }
+    $effectOwnerTypes = $EffectOwnerType -split ','
+    if (@($effectOwnerTypes | Sort-Object -CaseSensitive -Unique).Count -ne $effectOwnerTypes.Count) {
+        throw 'EffectOwnerType requires distinct class names.'
     }
 }
 if ($OriginalRandomizedWavesBattle) {
@@ -4924,33 +4928,38 @@ if ($OriginalBattleSetupWitness) {
     return
 }
 if ($EffectOwnerType) {
-    $capturePath = Join-Path $profile 'effect-owners.mt2f'
-    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+    if ($process.ExitCode -ne 0 -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original effect owners captured' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) {
         throw "Original effect owner query failed; inspect $unityLog"
     }
     Add-Type -Path (Join-Path $nativeBuildWorkspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
-    $effectOwnersDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
-    try {
-        $effectOwnersRoot = $effectOwnersDocument.RootElement
-        $count = $effectOwnersRoot.GetProperty('MatchCount').GetInt32()
-        $rows = $effectOwnersRoot.GetProperty('Matches').GetArrayLength()
-        $definitionCounts = $effectOwnersRoot.GetProperty('Definitions')
-        if ($effectOwnersRoot.GetProperty('Schema').GetInt32() -ne 1 -or
-            $effectOwnersRoot.GetProperty('Scope').GetString() -cne 'AllGameDataEffectLists' -or
-            $effectOwnersRoot.GetProperty('EffectType').GetString() -cne $EffectOwnerType -or
-            [Guid]$effectOwnersRoot.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
-            -not $effectOwnersRoot.GetProperty('DecisionUnchanged').GetBoolean() -or
-            $effectOwnersRoot.GetProperty('FrameBefore').GetInt32() -ne $effectOwnersRoot.GetProperty('FrameAfter').GetInt32() -or
-            -not $effectOwnersRoot.GetProperty('RngBefore').ContentEquals($effectOwnersRoot.GetProperty('RngAfter')) -or
-            @('Cards', 'Characters', 'Upgrades', 'Relics').Where({ $definitionCounts.GetProperty($_).GetInt32() -le 0 }).Count -gt 0 -or
-            $count -lt 0 -or $rows -ne [Math]::Min(128, $count) -or
-            $effectOwnersRoot.GetProperty('MatchesTruncated').GetBoolean() -ne ($rows -lt $count)) {
-            throw 'Effect owner query scope, counts or native invariants differ.'
+    foreach ($effectOwner in $effectOwnerTypes) {
+        $archiveName = if ($effectOwnerTypes.Count -eq 1) { 'effect-owners.mt2f' } else { "effect-owners-$effectOwner.mt2f" }
+        $capturePath = Join-Path $profile $archiveName
+        $effectOwnersDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+        try {
+            $effectOwnersRoot = $effectOwnersDocument.RootElement
+            $count = $effectOwnersRoot.GetProperty('MatchCount').GetInt32()
+            $rows = $effectOwnersRoot.GetProperty('Matches').GetArrayLength()
+            $definitionCounts = $effectOwnersRoot.GetProperty('Definitions')
+            if ($effectOwnersRoot.GetProperty('Schema').GetInt32() -ne 1 -or
+                $effectOwnersRoot.GetProperty('Scope').GetString() -cne 'AllGameDataEffectLists' -or
+                $effectOwnersRoot.GetProperty('EffectType').GetString() -cne $effectOwner -or
+                [Guid]$effectOwnersRoot.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
+                -not $effectOwnersRoot.GetProperty('DecisionUnchanged').GetBoolean() -or
+                $effectOwnersRoot.GetProperty('FrameBefore').GetInt32() -ne $effectOwnersRoot.GetProperty('FrameAfter').GetInt32() -or
+                -not $effectOwnersRoot.GetProperty('RngBefore').ContentEquals($effectOwnersRoot.GetProperty('RngAfter')) -or
+                @('Cards', 'Characters', 'Upgrades', 'Relics').Where({ $definitionCounts.GetProperty($_).GetInt32() -le 0 }).Count -gt 0 -or
+                $count -lt 0 -or $rows -ne [Math]::Min(128, $count) -or
+                $effectOwnersRoot.GetProperty('MatchesTruncated').GetBoolean() -ne ($rows -lt $count)) {
+                throw "Effect owner query scope, counts or native invariants differ for $effectOwner."
+            }
+            Write-Output "NATIVE-EFFECT-OWNERS PASS: type=$effectOwner matches=$count rows=$rows trace=$capturePath"
+        } finally {
+            $effectOwnersDocument.Dispose()
         }
-        Write-Output "NATIVE-EFFECT-OWNERS PASS: type=$EffectOwnerType matches=$count rows=$rows trace=$capturePath"
-    } finally { $effectOwnersDocument.Dispose() }
+    }
     return
 }
 if ($RoomHealthCardHover) {
