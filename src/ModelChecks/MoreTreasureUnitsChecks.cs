@@ -21,7 +21,7 @@ internal static class MoreTreasureUnitsChecks
 
         using var modified = ModelJson.ReadFixture(modifiedPath);
         EnemySpawnState candidate = Initial(modified.RootElement, 2, modified: true);
-        Require(stock.RootElement.GetProperty("NativeRunInput").ContentEquals(modified.RootElement.GetProperty("NativeRunInput")),
+        Require(SameCheckpoint(stock.RootElement.GetProperty("NativeRunInput"), modified.RootElement.GetProperty("NativeRunInput")),
             "The collector gain must use the same original native campaign input as the control.");
         Require(baseline.Rng.Equals(candidate.Rng) &&
             baseline.Treasures.Select(item => item.Unit.AssetKey).SequenceEqual(candidate.Treasures.Select(item => item.Unit.AssetKey)),
@@ -53,11 +53,25 @@ internal static class MoreTreasureUnitsChecks
     private static FixtureValue Deployment(FixtureValue root) =>
         root.GetProperty("Turns")[0].GetProperty("Before").GetProperty("Spawn");
 
+    private static bool SameCheckpoint(FixtureValue stock, FixtureValue modified)
+    {
+        if (stock.ContentEquals(modified)) return true;
+        if (stock.TryGetProperty("RunType", out _) || !modified.TryGetProperty("RunType", out _)) return false;
+
+        FixtureProperty[] legacy = stock.EnumerateObject().ToArray();
+        FixtureProperty[] current = modified.EnumerateObject().ToArray();
+        return current.Length == legacy.Length + 1 && current.Count(field => field.Name == "RunType") == 1 &&
+            legacy.Zip(current.Where(field => field.Name != "RunType"),
+                (before, after) => before.Name == after.Name && before.Value.ContentEquals(after.Value)).All(equal => equal);
+    }
+
     private static EnemySpawnState Initial(FixtureValue fixture, int count, bool modified)
     {
         FixtureValue run = fixture.GetProperty("NativeRunInput");
         Require(fixture.GetProperty("GameVersion").GetString() == "2.3.1" &&
             fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            run.GetProperty("Schema").GetInt32() == 1 &&
+            (!run.TryGetProperty("RunType", out FixtureValue runType) || runType.ValueKind == FixtureKind.String && runType.GetString() == "Class") &&
             run.GetProperty("Distance").GetInt32() == 1 && run.GetProperty("AscensionLevel").GetInt32() == 0 &&
             !run.GetProperty("WasDevCheatUsed").GetBoolean(),
             "Expected a pinned native Rank 0 Ring 2 battle.");
