@@ -9175,10 +9175,16 @@ if (args.Length >= 4 && args[0] == "--register-game231-native-battle")
     NativeBattleRegistration.Run(args[1], args[2], args[3], args[4..]);
     return;
 }
-if (args.Length == 2 && args[0] == "--recorded-chain-diagnose")
+if ((args.Length == 2 || args.Length == 3 && args[2] == "--frontiers") && args[0] == "--recorded-chain-diagnose")
 {
     using var chainDocument = ModelJson.ReadFixture(args[1]);
     RecordedBattleChecks.Native(chainDocument.RootElement);
+    if (args.Length == 3)
+    {
+        BattleSearchChecks.RecordedFrontiers(chainDocument.RootElement, requireZeroUnsupported: true);
+        BattleSearchChecks.RecordedEndTurnFrontiers(chainDocument.RootElement, choiceBudget: 64);
+        Console.WriteLine("NATIVE-RECORDED-END-TURN-FRONTIERS PASS.");
+    }
     Console.WriteLine("RECORDED-CHAIN-DIAGNOSTIC: capture counters are not acceptance checks; require a fresh passing native capture before curation.");
     return;
 }

@@ -11,7 +11,8 @@ The command starts each decision from its native `Before` state and compares the
 modeled successor with `Actual`. It groups unsupported decisions and state
 differences by reason, reports the earliest affected input for each, and returns
 exit code 1 when any decision fails. Use `--recorded-chain-diagnose` on the same
-archive to verify continuity once those gaps are resolved.
+archive to verify continuity once those gaps are resolved. Append `--frontiers`
+to check the recorded card and EndTurn candidates in the same run.
 
 `FixtureTools extract-unsupported-branch <full-battle.mt2f> <request.mt2f> '<exact reason>'`
 reuses recorded forecasts and actual input successors, including the last successor
