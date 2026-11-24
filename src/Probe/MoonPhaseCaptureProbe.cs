@@ -13,7 +13,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
             OriginalPyreAbilityCooldownWitness.Reuse || OriginalFhyraGoldWitness.Enabled || OriginalFhyraGoldWitness.FullBattle ||
             OriginalPactDrawWitness.Enabled || OriginalPactDrawWitness.FullBattle ||
-            OriginalEntropyDrawWitness.Enabled || OriginalUnrulyWitness.FullBattle ||
+            OriginalEntropyDrawWitness.Enabled || OriginalUnrulyWitness.FullBattle || MoreTreasureUnitsProbe.Enabled ||
             Environment.GetEnvironmentVariable("MT2_PROBE_REGION_RUN_INPUT") == "1" ||
             RankThreeRoomSlayScenario.Enabled || OriginalRoomHealthAttackScenario.Enabled || OriginalStatusMagnitudeWitness.Moon ||
             OriginalOpeningUnitsScenario.Enabled || OriginalSecondFloorEnemyOpeningWitness.Enabled ||
