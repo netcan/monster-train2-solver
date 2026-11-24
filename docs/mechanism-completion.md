@@ -1221,6 +1221,11 @@ Warborne 三个原版来源／2,304 条原生回调及同量不可变后继、16
 回调均指向薪火。决策状态、帧号和随机流在各次查询中保持一致。批量调用的类名用逗号分隔。
 [批量查询归档](../tests/compatibility/game-2.3.1/mechanics/effect-owner-query/manifest.tsv)
 
+同日追加原版卡牌初始升级和 26 棵冠军奖励树。三条 Little Fade 伤害记录只命中通用升级目录。
+Little Fade 的原版实测升级树提供强化友军、增加自身费用及永久尖刺。原版状态效果正对照在冠军奖励树命中
+69 条。首轮扫描据通用升级目录将三条伤害记录标为实战缺口，这项结论以追加的挂载查询结果更正。
+[冠军奖励树归档](../tests/compatibility/game-2.3.1/mechanics/effect-owner-query/target-attack-reward-scan.mt2f)
+
 2026-11-15 新增[出生状态层数缩放](spawn-status-scaling-mechanism.md)：
 四个原版来源、54 组配置、2,592 次原生出生回调通过，约 0.343 秒；区分按
 原始定义追加与运行时触发器重复缩放，并修正附魔采集丢失运行时参数的问题。
