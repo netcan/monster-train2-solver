@@ -98,6 +98,11 @@ try {
         dotnet $checks --solver-stage-case-only "${reanimation}-battle.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original front reanimation battle failed for $tier." }
     }
+    $skullCollectors = "$current/skull-collectors"
+    dotnet $checks --native-skull-collectors-only "$skullCollectors/native-first-treasure.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original SkullCollectors opening failed.' }
+    dotnet $checks --solver-stage-case-only "$skullCollectors/native-tier1-battle.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original SkullCollectors tier 1 battle failed.' }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }
