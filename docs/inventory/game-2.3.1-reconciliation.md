@@ -13,12 +13,12 @@
 | inspect-inherited-code | 8 | 8 | 8 |
 | inspect-projection-normalization | 54 | 54 | 54 |
 | inspect-guard-links | 43 | 43 | 43 |
-| review-existing-code | 227 | 227 | 227 |
+| review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 104 | 100 | 100 |
+| scoped-review-recorded | 105 | 101 | 101 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 107 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 108 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -127,6 +127,7 @@
 | RelicEffectShowtime | shared-path | Three unchanged original souls apply their hidden floor attachment once before deployment. Settled capacities 5 to 8/8/10 admit a size-six pair and route the original front-only upgrade after room combat. Two/two/four positive repetitions, rear unit unaffected, and full-capacity no-op agree across full native wins, exact successors, 16 branches, frontiers and serial/parallel plans. Native RNG selects the opening room. Other floor seeds and mixed room attachments remain outside this evidence. |
 | RelicEffectShuffleUnitsEndOfTurn | shared-path | Original two-unit and three-unit captures compare deployment and the first ordinary EndTurn, per-team Battle RNG, positions and ordered callbacks. After a shuffle the native room refresh compacts both teams. The original whole battle matches 18 plays, six EndTurns, 49 room stages, 11 train stages and both frontiers. Additional turn-end or floor-rearrangement relic callbacks retain the compatibility guard. |
 | RelicEffectSpawnMonsterOnTurnStart | shared-path | Both original mutators use the ordered after-draw callback. The current native wins record five Follower births and fifteen Morsel births, including the settled deployment callbacks, physical groups and Battle RNG. Exact successors, sixteen branches, all recorded frontiers and equal serial and parallel search and plan replay pass. Full or disabled floor retries and mixed birth callbacks still need native stress evidence. |
+| RelicEffectSubstituteTreasureUnitOnSpawn | shared-path | The three original Class routes fix the collector tier at Rings 2, 4 and 7. The indexed candidate projection retains native substitution provenance. Exact spawned successors cover each tier's attributes, physical slot, treasure counter and Spawning RNG. |
 | RelicEffectSuppressHandDiscard | shared-path | The original HandDoesntDiscard custom run and same-seed stock control both discard during deployment. On the next ordinary turn the owner keeps two unplayed cards in order after three new draws. The two paid actions and four EndTurns match complete successors and RNG. Combined Ephemeral cleanup requires its own witness. |
 | RelicEffectTowerDamageDealtModified | shared-path | The exact original seven-effect owner adds ten to the shared Pyre attack query. The authored base 45, native query 55 and refreshed combat attack 55 match during deployment and turn one. The original whole battle passes 21 plays, seven EndTurns and both frontiers. The scope covers this owner's unconditional Pyre effect. |
 | RelicEffectUpgradeCardOnPurchasingUpgrade | input-only | Native DeckScreen.SetupRelicDataModes uses RelicManager.GetAdditionalCardUpgrades for Merchant or StoryEvent screens. The resulting permanent modifiers are captured on cards entering battle. |
@@ -161,10 +162,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `306439ec86363d7131d1e7d51e3c5cc42f8b37b4f299ecf933b98c54d74fef65`。
-- Model: PDB 校验过的项目源码集合 `46880aa73759a84cd3a9c2dcab1775c88c6c68a35a047f0a525d3a30687600eb`。
-- Probe: PDB 校验过的项目源码集合 `5cf9ae20bcc1accb0372796d0a201c173491de23898a7242dd9e7a9e18db0bf8`。
-- ModelChecks: PDB 校验过的项目源码集合 `b13838afdd2c7e468547823a02348fef7a32a49c3557e56546f29ac555edd499`。
+- 人工审查索引 SHA-256: `2911f75eedee4c0b0fbbe9dfbc9eed5db98b7ed48020b996c0bafe08bf367711`。
+- Model: PDB 校验过的项目源码集合 `eb84559634fe8a8dab1b3ce191b4708643cf7078c8ff988b4a2ac240444431ec`。
+- Probe: PDB 校验过的项目源码集合 `7fdc0c151cd3b1c0e718619a08d523756de8a5f70d3175017ba5bfa75aaa5864`。
+- ModelChecks: PDB 校验过的项目源码集合 `8f6be6eb7eff39f946fd0f5b77f7c55f986f1ae89f266bcc3c5c45b60109bf0f`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
