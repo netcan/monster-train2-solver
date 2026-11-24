@@ -319,7 +319,7 @@ namespace MonsterTrain2Poju.Probe
                 GameVersion = Application.version, GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
                 Scenario = save.GetCurrentScenarioData()?.name, Loop = loop, Distance = distance,
                 Assembly = type!.Assembly.GetName().Name, Version = type.Assembly.GetName().Version?.ToString(),
-                Root = root, advice.RootKey, First = first, Steps = advice.Plan.Steps.Count, advice.Plan.Outcome,
+                Root = root, PublishedRoot = advice.Root, advice.RootKey, First = first, Steps = advice.Plan.Steps.Count, advice.Plan.Outcome,
                 Terminal = terminal, advice.CurrentActionOnly, PanelText = body.text, PanelVertices = Get<int>("PanelVertices"),
                 PanelPixels = Get<int>("PanelPixels"), Publications = Get<int>("Published"),
                 PublicationRootChecks = Get<int>("PublicationRootChecks"), PurityFailures = Get<int>("PurityFailures"),

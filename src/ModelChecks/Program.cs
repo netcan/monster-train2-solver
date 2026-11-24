@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--original-endless-loop2-advisor-only")
+{
+    using var archive = ModelJson.ReadFixture(args[1]);
+    OriginalEndlessFirstWaveChecks.Loop2Advisor(archive.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--original-endless-loop2-horde-death-only")
 {
     using var opening = ModelJson.ReadFixture(args[1]);

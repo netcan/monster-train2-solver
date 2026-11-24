@@ -3,6 +3,33 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalEndlessFirstWaveChecks
 {
+    internal static void Loop2Advisor(FixtureValue receipt)
+    {
+        Require(Text(receipt, "GameVersion") == Game231FixtureCatalog.Version &&
+            Text(receipt, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(receipt, "EvidenceKind") == "NativeEndlessLoop2AdvisorObservation" &&
+            Text(receipt, "Assembly") == "MonsterTrain2Poju.Advisor" && Text(receipt, "Scenario") == "TestEndless_Level1Battle1" &&
+            Number(receipt, "Loop") == 2 && Number(receipt, "Distance") == 0 &&
+            Number(receipt, "CardInputs") == 0 && Number(receipt, "EndTurnInputs") == 0 &&
+            Number(receipt, "Publications") >= 1 && Number(receipt, "PublicationRootChecks") >= 1 &&
+            Number(receipt, "PurityFailures") == 0 && Flag(receipt, "OpeningStateAndGameplayRngUnchanged") &&
+            Flag(receipt, "RenderStateAndRngUnchanged"), "Expected a pure native publication from the separately built player Advisor.");
+        var root = receipt.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        var published = receipt.GetProperty("PublishedRoot").Deserialize<BattleTurnState>()!;
+        using var keys = new BattleStateKeys();
+        Require(root.Spawn.Turn == 0 && Text(receipt, "RootKey") is { Length: 64 } issuedKey && issuedKey.All(Uri.IsHexDigit) &&
+            (keys.Key(root) == keys.Key(published) || AbilityCacheAdviceReuse.Matches(published, root, keys)),
+            "Expected the matching native deployment root of the displayed recommendation.");
+        var first = receipt.GetProperty("First").Deserialize<BattleSearchStep>()!;
+        string? panel = Text(receipt, "PanelText");
+        Require(!Flag(receipt, "Terminal") && !Flag(receipt, "CurrentActionOnly") && Number(receipt, "Steps") > 0 &&
+            Number(receipt, "PanelPixels") > 0 && Number(receipt, "PanelVertices") > 0 &&
+            panel?.StartsWith("部分方案", StringComparison.Ordinal) == true && panel.Contains("整场战损尚未确定") &&
+            !first.IsEndTurn && first.Action is { } action && panel.Contains("第 " + (action.RoomIndex + 1) + " 层") &&
+            BattleActionModel.PlayCard(root, action).Supported, "Expected a rendered partial forecast with a supported first paid action.");
+        Console.WriteLine($"NATIVE-ENDLESS-LOOP2-ADVISOR CHECK PASS: rendered partial forecast, {Number(receipt, "Steps")} steps, zero native inputs and purity failures.");
+    }
+
     internal static void Loop2HordeDeath(FixtureValue opening, FixtureValue receipt)
     {
         Require(Text(receipt, "GameVersion") == Game231FixtureCatalog.Version &&
