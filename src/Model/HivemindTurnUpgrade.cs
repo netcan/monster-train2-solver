@@ -682,7 +682,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool PublishesAtAscension(TrainCombatState train) =>
             (train.Context?.QueryFrame?.Turn is >= 1 and <= 3 ||
-                train.Context?.QueryFrame?.Turn is 4 or 5 or 7 && IsScaledCampaign(train.Context)) && train.Rooms.All(room => !room.Preview) &&
+                train.Context?.QueryFrame?.Turn is >= 4 and <= 7 && IsScaledCampaign(train.Context)) && train.Rooms.All(room => !room.Preview) &&
             train.Rooms.Any(room => room.ExternalInteractions.Any(IsKnownMarker)) &&
             train.Rooms.All(room => room.Units.All(unit => unit.RegisteredStatus("hivemindkiller") == null &&
                 (unit.Status(StatusId) == null || MatchesRoomMarker(Marker(unit), unit) ||
