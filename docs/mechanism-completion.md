@@ -661,6 +661,11 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 时，刚抽到的牌仍能进入候选。
 [原版弃掉新抽牌归档](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/offering-token-discard-drawn.mt2f)
 
+原版 Lazarus 冠军的三级 Devour 分别从 3 攻击的 Overworked Assistant 转移 3、6、9 点攻击。
+随后牺牲消耗助手的 1 层 Undying，原单位以 1 点生命留场。测试通过原版升级接口选定技能等级，
+在隔离手牌加入一张原版助手。三个等级的合法目标、结算后继和随机流均通过精确复放。
+[Devour 原版归档](../tests/compatibility/game-2.3.1/mechanics/lazarus-devour/manifest.tsv)
+
 原版 Starter Frostbite Discard 零费对敌方前排施加 8 层霜寒，并从合格手牌中随机弃一张。
 2 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`starter-frostbite-discard.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/starter-frostbite-discard.mt2f)

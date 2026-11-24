@@ -40,6 +40,10 @@ try {
     }
     dotnet $checks --original-offering-token-draw-discard-only "$offeringToken/offering-token-discard-drawn.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original Offering Token newly drawn discard failed.' }
+    foreach ($rank in @('i', 'ii', 'iii')) {
+        dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
+        if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }
+    }
     dotnet $checks --parallel-shorter-fallback-only "$current/player-advisor-rolling/unlocked-covenant0-ring5-healing-route-defeat.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Parallel whole-battle cutoff acceptance failed.' }
     dotnet $checks --relentless-battle-pair-only "$current/relentless-battle/abandon.mt2f" "$current/relentless-battle/continue.mt2f"

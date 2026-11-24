@@ -485,6 +485,7 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalHandAndEmberWitness.Enabled) OriginalHandAndEmberWitness.Select(setup, save);
                     if (fullBattle && OriginalBattleSetupWitness.Enabled) OriginalBattleSetupWitness.Select(setup, save);
                     if (fullBattle && OriginalLittleFadeCostWitness.Enabled) OriginalLittleFadeCostWitness.SelectChampion(setup);
+                    if (fullBattle && OriginalLazarusDevourWitness.Enabled) OriginalLazarusDevourWitness.SelectChampion(setup, save);
 #endif
                     if (fullBattle && OriginalPyreCapacityCarryoverScenario.Enabled)
                         OriginalPyreCapacityCarryoverScenario.SelectBeforeRun(setup, save, log);
@@ -914,6 +915,8 @@ namespace MonsterTrain2Poju.Probe
                         return;
                     if (fullBattle && OriginalSaviorChampionWitness.Enabled && !OriginalSaviorChampionWitness.Prepared)
                         OriginalSaviorChampionWitness.Prepare(save);
+                    if (fullBattle && OriginalLazarusDevourWitness.Enabled && !OriginalLazarusDevourWitness.Prepared)
+                        OriginalLazarusDevourWitness.Prepare(save);
                     if (fullBattle && OriginalLittleFadeCostWitness.Enabled && !OriginalLittleFadeCostWitness.Prepared)
                         OriginalLittleFadeCostWitness.Prepare(save);
                     if (fullBattle && OriginalSproutWitness.Enabled && !OriginalSproutWitness.Acquired)
@@ -1580,6 +1583,13 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalSaviorChampionWitness.Tick(FullBattleTrace.Active!, managers, log,
                     () => AdvanceTurn(combat!, record: false)))
                     Finish(true, "Original Savior champion ability captured.");
+                return;
+            }
+            if (fullBattle && OriginalLazarusDevourWitness.Enabled)
+            {
+                if (OriginalLazarusDevourWitness.Tick(FullBattleTrace.Active!, managers, log,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original Lazarus Devour champion ability captured.");
                 return;
             }
             if (fullBattle && OriginalLittleFadeCostWitness.Enabled)

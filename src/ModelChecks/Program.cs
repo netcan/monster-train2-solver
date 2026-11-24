@@ -494,6 +494,12 @@ if (args.Length == 2 && args[0] == "--native-savior-champion-only")
     OriginalSaviorChampionChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-lazarus-devour-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalLazarusDevourChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] is "--native-advisor-restart-only" or "--native-advisor-undo-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

@@ -669,6 +669,7 @@ param(
     [switch] $PersistentMonsterHpCampaignContinuation,
     [switch] $OriginalPersistentMonsterHpReload,
     [ValidateSet(2, 3)][int] $OriginalSaviorChampionRank,
+    [ValidateSet(1, 2, 3)][int] $OriginalLazarusDevourRank,
     [switch] $OriginalLittleFadeCostWitness,
     [switch] $OriginalLittleFadeBuffFriendlyWitness,
     [switch] $OriginalLittleFadePermanentSpikesWitness,
@@ -1217,6 +1218,18 @@ if ($OriginalSaviorChampionRank) {
         throw 'Select one original Savior champion rank with binary capture.'
     }
     $PrimaryClan = 'Banished'
+    $SecondaryClan = 'Hellhorned'
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalLazarusDevourRank) {
+    $witnessArguments = @('OriginalLazarusDevourRank', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
+        throw 'Select one original Lazarus Devour rank with binary capture.'
+    }
+    $PrimaryClan = 'LazarusLeague'
     $SecondaryClan = 'Hellhorned'
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -3048,7 +3061,8 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness -or
     $PersistentMonsterHpCampaignContinuation -or $OriginalPersistentMonsterHpReload -or
     $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier -or $OriginalSavageryDeckUpgrade -or $OriginalBattleSetupWitness -or
-    $OriginalSaviorChampionRank -or $OriginalLittleFadeCostWitness -or $OriginalLittleFadeBuffFriendlyWitness -or $OriginalLittleFadePermanentSpikesWitness) {
+    $OriginalSaviorChampionRank -or $OriginalLazarusDevourRank -or
+    $OriginalLittleFadeCostWitness -or $OriginalLittleFadeBuffFriendlyWitness -or $OriginalLittleFadePermanentSpikesWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -3676,6 +3690,7 @@ $environment = @{
     MT2_PROBE_PERSISTENT_HP_INPUT_RUN_ID = $(if ($OriginalPersistentMonsterHpReload) { $persistentInputRunId } else { '' })
     MT2_PROBE_PERSISTENT_HP_ABOVE_MAX_AND_DEATH = $(if ($PersistentMonsterHpAboveMaxAndDeath) { '1' } else { '0' })
     MT2_PROBE_SAVIOR_CHAMPION_RANK = [string]$OriginalSaviorChampionRank
+    MT2_PROBE_LAZARUS_DEVOUR_RANK = [string]$OriginalLazarusDevourRank
     MT2_PROBE_LITTLE_FADE_COST_WITNESS = $(if ($OriginalLittleFadeBuffFriendlyWitness) { 'BuffFriendly' }
         elseif ($OriginalLittleFadePermanentSpikesWitness) { 'PermanentSpikes' } elseif ($OriginalLittleFadeCostWitness) { '1' } else { '0' })
     MT2_PROBE_CARD_CATALOG = $(if ($CardCatalog) { '1' } else { '0' })
@@ -4741,6 +4756,16 @@ if ($OriginalSaviorChampionRank) {
         throw "Original Savior champion ability witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-SAVIOR-CHAMPION PASS rank=$OriginalSaviorChampionRank trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalLazarusDevourRank) {
+    $capturePath = Join-Path $profile 'lazarus-devour-ability.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Lazarus Devour champion ability captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original Lazarus Devour champion ability witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-LAZARUS-DEVOUR PASS rank=$OriginalLazarusDevourRank trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalLittleFadeCostWitness -or $OriginalLittleFadeBuffFriendlyWitness -or $OriginalLittleFadePermanentSpikesWitness) {
