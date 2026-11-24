@@ -633,6 +633,7 @@ param(
     [switch] $SecondFloorEnemyOpeningFullBattle,
     [switch] $OriginalHealOnAscendWitness,
     [ValidateSet('Tier2', 'Tier3')] [string] $OriginalFrontReanimationWitness = '',
+    [switch] $FrontReanimationFullBattle,
     [switch] $OriginalRandomizedWavesBattle,
     [switch] $OriginalDisabledRoomPreviewBattle,
     [switch] $OriginalMoreTreasureUnitsBattle,
@@ -1360,8 +1361,11 @@ if ($OriginalSecondFloorEnemyOpening) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
 }
+if ($FrontReanimationFullBattle -and $OriginalFrontReanimationWitness -cne 'Tier3') {
+    throw 'FrontReanimationFullBattle requires the original Tier3 first-spawn reanimation witness.'
+}
 if ($OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness) {
-    $healArguments = @('OriginalHealOnAscendWitness', 'OriginalFrontReanimationWitness', 'InputProfile', 'BattleDistance',
+    $healArguments = @('OriginalHealOnAscendWitness', 'OriginalFrontReanimationWitness', 'FrontReanimationFullBattle', 'InputProfile', 'BattleDistance',
         'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 1 -or
@@ -3780,6 +3784,7 @@ $environment = @{
     MT2_PROBE_SECOND_FLOOR_ENEMY_OPENING = $(if ($SecondFloorEnemyOpeningFullBattle) { 'battle' } elseif ($OriginalSecondFloorEnemyOpening) { '1' } else { '0' })
     MT2_PROBE_HEAL_ON_ASCEND = $(if ($OriginalHealOnAscendWitness) { '1' } else { '0' })
     MT2_PROBE_FRONT_REANIMATION = $OriginalFrontReanimationWitness
+    MT2_PROBE_FRONT_REANIMATION_FULL_BATTLE = $(if ($FrontReanimationFullBattle) { '1' } else { '0' })
     MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_MORE_TREASURE_UNITS = $(if ($OriginalMoreTreasureUnitsBattle) { '1' } else { '0' })
     MT2_PROBE_SKULL_COLLECTORS = $(if ($OriginalSkullCollectorsWitness) { [string]$SkullCollectorsTier } else { '0' })
@@ -5040,7 +5045,7 @@ if ($OriginalSecondFloorEnemyOpening -and -not $SecondFloorEnemyOpeningFullBattl
     Write-Output "NATIVE-SECOND-FLOOR-ENEMY-OPENING PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
-if ($OriginalFrontReanimationWitness) {
+if ($OriginalFrontReanimationWitness -and -not $FrontReanimationFullBattle) {
     $capturePath = Join-Path $profile 'front-reanimation.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original first-spawn reanimation component captured' -Quiet) -or
@@ -6577,6 +6582,11 @@ if ($SecondFloorEnemyOpeningFullBattle -and (
     -not (Test-Path -LiteralPath (Join-Path $profile 'second-floor-enemy-opening.mt2f') -PathType Leaf) -or
     (Get-OriginalSignature $checkpoint) -cne $secondFloorInputSignature)) {
     throw 'The original second-floor battle requires a captured opening and unchanged donor checkpoint.'
+}
+if ($FrontReanimationFullBattle -and (
+    -not (Test-Path -LiteralPath (Join-Path $profile 'front-reanimation.mt2f') -PathType Leaf) -or
+    (Get-OriginalSignature $checkpoint) -cne $healInputSignature)) {
+    throw 'The original reanimation battle requires a captured opening and unchanged donor checkpoint.'
 }
 if ($RegionRunInput -and ((Get-OriginalSignature $checkpoint) -cne $regionInputSignature -or
     $trace.NativeRunInput.RunType -cne 'RegionRun' -or $trace.NativeRunInput.WasDevCheatUsed -ne $false -or

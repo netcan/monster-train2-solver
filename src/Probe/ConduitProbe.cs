@@ -16,7 +16,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => AdvisorRuntime.PlayerSession ||
             Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_ADVISOR") == "1" ||
 #if DEVELOPMENT_PROBE
-            OriginalSecondFloorEnemyOpeningWitness.Enabled ||
+            OriginalSecondFloorEnemyOpeningWitness.Enabled || OriginalFrontReanimationWitness.FullBattle ||
             OriginalOpeningUnitsScenario.Enabled || OriginalPactDrawWitness.Enabled || OriginalPactDrawWitness.FullBattle || OriginalEntropyDrawWitness.Enabled ||
             OriginalUnrulyWitness.FullBattle || MoreTreasureUnitsProbe.Enabled ||
             Environment.GetEnvironmentVariable("MT2_PROBE_REGION_RUN_INPUT") == "1" ||

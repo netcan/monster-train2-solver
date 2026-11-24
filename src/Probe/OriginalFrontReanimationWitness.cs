@@ -23,6 +23,8 @@ namespace MonsterTrain2Poju.Probe
             _ => default
         };
         internal static bool Enabled => Definition.Id != null;
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_FRONT_REANIMATION_FULL_BATTLE") == "1";
+        internal static bool Captured { get; private set; }
         private static RelicEffectAddStatusEffectOnFirstSpawn? active;
         private static object? owner;
         private static readonly List<Observation> Rows = new();
@@ -105,6 +107,7 @@ namespace MonsterTrain2Poju.Probe
                 archive.Write(stream);
             if (!complete)
                 throw new InvalidOperationException($"Native first-spawn, later candidate, AfterDraw reset and next-turn grant were not all observed ({committed.Length} committed callbacks, indices {first}/{later}/{reset}/{next}). Saved {fileName}.");
+            Captured = true;
             return true;
         }
 
