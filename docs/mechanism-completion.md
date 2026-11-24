@@ -1349,6 +1349,12 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 两类候选枚举通过严格检查，结算时薪火剩余 80 HP。
 [原版整战归档](../tests/compatibility/game-2.3.1/mechanics/shuffle-units/native-settled-win.mt2f)
 
+原版 `BothSidesUnitsAreStronger` 的付费部署和第一波结算逐项匹配。原版敌军出生记录观察到
+生命和最大生命增加 10，后续触发增加 5 点攻击。共享薪火攻击查询和刷新都从 45 得到 55。
+原版胜局的 21 次出牌、7 次结束回合及两类候选枚举通过严格检查，结算时薪火剩余 56 HP。
+[首波对照](../tests/compatibility/game-2.3.1/mechanics/both-sides-units/native-first-wave-projected.mt2f) ·
+[原版整战归档](../tests/compatibility/game-2.3.1/mechanics/both-sides-units/native-win.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，
