@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -18,13 +19,14 @@ namespace MonsterTrain2Poju.Probe
         private const string OwnerId = "b342ef1d-306b-4d40-aa9d-782bbae58af3";
         private const string OwnerKey = "Enemy_EndlessScaling";
         private const string OpeningScenario = "TestEndless_Level1Battle2";
-        private const int NextRingDistance = 1;
         private const int ScheduledWaveCount = 6;
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_WITNESS") == "1";
         internal static bool FactorBatch => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_FACTOR_BATCH") == "1";
         internal static bool AllWaves => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_ALL_WAVES") == "1";
         private static bool ControlledNextRing => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_NEXT_RING") == "1";
+        private static int ControlledDistance => int.Parse(
+            Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_DISTANCE") ?? "1", CultureInfo.InvariantCulture);
         internal static bool ControlledFirstLoop { get; private set; }
         private static bool controlledAdvanceApplied;
         private static object? scenario;
@@ -130,8 +132,8 @@ namespace MonsterTrain2Poju.Probe
             if (AllWaves && (ControlledFirstLoop || save.InTestScenario || SaveManager.WasDevCheatUsed ||
                 save.GetRunType() != RunType.Class || loop != 1 || distance != 0 || encounter != OpeningScenario))
                 throw new InvalidOperationException("Expected the original post-victory Endless opening for the six-wave witness.");
-            if (ControlledNextRing && (!controlledAdvanceApplied || loop != 1 || distance != NextRingDistance || string.IsNullOrEmpty(encounter)))
-                throw new InvalidOperationException("The controlled Endless advance did not reach the second original battle.");
+            if (ControlledNextRing && (!controlledAdvanceApplied || loop != 1 || distance != ControlledDistance || string.IsNullOrEmpty(encounter)))
+                throw new InvalidOperationException("The controlled Endless advance did not reach the requested original battle.");
             var balance = save.GetBalanceData().GetEndlessScalingData();
             scenario = new
             {
@@ -161,12 +163,15 @@ namespace MonsterTrain2Poju.Probe
                     run.GetLoopIndex() != 1 || run.GetCurrentDistance() != 0 || run.GetNumBattlesCompleted() != save.GetRunLength() ||
                     save.GetCurrentScenarioData()?.name != OpeningScenario)
                     throw new InvalidOperationException("Controlled Endless advance requires the original post-victory first-loop checkpoint.");
-                var next = save.GetScenarioData(NextRingDistance);
-                if (next == null) throw new InvalidOperationException("The original Endless route has no second battle.");
+                int distance = ControlledDistance;
+                if (distance is not (1 or 2))
+                    throw new InvalidOperationException("The controlled Endless witness accepts Ring 2 or Ring 3.");
+                var next = save.GetScenarioData(distance);
+                if (next == null) throw new InvalidOperationException("The original Endless route has no battle at the requested distance.");
 
                 // The successful native ContinueRun load reaches this callback before resolving the battle intro.
-                save.AdvanceToNextNode();
-                if (save.GetCurrentDistance() != NextRingDistance || save.GetCurrentScenarioData() != next)
+                for (int step = 0; step < distance; step++) save.AdvanceToNextNode();
+                if (save.GetCurrentDistance() != distance || save.GetCurrentScenarioData() != next)
                     throw new InvalidOperationException("The native node advance selected an unexpected Endless scenario.");
                 controlledAdvanceApplied = true;
             }
@@ -185,7 +190,7 @@ namespace MonsterTrain2Poju.Probe
             if (combat.GetTurnCount() != 1) return false;
             var firstDecision = trace.CaptureDecision();
             if (ControlledNextRing && (Waves.Count != 1 || !Waves[0].PhaseAdvanced || firstDecision.Spawn.Phase != 1))
-                throw new InvalidOperationException("Expected the first scheduled birth wave in the controlled second Endless battle.");
+                throw new InvalidOperationException("Expected the first scheduled birth wave in the controlled Endless battle.");
             var waveBirths = ControlledNextRing ? Waves[0].Births : Births;
             string captureName = ControlledNextRing ? "endless-enemy-scaling-controlled-next-ring.mt2f" : "endless-enemy-scaling.mt2f";
             using var document = NativeFixtureCapture.Capture(new
@@ -199,7 +204,7 @@ namespace MonsterTrain2Poju.Probe
             if (waveBirths.Count == 0 || waveBirths.Any(birth => birth.After == null))
                 throw new InvalidOperationException("The original first enemy wave did not complete an Endless birth callback.");
             if (ControlledNextRing)
-                log.LogInfo($"ENDLESS-ENEMY-SCALING-CONTROLLED-NEXT-RING OBSERVED loop=1 distance=1 callbacks={waveBirths.Count} first={waveBirths[0].AssetKey}");
+                log.LogInfo($"ENDLESS-ENEMY-SCALING-CONTROLLED-NEXT-RING OBSERVED loop=1 distance={ControlledDistance} callbacks={waveBirths.Count} first={waveBirths[0].AssetKey}");
             else log.LogInfo($"ENDLESS-ENEMY-SCALING OBSERVED original callbacks={Births.Count} first={Births[0].AssetKey}");
             return true;
         }
