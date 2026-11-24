@@ -1548,9 +1548,8 @@ namespace MonsterTrain2Poju.Model
                     bool allSubtypes = OriginalAllSubtypesModel.Active(state.Context, deployment: state.Rooms.Any(room => room.Deployment));
                     CombatUnit[] collected = state.Rooms.SelectMany(room => room.Units)
                         .Where(unit => targets.UnitIds.Contains(unit.Id)).ToArray();
-                    int[] sacrificeIds = collected.Where(unit => unit.Team == CombatTeam.Player &&
-                        OriginalAllSubtypesModel.MatchesCharacter(unit, effect.TargetSubtype, allSubtypes) && unit.IsBoss != true && !unit.IsPyre &&
-                        unit.BumpRules?.OuterBoss != true).Select(unit => unit.Id).ToArray();
+                    int[] sacrificeIds = collected.Where(unit => IsDamageByUnitsKilledSource(unit, effect.TargetSubtype, allSubtypes))
+                        .Select(unit => unit.Id).ToArray();
                     int[] heroIds = collected.Where(unit => unit.Team == CombatTeam.Enemy).Select(unit => unit.Id).ToArray();
                     int damage = unchecked(sacrificeIds.Length * effect.Value);
                     int damageSourceCardId = effect.UseCardTraits ? sourceCardId : 0;
@@ -3447,12 +3446,16 @@ namespace MonsterTrain2Poju.Model
             {
                 bool allSubtypes = OriginalAllSubtypesModel.Active(state.Context, deployment: state.Rooms.Any(room => room.Deployment));
                 return state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) &&
-                    unit.Team == CombatTeam.Player && OriginalAllSubtypesModel.MatchesCharacter(unit, effect.TargetSubtype, allSubtypes) && unit.IsBoss != true &&
-                    !unit.IsPyre && unit.BumpRules?.OuterBoss != true);
+                    IsDamageByUnitsKilledSource(unit, effect.TargetSubtype, allSubtypes));
             }
             return !AttackChange(effect) ? targets.UnitIds.Count : state.Rooms.SelectMany(room => room.Units)
                 .Count(unit => targets.UnitIds.Contains(unit.Id) && (unit.IsPyre || unit.CanAttack));
         }
+        private static bool IsDamageByUnitsKilledSource(CombatUnit unit, string subtype, bool allSubtypes) =>
+            unit.Team == CombatTeam.Player && unit.IsBoss != true && !unit.IsPyre && unit.BumpRules?.OuterBoss != true &&
+            !(unit.Modifiers?.IsChampion ?? unit.Subtypes.Contains(RelicStartTurnHealModel.ChampionSubtype)) &&
+            OriginalAllSubtypesModel.MatchesCharacter(unit, subtype, allSubtypes);
+
         private static bool StatusAdjustmentMatches(CombatUnit unit, CombatStatus status, CardActionEffect effect, bool allowEmptyList)
         {
             if (effect.StatusAdjustmentFilter == 0)

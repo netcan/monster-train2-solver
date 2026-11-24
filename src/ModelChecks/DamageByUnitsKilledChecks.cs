@@ -39,6 +39,16 @@ internal static class DamageByUnitsKilledChecks
                     kills >= 2 && actualStats.Value(spell.InstanceId, "HeroesKilled", "ThisTurn") -
                     beforeStats.Value(spell.InstanceId, "HeroesKilled", "ThisTurn") == kills,
                     "The pinned Shardtail action must pierce armor and credit the source card for its kills.");
+                var train = before.Spawn.Train;
+                var allSubtypes = new CombatRelicState(OriginalAllSubtypesModel.OwnerId, OriginalAllSubtypesModel.OwnerKey,
+                    [OriginalAllSubtypesModel.Effect], isCovenant: false, disallowedInPlacementPhase: false);
+                var active = CardSpellModel.WithContext(train, train.Context!.WithRelics(train.Context.Relics!.Append(allSubtypes).ToArray()));
+                CombatUnit champion = train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.Modifiers?.IsChampion == true);
+                CombatUnit steward = room.Units.Single(unit => unit.Team == CombatTeam.Player && !imps.Contains(unit.Id));
+                Require(OriginalAllSubtypesModel.MatchesCharacter(champion, impSubtype, allSubtypes: true) &&
+                    CardSpellModel.TestCount(active, effect, new CardTargets([champion.Id])) == 0 &&
+                    CardSpellModel.TestCount(active, effect, new CardTargets([steward.Id])) == 1,
+                    "The native subtype wildcard must exclude champions from sacrifice and admit ordinary friendly units.");
             }
             string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!),
                 BattleTurnChecks.Comparable(actual));
