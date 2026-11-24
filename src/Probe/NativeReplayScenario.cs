@@ -1372,8 +1372,23 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (PlayerAdvisorProbe.ObserveEndlessLoop2)
                 {
-                    if (PlayerAdvisorProbe.TryCaptureEndlessLoop2(managers, FullBattleTrace.Active!))
-                        Finish(true, "Player Advisor displayed the original Endless Loop 2 deployment without battle inputs.");
+                    FullBattleTrace observation = FullBattleTrace.Active!;
+                    if (PlayerAdvisorProbe.EndlessLoop2HandoffStarted)
+                    {
+                        if (PlayerAdvisorProbe.TryCaptureEndlessLoop2Handoff(managers, observation))
+                            Finish(true, "Player Advisor verified the original Endless Loop 2 suffix after one native card.");
+                    }
+                    else if (PlayerAdvisorProbe.TryCaptureEndlessLoop2(managers, observation))
+                    {
+                        if (PlayerAdvisorProbe.ObserveEndlessLoop2Handoff)
+                        {
+                            pendingPlay = PlayerAdvisorProbe.PrepareEndlessLoop2Handoff(managers);
+                            PlayPendingPolicyCard(managers, cards!);
+                            PlayerAdvisorProbe.VerifyEndlessLoop2Accepted();
+                        }
+                        else
+                            Finish(true, "Player Advisor displayed the original Endless Loop 2 deployment without battle inputs.");
+                    }
                     return;
                 }
                 if (!OriginalEndlessEnemyScalingWitness.AllWaves)

@@ -20,7 +20,13 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_ADVISOR") == "1";
         internal static bool ObserveEndlessLoop2 => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_OBSERVATION") == "1";
+        internal static bool ObserveEndlessLoop2Handoff => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_HANDOFF") == "1";
+        internal static bool EndlessLoop2HandoffStarted => loop2OriginalAdvice != null;
         private static string? loop2DeploymentStamp;
+        private static BattleAdvice? loop2OriginalAdvice;
+        private static long loop2OriginalGeneration, loop2OriginalSearches;
+        private static int loop2OriginalPublications;
+        private static string? loop2TentativePanel, loop2TentativeStatus;
         private static object? advisor;
         private static Type? type;
         private static int phase, boundaryFrame, captureCount, publicationCount;
@@ -171,6 +177,9 @@ namespace MonsterTrain2Poju.Probe
             if (RollingAdviceScenario.OffRouteEnabled)
                 new Harmony("netcan.poju.off-route-acceptance").Patch(AccessTools.Method(type, "CompleteCardInput"),
                     postfix: new HarmonyMethod(typeof(PlayerAdvisorProbe), nameof(ObserveOffRouteInput)));
+            if (ObserveEndlessLoop2Handoff)
+                new Harmony("netcan.poju.endless-loop2-handoff").Patch(AccessTools.Method(type, "CompleteCardInput"),
+                    postfix: new HarmonyMethod(typeof(PlayerAdvisorProbe), nameof(ObserveEndlessLoop2Accepted)));
             if (AdvisorRapidContinuationProbe.Enabled)
             {
                 var harmony = new Harmony("netcan.poju.rapid-continuation-acceptance");
@@ -335,6 +344,99 @@ namespace MonsterTrain2Poju.Probe
                 Get<long>("DiagnosticCardInputs") == 0;
             int PyreHealth(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
+        }
+
+        internal static PlayCardAction PrepareEndlessLoop2Handoff(AllGameManagers managers)
+        {
+            BattleAdvice advice = Advice;
+            PlayCardAction? first = advice.Plan.Steps[0].Action;
+            Require(!EndlessLoop2HandoffStarted && !advice.CurrentActionOnly && advice.Plan.Steps.Count >= 2 &&
+                first is { ActivatorUnitId: 0, ActivatorRoomIndex: null, Operation: null, TargetUnitId: 0, PlayerPosition: >= 0,
+                    RecursionSelections.Count: 0, MixSelections.Count: 0, SummonSelections.Count: 0 } &&
+                first.RoomIndex == managers.GetRoomManager().GetSelectedRoom(),
+                "Loop 2 handoff requires a direct advised deployment on the selected floor and a remaining plan");
+            loop2OriginalAdvice = advice;
+            loop2OriginalGeneration = GetGeneration();
+            loop2OriginalSearches = SearchCount;
+            loop2OriginalPublications = PublicationCount;
+            return NativeAction(first)!;
+        }
+
+        private static void ObserveEndlessLoop2Accepted(bool accepted, object? input)
+        {
+            if (!accepted || input == null || loop2OriginalAdvice == null ||
+                !(bool)AccessTools.Field(input.GetType(), "DirectHandPlay").GetValue(input) ||
+                !(bool)AccessTools.Field(input.GetType(), "Matches").GetValue(input) ||
+                !ReferenceEquals(Field<BattleAdvice?>("displayed"), loop2OriginalAdvice) || Field<int>("tentativeSteps") != 1)
+                return;
+            loop2TentativePanel = Field<Text>("body").text;
+            loop2TentativeStatus = Field<Text>("statusLabel").text;
+        }
+
+        internal static void VerifyEndlessLoop2Accepted()
+        {
+            Require(Get<long>("DiagnosticCardInputs") == 1 && loop2TentativeStatus == "临时步骤 · 待确认" &&
+                loop2TentativePanel?.StartsWith("临时步骤 · 结果与手牌位置待核对", StringComparison.Ordinal) == true,
+                "the accepted Loop 2 card did not immediately expose the original tentative suffix");
+        }
+
+        internal static bool TryCaptureEndlessLoop2Handoff(AllGameManagers managers, FullBattleTrace trace)
+        {
+            Require(trace.ObservedActionCount == 1 && trace.ObservedTurns.Count == 0 &&
+                managers.GetCombatManager().GetTurnCount() == 0 && Get<long>("DiagnosticCardInputs") == 1 &&
+                Get<int>("Failures") == 0 && Get<int>("PurityFailures") == 0,
+                "the Loop 2 handoff must settle one native card without an EndTurn or capture failure");
+            var input = trace.ObservedActions[0];
+            Require(input.Actual != null && input.Predicted.Supported && input.Difference == null &&
+                input.ActualOutcome == RoomOutcome.Exchanged, "the isolated native paid successor differs from the model");
+            BattleAdviceSession session = Field<BattleAdviceSession>("session");
+            if (!PublicationSettled(session)) return false;
+
+            BattleAdvice original = loop2OriginalAdvice!;
+            BattleAdvice final = Advice;
+            BattleTurnState native = Capture();
+            using var keys = new BattleStateKeys();
+            using var boundaryKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+            BattleActionResult modeled = BattleActionModel.PlayCard(original.Root, original.Plan.Steps[0].Action!);
+            string nativeKey = keys.Key(native);
+            Require(modeled.Supported && modeled.Outcome == RoomOutcome.Exchanged &&
+                boundaryKeys.Key(modeled.State!) == boundaryKeys.Key(native) &&
+                session.MatchesCurrentRoot(native) && (bool)Call("ReadyFor", native)! && nativeKey == final.RootKey &&
+                keys.Key(final.Root) == nativeKey && GetGeneration() > loop2OriginalGeneration && final.ReusedContinuation &&
+                SearchCount == loop2OriginalSearches && PublicationCount == loop2OriginalPublications + 1 &&
+                JToken.DeepEquals(JArray.FromObject(original.Plan.Steps.Skip(1)), JArray.FromObject(final.Plan.Steps)),
+                "the final Loop 2 publication did not reuse the verified suffix at the native successor");
+            Text body = Field<Text>("body");
+            Require(body.isActiveAndEnabled && Field<int>("tentativeSteps") == 0 &&
+                body.text.Contains("本回合步骤") && !body.text.StartsWith("临时步骤", StringComparison.Ordinal),
+                "the verified suffix is missing from the production panel");
+            string Stamp() => TwoTurnScenario.CaptureSnapshot("loop2-handoff", managers, managers.GetSaveManager(),
+                managers.GetCombatManager(), managers.GetCardManager(), log!, writeLog: false, includePresentationRng: true);
+            string beforeRender = Stamp();
+            UnityEngine.Random.State unityRng = UnityEngine.Random.state;
+            Call("CapturePanel");
+            Require(beforeRender == Stamp() && unityRng.Equals(UnityEngine.Random.state), "rendering the verified suffix changed native state or RNG");
+
+            SaveManager save = managers.GetSaveManager();
+            using var document = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, EvidenceKind = "NativeEndlessLoop2AdvisorHandoff",
+                GameVersion = Application.version, GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
+                Scenario = save.GetCurrentScenarioData()?.name, Loop = save.GetRunState().GetLoopIndex(), Distance = save.GetCurrentDistance(),
+                Assembly = type!.Assembly.GetName().Name, Version = type.Assembly.GetName().Version?.ToString(),
+                OriginalRoot = original.Root, OriginalRootKey = original.RootKey, OriginalSteps = original.Plan.Steps,
+                OriginalGeneration = loop2OriginalGeneration, OriginalSearches = loop2OriginalSearches,
+                OriginalPublications = loop2OriginalPublications, Input = input,
+                TentativePanelText = loop2TentativePanel, TentativeStatusText = loop2TentativeStatus,
+                AcceptedCardInputs = Get<long>("DiagnosticCardInputs"), EndTurnInputs = trace.ObservedTurns.Count,
+                FinalRoot = native, FinalPublishedRoot = final.Root, FinalRootKey = nativeKey, FinalSteps = final.Plan.Steps,
+                FinalPanelText = body.text, FinalGeneration = GetGeneration(), FinalSearches = SearchCount,
+                FinalPublications = PublicationCount, final.ReusedContinuation, PurityFailures = Get<int>("PurityFailures")
+            });
+            using var output = System.IO.File.Create(System.IO.Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "endless-loop2-advisor-handoff.mt2f"));
+            document.Write(output);
+            return true;
         }
 
         internal static long ResumeAfterFrozenPrefix()
