@@ -314,6 +314,14 @@ namespace MonsterTrain2Poju.Model
         internal const string DamageEnemyOnAscend = "RelicEffectDamageEnemyOnAscend";
         internal const string DamageEnemyOnDescend = "RelicEffectDamageEnemyOnDescend";
         internal const string ModifyDragonsHoardCap = "RelicEffectModifyDragonsHoardCap";
+        internal static bool IsOriginalSilverPostBattleOwner(CombatRelicState relic) =>
+            relic is { IsCovenant: false, DisallowedInPlacementPhase: false,
+                EffectTypes: ["RelicEffectBuffPyreForBossKill", "RelicEffectAddPostBattleRewardOnBossDeath"] } &&
+            (relic.DataId, relic.AssetKey) is
+                ("50198df9-788c-4618-942a-57361c585a57", "SilverT1") or
+                ("354e6614-8b05-4933-bd24-97a41fc63061", "SilverT2") or
+                ("44e74028-4548-4f36-911d-cdf4dd821511", "SilverT3");
+
         internal const string SoulSaviorStarterDeckId = "28d887c8-4fe3-4c55-a92e-90cd4b1baa25";
         internal const string SoulSaviorStarterDeckKey = "SoulSavior_StarterDeck";
         internal static bool IsSoulSaviorStarterDeck(CombatRelicState relic) => relic is
@@ -364,6 +372,8 @@ namespace MonsterTrain2Poju.Model
                     // This RegionRun owner builds the deck before combat. Card
                     // instances and any permanent starter upgrades are captured.
                     if (IsSoulSaviorStarterDeck(relic)) continue;
+                    // BattleComplete and post-battle reward generation run after the combat terminal snapshot.
+                    if (IsOriginalSilverPostBattleOwner(relic)) continue;
                     if (effect == RelicDeckPyreStatsModel.CardCopies && RelicDeckPyreStatsModel.IsOriginal(relic)) continue;
                     if (effect == RelicLateAttackModel.Effect) continue;
                     if (effect == RelicSpawnSilenceModel.Effect) continue;

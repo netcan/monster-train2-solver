@@ -31,6 +31,19 @@ internal static class CampaignRelicChecks
         Require(CampaignRelicModel.AcquireHoardCap(99, 3, 100) == 100 &&
             CampaignRelicModel.RemoveHoardCap(100, 100, 3, 100) == (97, 97),
             "Hoard acquisition clamp/removal truncation differs.");
+        string[] silverEffects = ["RelicEffectBuffPyreForBossKill", "RelicEffectAddPostBattleRewardOnBossDeath"];
+        foreach (var (id, key) in new[] {
+            ("50198df9-788c-4618-942a-57361c585a57", "SilverT1"),
+            ("354e6614-8b05-4933-bd24-97a41fc63061", "SilverT2"),
+            ("44e74028-4548-4f36-911d-cdf4dd821511", "SilverT3") })
+        {
+            CombatRelicState Owner(string asset, IReadOnlyList<string> effects) =>
+                new(id, asset, effects, isCovenant: false, disallowedInPlacementPhase: false);
+            Require(RelicModel.Validate(new[] { Owner(key, silverEffects) }) == null &&
+                RelicModel.Validate(new[] { Owner("OtherSilverOwner", silverEffects) }) != null &&
+                RelicModel.Validate(new[] { Owner(key, [.. silverEffects, "UncalibratedCombatCallback"]) }) != null,
+                "Only original Silver souls with their exact post-battle effects are compatible with battle search.");
+        }
         foreach (var owner in Owners.Skip(4))
         {
             CombatRelicState[] relics = [new CombatRelicState(owner.Id, owner.Key, [owner.Type],

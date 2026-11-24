@@ -1410,6 +1410,10 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 90 种状态中有 26 种带无尽缩放资格，查询前后确定性随机流一致。
 [原版倍率归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-balance-factors.mt2f)
 
+三阶原版 Silver 灵魂的薪火升级由 `SaveManager.BattleComplete` 在战斗终局快照之后调用，
+同一灵魂的额外奖励在战后生成。顾问识别原版灵魂和完整有序效果列表，并在下一场读取薪火的实际数值。
+该边界经过原版目录与调用链核对，三阶灵魂的实际战后升级仍待实机对照。
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，
