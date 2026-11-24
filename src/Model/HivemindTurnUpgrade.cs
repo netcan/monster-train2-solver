@@ -244,7 +244,7 @@ namespace MonsterTrain2Poju.Model
             ScaledFeedRoom(room) && IsScaledFeedRecipient(unit, room.Context?.QueryFrame?.Turn);
 
         private static bool IsScaledBossFeedingRoom(RoomCombatState room) =>
-            (room.Context?.QueryFrame?.Turn, room.RoomIndex) is (5, 0) or (6, 1) or (7, 2) &&
+            (room.Context?.QueryFrame?.Turn, room.RoomIndex) is (5, 0) or (6, 1 or 2) or (7, 2) &&
             IsScaledCampaign(room.Context);
 
         private static bool IsScaledBossFeedTarget(CombatUnit unit) => RelicModel.IsObservedSoulSaviorBossStatTarget(unit) &&
@@ -262,7 +262,7 @@ namespace MonsterTrain2Poju.Model
             bool expectedFrame = (turn, room.RoomIndex, status.Stacks, cachedAttack) switch
             {
                 (5, 0 or 1, 3 or 6 or 9, 0) => true,
-                (6, 1, <= 12, >= 0) or (6, 2, <= 12, > 0) => true,
+                (6, 1, <= 12, >= 0) or (6, 2 or 3, <= 12, > 0) => true,
                 (7, 2 or 3, _, > 0) => true,
                 (7, 2, <= 12, 0) => replacingCache,
                 _ => false
