@@ -409,6 +409,8 @@ namespace MonsterTrain2Poju.Model
             foreach (BattleSearchStep step in plan.Steps)
             {
                 token.ThrowIfCancellationRequested();
+                if (step.IsEndTurn != (step.Action == null))
+                    throw new InvalidOperationException("An advice step must contain exactly one input.");
                 roots?.Add(continuationKeys.Key(replayed));
                 if (fullRoots != null)
                     fullRoots.Add(fullRoots.Count == 0 && verifiedRootKey != null ? verifiedRootKey : keys.Key(replayed));
@@ -421,8 +423,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 else
                 {
-                    if (step.Action == null) throw new InvalidOperationException("Missing planned action.");
-                    BattleActionResult next = BattleActionModel.PlayCard(replayed, step.Action);
+                    BattleActionResult next = BattleActionModel.PlayCard(replayed, step.Action!);
                     if (!next.Supported) throw new InvalidOperationException(next.Reason);
                     replayed = next.State!; outcome = next.Outcome;
                 }
