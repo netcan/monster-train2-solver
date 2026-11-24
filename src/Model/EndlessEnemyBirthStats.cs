@@ -23,21 +23,27 @@ namespace MonsterTrain2Poju.Model
 
         internal CombatUnit? Apply(CombatUnit actor)
         {
-            if (actor.SpawnerCardId > 0 || actor.IsBoss != false || actor.Statuses.Count != 0 ||
+            if (actor.SpawnerCardId > 0 || !SupportedShape(actor) ||
                 actor.BaseAttack != InitialAttack || actor.Health != InitialHealth || actor.MaxHealth != InitialHealth ||
                 actor.Modifiers is not { AttackDamageAdded: 0, DamageBuff: 0 } modifiers ||
                 modifiers.AttackDamage != InitialAttack || Attack < 0 || Health < 1 ||
-                !SupportedTrigger(actor) || actor.Triggers[0].Effects.Count != EffectValues.Count ||
+                (actor.Triggers.FirstOrDefault()?.Effects.Count ?? 0) != EffectValues.Count ||
                 EffectValues.Any(value => value < 0))
                 return null;
 
-            CombatTrigger trigger = actor.Triggers[0];
+            CombatUnit scaled = actor.WithRawAttack(Attack).WithHealthAndMaxHealth(Health, Health);
+            if (actor.Triggers is not [var trigger]) return scaled;
             CombatEffect[] effects = trigger.Effects.Select((effect, index) => effect.WithActionValue(EffectValues[index])).ToArray();
-            return actor.WithRawAttack(Attack).WithHealthAndMaxHealth(Health, Health)
-                .WithTriggers(new[] { trigger.WithEffects(effects) });
+            return scaled.WithTriggers(new[] { trigger.WithEffects(effects) });
         }
 
-        internal static bool SupportedTrigger(CombatUnit actor) => actor.Triggers is [var trigger] &&
+        internal static bool SupportedShape(CombatUnit actor) =>
+            actor.IsBoss == false && actor.Statuses.Count == 0 &&
+                (actor.Triggers.Count == 0 || SupportedTrigger(actor)) ||
+            actor.IsBoss == true && actor.EndsBattleOnDeath && actor.BumpRules?.OuterBoss != true &&
+                actor.Triggers.Count == 0 && actor.Statuses is [{ Id: "relentless", Stacks: 1 }];
+
+        private static bool SupportedTrigger(CombatUnit actor) => actor.Triggers is [var trigger] &&
             trigger.Effects.All(effect => effect.Action is { Range: null, Statuses.Count: 0 } action &&
                 action.Value == effect.Value && effect.DamageStatusMultiplier == null) &&
             (trigger switch

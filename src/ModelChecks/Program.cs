@@ -14,6 +14,12 @@ if (args.Length == 2 && args[0] == "--original-endless-forecast-only")
     OriginalEndlessFirstWaveChecks.Forecast(archive.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-endless-waves-only")
+{
+    using var archive = ModelJson.ReadFixture(args[1]);
+    OriginalEndlessFirstWaveChecks.Waves(archive.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--endless-enemy-birth-scope-only")
 {
     using var archive = ModelJson.ReadFixture(args[1]);

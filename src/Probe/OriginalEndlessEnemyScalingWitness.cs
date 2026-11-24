@@ -114,6 +114,7 @@ namespace MonsterTrain2Poju.Probe
             }
 
             if (Waves.Count != ScheduledWaveCount || Waves.Any(wave => wave.SettledDecision == null)) return false;
+            trace.CompleteEndTurn(RoomOutcome.Exchanged);
             WriteWaves(log, null);
             return true;
         }
@@ -127,7 +128,9 @@ namespace MonsterTrain2Poju.Probe
             {
                 Schema = 1, Boundary = "OriginalEndlessEnemyScalingWaves", GameVersion = Application.version, GameModuleMvid = Module,
                 Scenario = scenario, Deployment = deployment, ScheduledWaves = ScheduledWaveCount, CompletedWaves = completed,
-                NativeWon = nativeWon, Waves, UnscheduledBirths = Births.Except(Waves.SelectMany(wave => wave.Births)).ToArray()
+                NativeWon = nativeWon, Waves, UnscheduledBirths = Births.Except(Waves.SelectMany(wave => wave.Births)).ToArray(),
+                Turns = FullBattleTrace.Active!.ObservedTurns.Select(turn =>
+                    new { turn.Index, turn.Before, turn.Actual, turn.ActualOutcome, turn.RelentlessDecisions }).ToArray()
             });
             using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "endless-enemy-scaling-waves.mt2f"));
             document.Write(output);

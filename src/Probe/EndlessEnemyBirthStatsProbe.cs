@@ -39,11 +39,12 @@ namespace MonsterTrain2Poju.Probe
             return (data, raw) =>
             {
                 var baseline = data.GetEndlessBaselineStats();
-                if (raw.IsBoss != false || raw.Statuses.Count != 0 || !baseline.HasHealth() ||
-                    !EndlessEnemyBirthStats.SupportedTrigger(raw))
+                if (!baseline.HasHealth() || data.IsOuterTrainBoss() || !EndlessEnemyBirthStats.SupportedShape(raw) ||
+                    data.GetStartingStatusEffects().Any(status =>
+                        managers.GetStatusEffectManager().GetStatusEffectDataById(status.statusId)?.ScalesInEndless() != false))
                     return null;
                 int baselineAttack = baseline.HasAttack() ? baseline.GetAttack() : raw.BaseAttack;
-                int[] values = raw.Triggers[0].Effects.Select(entry => Mathf.CeilToInt(entry.Value *
+                int[] values = raw.Triggers.SelectMany(trigger => trigger.Effects).Select(entry => Mathf.CeilToInt(entry.Value *
                     (entry.Type == "CardEffectDamage" ? damage : entry.Type == "CardEffectHeal" ? heal : buff))).ToArray();
                 return new EndlessEnemyBirthStats(raw.BaseAttack, raw.Health,
                     Mathf.CeilToInt(baselineAttack * attack), Mathf.CeilToInt(baseline.GetHealth() * health), values);

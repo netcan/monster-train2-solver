@@ -61,6 +61,43 @@ internal static class OriginalEndlessFirstWaveChecks
         Console.WriteLine("NATIVE-ENDLESS-FORECAST PASS: complete deployment successor and original first-wave RNG.");
     }
 
+    internal static void Waves(FixtureValue archive)
+    {
+        Require(Text(archive, "GameVersion") == Game231FixtureCatalog.Version &&
+            Text(archive, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(archive, "Boundary") == "OriginalEndlessEnemyScalingWaves" &&
+            !Flag(archive.GetProperty("Scenario"), "ControlledFirstLoop"), "Expected the original post-victory Endless wave capture.");
+        FixtureValue[] waves = archive.GetProperty("Waves").EnumerateArray().ToArray();
+        FixtureValue[] turns = archive.GetProperty("Turns").EnumerateArray().ToArray();
+        Require(waves.Length == 6 && turns.Length == waves.Length && Number(archive, "CompletedWaves") == waves.Length,
+            "Expected a native EndTurn for every scheduled wave.");
+
+        int births = 0;
+        for (int index = 0; index < waves.Length; index++)
+        {
+            FixtureValue wave = waves[index], turn = turns[index];
+            Require(Number(wave, "Index") == index && Number(turn, "Index") == index &&
+                Flag(wave, "PhaseAdvanced"), "The scheduled wave order changed.");
+            FixtureValue actual = turn.GetProperty("Actual");
+            Require(actual.GetProperty("Spawn").GetProperty("Phase").GetInt32() == index + 1,
+                "The native turn must settle exactly one wave.");
+            var root = turn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var decisions = turn.GetProperty("RelentlessDecisions").Deserialize<IReadOnlyList<RelentlessDecision>>();
+            BattleTurnResult next = BattleTurnModel.EndTurn(root, decisions);
+            Require(next.Supported, "Wave " + (index + 1) + ": " + next.UnsupportedReason);
+            RecordedBattleChecks.RecordedBoundary(next.State!, actual,
+                terminal: false, "original Endless wave " + (index + 1), trackPreviewPosition: true);
+            foreach (FixtureValue birth in wave.GetProperty("Births").EnumerateArray())
+            {
+                births++;
+                Require(birth.GetProperty("Before").GetProperty("Rng").ContentEquals(
+                    birth.GetProperty("After").GetProperty("Rng")), "An observed birth changed callback RNG.");
+            }
+        }
+        Require(births == 21, "The original six-wave roster changed.");
+        Console.WriteLine("NATIVE-ENDLESS-WAVES PASS: six exact EndTurns and 21 ordered native birth callbacks.");
+    }
+
     private static int Number(FixtureValue value, string field) => value.GetProperty(field).GetInt32();
     private static string? Text(FixtureValue value, string field) => value.GetProperty(field).GetString();
     private static bool Flag(FixtureValue value, string field) => value.GetProperty(field).GetBoolean();
