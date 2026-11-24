@@ -180,7 +180,7 @@ namespace MonsterTrain2Poju.Model
         {
             if (interaction is not (Infested + " room modifiers" or Hunter + " room modifiers" or
                 Infested + " room modifiers; " + Hunter + " room modifiers") ||
-                train.Context?.QueryFrame?.Turn is not (>= 2 and <= 4))
+                train.Context?.QueryFrame?.Turn is not (>= 2 and <= 5))
                 return false;
 
             return train.Rooms.Any(room => room.RoomIndex == 0 && !room.Preview &&
