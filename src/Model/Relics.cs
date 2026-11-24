@@ -282,6 +282,19 @@ namespace MonsterTrain2Poju.Model
             IsCovenant: false, DisallowedInPlacementPhase: false,
             EffectTypes: ["RelicEffectPurgeStarterDeck", "RelicEffectAddCardSetStartOfRun"]
         };
+        internal static bool IsSoulSaviorFirstRegionScaling(CombatRelicState relic) => relic is
+        {
+            DataId: "c9860ec2-1227-4333-8ca7-9e10b93c8810", AssetKey: "SoulSavior_RunDistance1",
+            IsCovenant: false, DisallowedInPlacementPhase: false
+        } && relic.EffectTypes is [ModifyCharacterMaxHealth, ModifyCharacterAttackDamage,
+            RelicResourceModel.PyreHealth, RelicResourceModel.PyreAttack, ..] && relic.EffectTypes.Count == 15 &&
+            relic.EffectTypes.Skip(4).All(effect => effect == RelicPercentageStatModel.Effect);
+
+        internal static bool IsObservedSoulSaviorBossStatTarget(CombatUnit unit) => unit is
+        {
+            AssetKey: "Boss_SoulSavior_R2_TrainBoss_Titanskin", Team: CombatTeam.Enemy, Health: > 0, IsBoss: true,
+            SpawnerCardId: 0, Modifiers.IsClone: false
+        } && unit.Subtypes.Contains("SubtypesData_Boss");
         internal static bool AbilitiesTriggerIncant(CombatContext? context) =>
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
         internal static string? Validate(CombatContext? context) => ConduitModel.Validate(context) ?? Validate(context?.Relics) ??

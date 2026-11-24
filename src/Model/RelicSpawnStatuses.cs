@@ -228,6 +228,17 @@ namespace MonsterTrain2Poju.Model
                         if (!onlyCovenants && !DrainYield()) return failed!;
                         continue;
                     }
+                    if (relic.EffectTypes[effectIndex] == RelicModel.ModifyCharacterMaxHealth &&
+                        RelicModel.IsSoulSaviorFirstRegionScaling(relic) && fromCardId == 0)
+                    {
+                        CombatUnit boss = state.Units.Single(unit => unit.Id == unitId);
+                        if (!RelicModel.IsObservedSoulSaviorBossStatTarget(boss)) continue;
+                        int maximum = Math.Min(99999, checked(boss.MaxHealth + 700));
+                        CombatUnit boosted = boss.WithHealthAndMaxHealth(Math.Min(maximum, checked(boss.Health + 700)), maximum);
+                        state = state.WithUnits(state.Units.Select(unit => unit.Id == unitId ? boosted : unit).ToArray());
+                        if (!DrainYield()) return failed!;
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicModel.ModifyCardAttack)
                     {
                         RelicCardAttackModifier effect = relic.CardAttackModifiers!.Single(item => item.EffectIndex == effectIndex);

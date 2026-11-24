@@ -5017,6 +5017,15 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatRelicState relic in context.Relics)
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
+                    if (relic.EffectTypes[effectIndex] == RelicModel.ModifyCharacterAttackDamage && kind == "OnSpawn" &&
+                        unit.Alive && RelicModel.IsSoulSaviorFirstRegionScaling(relic) &&
+                        RelicModel.IsObservedSoulSaviorBossStatTarget(unit.Source))
+                    {
+                        CombatUnit actor = unit.Freeze();
+                        UnitModifiers stats = actor.Modifiers!;
+                        unit.Apply(actor.WithModifiers(stats.WithDamageBuff(checked(stats.DamageBuff + 10))).WithRawAttack(stats.AttackDamage));
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicPersistentMonsterHealthModel.Effect)
                     {
                         if (!source.Preview && (kind is "OnHit" or "OnHeal" or "OnDeath"))

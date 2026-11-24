@@ -214,7 +214,7 @@ namespace MonsterTrain2Poju.Model
         private static bool IndependentSoulSaviorRelic(CombatRelicState relic)
         {
             if (relic.DisallowedInPlacementPhase != false) return false;
-            if (RelicModel.IsSoulSaviorStarterDeck(relic)) return true;
+            if (RelicModel.IsSoulSaviorStarterDeck(relic) || RelicModel.IsSoulSaviorFirstRegionScaling(relic)) return true;
             return (relic.DataId, relic.AssetKey) switch
             {
                 ("4687feca-a053-48ed-b208-81dc6dfc6e72", "UnitsGainStealthOnSlayPlusAttack") =>
@@ -223,9 +223,6 @@ namespace MonsterTrain2Poju.Model
                 ("f2c1e86b-ac5c-474f-8c3a-ebee76981fb8", "SoulSavior_DifficultyTier2") =>
                     relic.EffectTypes.Count == 12 && relic.EffectTypes.Take(11).All(type => type == RelicPercentageStatModel.Effect) &&
                     relic.EffectTypes[11] == RelicSpawnStatusScalingModel.Effect,
-                ("c9860ec2-1227-4333-8ca7-9e10b93c8810", "SoulSavior_RunDistance1") =>
-                    relic.EffectTypes.SequenceEqual(new[] { "RelicEffectModifyCharacterMaxHealth", "RelicEffectModifyCharacterAttackDamage",
-                        RelicResourceModel.PyreHealth, RelicResourceModel.PyreAttack }.Concat(Enumerable.Repeat(RelicPercentageStatModel.Effect, 11))),
                 ("e21a3bc5-0816-4bec-8d0d-9a1fe80b6308", "GrumpT3") =>
                     relic.EffectTypes is ["RelicEffectCardUpgrade"],
                 ("75b688f5-daa0-487b-bf02-81d5ff014135", "WormgutT3") =>
