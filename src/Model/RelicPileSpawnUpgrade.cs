@@ -51,7 +51,9 @@ namespace MonsterTrain2Poju.Model
             if (!condition.Supported) return Fail(condition.UnsupportedReason!);
             var state = source.WithContext(condition.Context);
             if (!condition.Passed) return Match(state);
-            bool subtype = rule.Subtype.Length == 0 ? unit.Team == CombatTeam.Enemy || !unit.IsPyre : unit.Subtypes.Contains(rule.Subtype);
+            bool subtype = rule.Subtype.Length == 0 ? unit.Team == CombatTeam.Enemy || !unit.IsPyre :
+                OriginalAllSubtypesModel.MatchesCharacter(unit, rule.Subtype,
+                    OriginalAllSubtypesModel.Active(state.Context, state.Deployment));
             string team = unit.Team == CombatTeam.Player ? "Monsters" : "Heroes";
             if (Applications(1, 1, rule.Team, team, subtype) == 0 || rule.Threshold <= 0) return Match(state);
             int? visible = VisibleCount(state.Context!, rule.Pile);
