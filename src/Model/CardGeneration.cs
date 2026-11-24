@@ -368,7 +368,8 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (candidate.MaskDescriptor == null) return Unsupported("Optional generation-upgrade filters require captured card metadata.");
                     CardUpgradeMaskCard maskCard = CardBranchMaskModel.Resolve(candidate.WithModifiers(permanent, temporary));
-                    applyOptionalUpgrade = rule.OptionalUpgradeFilters.All(filter => CardUpgradeMaskModel.FilterCard(filter, maskCard));
+                    bool allSubtypes = OriginalAllSubtypesModel.Active(context, deployment: context.QueryFrame?.Turn == 0);
+                    applyOptionalUpgrade = rule.OptionalUpgradeFilters.All(filter => CardUpgradeMaskModel.FilterCard(filter, maskCard, allSubtypes));
                 }
                 if (applyOptionalUpgrade)
                 {

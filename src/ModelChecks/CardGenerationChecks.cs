@@ -50,6 +50,27 @@ internal static class CardGenerationChecks
         Require(detached.Supported && detached.Context!.CardInstances!.Single(card => card.InstanceId == 4)
             .Temporary.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(["pending"]),
             "Generation without a source copied modifiers or applied source-dependent discard upgrades.");
+        var excludedSubtype = new CardMaskDefinition("generated-unit", "Monster", "Common", true, true, true,
+            ["excluded-subtype"], [], [], [], null, false, 1, 0, false, false, false);
+        var filteredCreation = new CardCreationRule(excludedSubtype.DataId, CardModifiers.Empty(), null, [],
+            maskDescriptor: new(excludedSubtype, 1, [], []));
+        var filteredUpgrade = new CardUpgradeModifier("filtered", "filtered", new(damage: 1), [], false, false, false, 0, 0, [],
+            maskMetadata: new([], false, false, false, false));
+        var filteredRule = new CardGenerationRule("HandPile", 1, [filteredCreation], deterministicPoolSelection: true,
+            upgrade: filteredUpgrade, optionalUpgradeFilters: [new(subtypes: new(excluded: ["excluded-subtype"]))]);
+        var allSubtypes = new CombatRelicState("3894bbe3-6ad6-42ed-9f63-6b47371b4583", "AllUnitsAllSubtypes",
+            ["RelicEffectMonstersAreAllSubtypes"], isCovenant: false, disallowedInPlacementPhase: true);
+        bool AddsOptionalUpgrade(int turn, params CombatRelicState[] relics)
+        {
+            var before = new CombatContext(context.Cards, rng, 0, 4, 2, cardInstances: context.CardInstances,
+                queryFrame: new(turn: turn), relics: relics);
+            CardGenerationResult result = CardGenerationModel.Apply(before, filteredRule);
+            Require(result.Supported && result.AddedCards.Single().InstanceId == 4 && result.Context!.BattleRng.Equals(rng),
+                "Optional generation-upgrade filtering changes card identity or RNG.");
+            return result.Context!.CardInstances!.Single(card => card.InstanceId == 4).Temporary.Upgrades.Count == 1;
+        }
+        Require(!AddsOptionalUpgrade(1) && !AddsOptionalUpgrade(0, allSubtypes) && AddsOptionalUpgrade(1, allSubtypes),
+            "Optional generation-upgrade filtering did not use the phase-active all-subtypes owner.");
         var full = new CombatContext(new([new(1, "source"), new(2, "held")], context.Cards.Draw, [], rng, 2, []),
             rng, 0, 4, 2, cardInstances: context.CardInstances, nextAddedTemporaryUpgrades: [pending]);
         CardGenerationResult refused = CardGenerationModel.Apply(full, new("HandPile", 3, [creation]), 1);
