@@ -1553,6 +1553,7 @@ namespace MonsterTrain2Poju.Model
                         unit.BumpRules?.OuterBoss != true).Select(unit => unit.Id).ToArray();
                     int[] heroIds = collected.Where(unit => unit.Team == CombatTeam.Enemy).Select(unit => unit.Id).ToArray();
                     int damage = unchecked(sacrificeIds.Length * effect.Value);
+                    int damageSourceCardId = effect.UseCardTraits ? sourceCardId : 0;
                     foreach (int id in sacrificeIds)
                     {
                         RoomCombatState? deathRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == id));
@@ -1593,7 +1594,7 @@ namespace MonsterTrain2Poju.Model
                         if (state.Context?.SpawnPoints != null && !damageRoom.Preview)
                         {
                             TrainSpellResult applied = ApplyNativeDamageStep(state, damageRoom.RoomIndex, id, Math.Max(0, damage),
-                                0, Array.Empty<RoomCombatModel.QueuedCharacterTrigger>(), selfUnitId);
+                                damageSourceCardId, Array.Empty<RoomCombatModel.QueuedCharacterTrigger>(), selfUnitId);
                             if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
                             state = applied.State!;
                             events.AddRange(applied.Events);
@@ -1604,7 +1605,7 @@ namespace MonsterTrain2Poju.Model
                         else
                         {
                             RoomCombatResult applied = RoomCombatModel.ApplyCardDamageAfterTraits(damageRoom, id,
-                                Math.Max(0, damage), 0, deferSpawnerExhaustion: piles != null,
+                                Math.Max(0, damage), damageSourceCardId, deferSpawnerExhaustion: piles != null,
                                 attackerUnitId: selfUnitId, refreshPyre: Refresh);
                             if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
                             state = ReplaceRoom(state, applied.State!);

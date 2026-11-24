@@ -729,7 +729,9 @@ namespace MonsterTrain2Poju.Probe
                 nextDrawUpgrade: type == "ScheduleNextDrawUpgrade" ? TypedDrawProbe.UpgradeRule(effect) : null,
                 requiredGold: type == "ScheduleNextDrawUpgrade" ? effect.GetAdditionalParamInt() : 0,
                 goldCostRequired: type == "RewardGold" ? effect.GetParamBool() : (bool?)null,
-                useCardTraits: (type is "DamagePerSourceAttack" or "HealTrain" or "HealTrainPerEmber") && effect.GetParamBool(),
+                useCardTraits: (type is "DamagePerSourceAttack" or "HealTrain" or "HealTrainPerEmber") && effect.GetParamBool() ||
+                    type == "DamageByUnitsKilled" && typeof(CardEffectDamageByUnitsKilled).Module.ModuleVersionId ==
+                        new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d"),
                 requireEquipment: (type == "AttackWithUnit" || type == "AttackTargetsWithSelfUnit") && effect.GetParamBool(), useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2(),
                 countStatusOnlyOnTargets: type == "AddStatusPerOtherEffect" && effect.GetParamBool(), spawnFallbackUnit: spawnFallbackUnit,
                 disallowStatusStackModifiers: type == "SpawnOrStatus" && effect.GetDisallowStatusEffectStackModifiers(),

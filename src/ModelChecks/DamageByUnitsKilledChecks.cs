@@ -6,6 +6,7 @@ internal static class DamageByUnitsKilledChecks
     internal static void Native(FixtureValue fixture)
     {
         const string spellId = "d9c0c510-ccb5-4a89-9f3b-99799e765540";
+        bool forwardsSource = fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version;
         int matched = 0;
         foreach (FixtureValue entry in fixture.GetProperty("Actions").EnumerateArray())
         {
@@ -27,6 +28,18 @@ internal static class DamageByUnitsKilledChecks
                 heroes.Any(id => room.Units.Single(unit => unit.Id == id).Health >
                     (after.Units.FirstOrDefault(unit => unit.Id == id)?.Health ?? 0)),
                 "Original Shardtail action did not sacrifice an Imp and damage an enemy.");
+            if (forwardsSource)
+            {
+                var effect = before.PlayRules!.Cards.Single(rule => rule.DataId == spellId).Effects.Single();
+                var actualStats = actual.Spawn.Train.Context!.Statistics!;
+                var beforeStats = before.Spawn.Train.Context.Statistics!;
+                int kills = heroes.Count(id => after.Units.All(unit => unit.Id != id));
+                Require(effect.UseCardTraits && room.Units.Any(unit => heroes.Contains(unit.Id) &&
+                    unit.Status("armor")?.Stacks >= imps.Length * effect.Value && after.Units.All(actor => actor.Id != unit.Id)) &&
+                    kills >= 2 && actualStats.Value(spell.InstanceId, "HeroesKilled", "ThisTurn") -
+                    beforeStats.Value(spell.InstanceId, "HeroesKilled", "ThisTurn") == kills,
+                    "The pinned Shardtail action must pierce armor and credit the source card for its kills.");
+            }
             string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!),
                 BattleTurnChecks.Comparable(actual));
             Require(difference == null, "Shardtail action differs: " + difference);
