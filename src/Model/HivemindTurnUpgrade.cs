@@ -205,12 +205,13 @@ namespace MonsterTrain2Poju.Model
             int? turn = train.Context?.QueryFrame?.Turn;
             if (turn is 6 or 7)
             {
-                string bossMarker = ScaledTrainBoss + " room modifiers";
-                if (interaction != (turn == 6 ? bossMarker + "; " + Infested + " room modifiers" : bossMarker)) return false;
+                string[] markers = interaction.Split(new[] { "; " }, StringSplitOptions.None);
+                if (!markers.All(IsKnownMarker)) return false;
                 return train.Rooms.Any(room => room.RoomIndex == turn - 5 && !room.Preview &&
-                    string.Join("; ", room.ExternalInteractions) == interaction && room.ExternalInteractions.All(marker =>
-                        room.Units.Any(unit => Marker(unit) == marker && (IsScaledBossFeedOwner(room, unit) ||
-                            IsScaledFirstWaveOwner(unit, train.Context)))));
+                    room.Units.Any(unit => IsScaledBossFeedOwner(room, unit)) &&
+                    string.Join("; ", room.ExternalInteractions.Where(markers.Contains)) == interaction &&
+                    markers.All(marker => room.Units.Any(unit => Marker(unit) == marker &&
+                        IsScaledRoomMarkerOwner(room, unit))));
             }
             if (interaction is not (Infested + " room modifiers" or Hunter + " room modifiers" or
                 Infested + " room modifiers; " + Hunter + " room modifiers") ||
@@ -235,8 +236,7 @@ namespace MonsterTrain2Poju.Model
             ScaledFeedRoom(room) && IsScaledFeedRecipient(unit, room.Context?.QueryFrame?.Turn);
 
         private static bool IsScaledBossFeedingRoom(RoomCombatState room) =>
-            ((room.Context?.QueryFrame?.Turn, room.RoomIndex) is (5, 0) or (6, 1) ||
-             room is { RoomIndex: 2, Preview: true } && room.Context?.QueryFrame?.Turn == 7) &&
+            (room.Context?.QueryFrame?.Turn, room.RoomIndex) is (5, 0) or (6, 1) or (7, 2) &&
             IsScaledCampaign(room.Context);
 
         private static bool IsScaledBossFeedTarget(CombatUnit unit) => RelicModel.IsObservedSoulSaviorBossStatTarget(unit) &&
@@ -255,8 +255,7 @@ namespace MonsterTrain2Poju.Model
             {
                 (5, 0 or 1, 3 or 6 or 9, 0) => true,
                 (6, 1, <= 12, >= 0) or (6, 2, <= 12, > 0) => true,
-                (7, 2, 15, > 0) => room.Preview,
-                (7, 2 or 3, <= 12, > 0) => true,
+                (7, 2 or 3, _, > 0) => true,
                 (7, 2, <= 12, 0) => replacingCache,
                 _ => false
             };

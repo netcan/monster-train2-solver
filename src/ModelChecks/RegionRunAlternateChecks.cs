@@ -47,20 +47,25 @@ internal static class RegionRunAlternateChecks
             CheckHivemind(next, turn: 6, holders: 6, total: 23, bossStacks: 6);
             next = ReplayEndTurn(next, witness.GetProperty("SecondEndTurn"));
             CheckHivemind(next, turn: 7, holders: 3, total: 16, bossStacks: 12);
+            next = ReplayEndTurn(next, witness.GetProperty("ThirdEndTurn"), RoomOutcome.PlayerDefeated);
+            CombatUnit boss = next.Spawn.Train.Rooms[3].Units.Single(unit => unit.IsBoss == true);
+            Require(next.Spawn.Turn == 7 && boss.Statuses.Single(status => status.Id == "hivemind").Stacks == 15 &&
+                boss.BaseAttack == 38, "The original terminal Pyre entry must preserve the boss's Hivemind and cached attack.");
         }
         Console.WriteLine($"NATIVE-REGION-ALTERNATE PASS room={action.RoomIndex} target={action.TargetUnitId} " +
             $"turn={next.Spawn.Turn}: exact continuous paid action, EndTurn successors, owner caches, and RNG.");
     }
 
-    private static BattleTurnState ReplayEndTurn(BattleTurnState previous, FixtureValue turn)
+    private static BattleTurnState ReplayEndTurn(BattleTurnState previous, FixtureValue turn,
+        RoomOutcome expected = RoomOutcome.Exchanged)
     {
         BattleTurnState turnRoot = RecordedBattleChecks.RecordedBoundary(previous, turn.GetProperty("Before"),
             terminal: false, "Before alternate EndTurn", trackPreviewPosition: true);
         BattleTurnResult ended = BattleTurnModel.EndTurn(turnRoot, RecordedBattleChecks.Decisions(turn));
-        Require(ended.Supported && ended.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
+        Require(ended.Supported && ended.Outcome == expected && ended.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
             ended.UnsupportedReason ?? "The alternate EndTurn outcome differs.");
         return RecordedBattleChecks.RecordedBoundary(ended.State!, turn.GetProperty("Actual"),
-            terminal: false, "After alternate EndTurn", trackPreviewPosition: true);
+            terminal: expected == RoomOutcome.PlayerDefeated, "After alternate EndTurn", trackPreviewPosition: true);
     }
 
     private static void CheckHivemind(BattleTurnState state, int turn, int holders, int total, int bossStacks)

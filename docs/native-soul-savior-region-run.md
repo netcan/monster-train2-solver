@@ -68,6 +68,7 @@ pwsh -File scripts/Run-CampaignProgress.ps1 -RegionRun -StopBeforeRing 4 -Native
 第 6 回合有七名 Hivemind 持有者，层数合计 29，七名单位的攻击缓存均为 +29。替换出牌和结束回合的完整后继及随机流均匹配。
 [原版备选路线](../tests/compatibility/game-2.3.1/mechanics/region-run-titanskin/native-gravity-alternate.mt2f)
 
-把同一张 Gravity 改投中层 FeedInfested 后连续结束两次回合，首领的 Hivemind 层数在第 6、7 回合分别为 6、12。
-全塔攻击缓存分别刷新为 +23、+16。替换出牌和两次结束回合的完整连续后继与随机流均匹配。
+把同一张 Gravity 改投中层 FeedInfested 后连续结束三次回合，首领的 Hivemind 层数在第 6、7 回合分别为 6、12。
+全塔攻击缓存分别刷新为 +23、+16。最后一次喂食使首领增至 15 层，并保留 +16 攻击缓存进入薪火层。
+替换出牌、三次结束回合、原版败局结算和随机流均连续匹配。
 [中层备选路线](../tests/compatibility/game-2.3.1/mechanics/region-run-titanskin/native-gravity-middle-alternate.mt2f)
