@@ -20,6 +20,96 @@ internal static class RollingAdviceChecks
             (RecordedBattleChecks.Decisions(right) ?? []).Select(Choice));
     private static (int Room, int Rounds, bool Continue) Choice(RelentlessDecision choice) =>
         (choice.RoomIndex, choice.CompletedRounds, choice.Continue);
+    private static bool SameStep(FixtureValue left, FixtureValue right) =>
+        left.GetProperty("IsEndTurn").GetBoolean() == right.GetProperty("IsEndTurn").GetBoolean() &&
+        left.GetProperty("Action").ContentEquals(right.GetProperty("Action")) && SameRelentlessChoices(left, right);
+
+    internal static void RapidContinuation(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
+            fixture.GetProperty("EvidenceKind").GetString() == "NativePlayerAdvisorRapidContinuation" &&
+            fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module,
+            "Expected the pinned native rapid continuation receipt.");
+        FixtureValue[] inputs = fixture.GetProperty("Inputs").EnumerateArray().ToArray();
+        Require(inputs.Length == 2 && inputs[0].GetProperty("Mode").GetString() == "rolling" &&
+            inputs[1].GetProperty("Mode").GetString() == "rapid-continuation" &&
+            fixture.GetProperty("SecondAcceptedWhileBlocked").GetBoolean(), "Missing two accepted inputs during one continuation verification.");
+        int verificationThread = fixture.GetProperty("VerificationThread").GetInt32();
+        int mainThread = fixture.GetProperty("MainThread").GetInt32();
+        long originalGeneration = fixture.GetProperty("OriginalGeneration").GetInt64();
+        long finalGeneration = fixture.GetProperty("FinalGeneration").GetInt64();
+        long searches = fixture.GetProperty("OriginalSearches").GetInt64();
+        long publications = fixture.GetProperty("OriginalPublications").GetInt64();
+        Require(verificationThread > 0 && mainThread > 0 && verificationThread != mainThread &&
+            originalGeneration > 0 && finalGeneration > originalGeneration &&
+            inputs.All(row => row.GetProperty("Generation").GetInt64() == originalGeneration) &&
+            searches > 0 && fixture.GetProperty("FinalSearches").GetInt64() == searches && publications > 0 &&
+            fixture.GetProperty("FinalPublications").GetInt64() == publications + 1,
+            "Expected worker verification and exactly one new publication without another search.");
+
+        FixtureValue initial = inputs[0];
+        FixtureValue[] initialPlan = initial.GetProperty("PlanSteps").EnumerateArray().ToArray();
+        Require(initialPlan.Length > inputs.Length && new[] { "PlanSteps", "Planned", "PlannedOutcome", "Score",
+            "RequestedHorizon", "TurnsPlanned", "UsedShorterHorizon", "PolicyBaselineScore" }
+            .All(field => initial.GetProperty(field).ContentEquals(inputs[1].GetProperty(field))),
+            "The second input did not carry the original forecast unchanged.");
+        using var keys = new BattleStateKeys();
+        using var boundaryKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+        BattleTurnState? previous = null;
+        for (int index = 0; index < inputs.Length; index++)
+        {
+            FixtureValue input = inputs[index];
+            BattleTurnState root = State(input.GetProperty("Root"));
+            BattleSearchStep step = ReadStep(input);
+            Require(root.Spawn.Turn == 0 && !step.IsEndTurn && step.Action is { ActivatorUnitId: 0 } action &&
+                action.RecursionSelections.Count == 0 && action.MixSelections.Count == 0 && action.SummonSelections.Count == 0 &&
+                SameStep(initialPlan[index], input) && input.GetProperty("Difference").ValueKind == FixtureKind.Null,
+                "The driver did not play the corresponding pair of original deployment steps.");
+            if (previous != null)
+                Require(boundaryKeys.Key(previous) == boundaryKeys.Key(root), "The two native input roots are not consecutive.");
+            string parent = JsonSerializer.Serialize(root);
+            BattleTurnState modeled = BattlePlannerChecks.Replay(root, [step], out RoomOutcome outcome);
+            Require(outcome == RoomOutcome.Exchanged && outcome == input.GetProperty("Outcome").Deserialize<RoomOutcome>(),
+                "The native deployment input outcome differs.");
+            RecordedBattleChecks.Compare(modeled, State(input.GetProperty("Expected")), terminal: false, $"Rapid forecast input {index + 1}");
+            RecordedBattleChecks.RecordedBoundary(modeled, input.GetProperty("Actual"), terminal: false, $"Rapid native input {index + 1}");
+            Require(JsonSerializer.Serialize(root) == parent, "Rapid input replay mutated its parent.");
+            previous = State(input.GetProperty("Actual"));
+        }
+
+        FixtureValue publication = fixture.GetProperty("FinalRoot");
+        BattleTurnState finalRoot = State(publication);
+        FixtureValue nativeRoot = fixture.GetProperty("FinalNativeRoot");
+        string nativeKey = fixture.GetProperty("FinalRootKey").GetString()!;
+        Require(nativeKey.Length == 64 && nativeKey.All(Uri.IsHexDigit) &&
+            nativeKey == fixture.GetProperty("FinalNativeRootKey").GetString() && publication.ContentEquals(nativeRoot) &&
+            keys.Key(finalRoot) == keys.Key(State(nativeRoot)) && boundaryKeys.Key(finalRoot) == boundaryKeys.Key(previous!),
+            "The final published root or native key differs from the independently captured native successor.");
+
+        FixtureValue finalPlan = fixture.GetProperty("FinalPlan");
+        FixtureValue[] suffix = finalPlan.GetProperty("Steps").EnumerateArray().ToArray();
+        Require(suffix.Length == initialPlan.Length - inputs.Length && suffix.Length <= finalPlan.GetProperty("MaxSteps").GetInt32() &&
+            suffix.Select((step, index) => SameStep(step, initialPlan[index + inputs.Length])).All(matches => matches) &&
+            finalPlan.GetProperty("Outcome").ContentEquals(initial.GetProperty("PlannedOutcome")) &&
+            finalPlan.GetProperty("Score").GetDouble() == initial.GetProperty("Score").GetDouble() &&
+            !finalPlan.GetProperty("Cancelled").GetBoolean() && finalPlan.GetProperty("ExpandedNodes").GetInt32() == 0 &&
+            suffix.Count(step => step.GetProperty("IsEndTurn").GetBoolean()) == finalPlan.GetProperty("TurnsCompleted").GetInt32(),
+            "The final publication did not retain the exact original two-step suffix.");
+        VerifyPlan(State(initial.GetProperty("Root")), initialPlan, initial.GetProperty("Planned"),
+            initial.GetProperty("PlannedOutcome"), initial.GetProperty("Score"));
+        VerifyPlan(finalRoot, suffix, finalPlan.GetProperty("State"), finalPlan.GetProperty("Outcome"), finalPlan.GetProperty("Score"));
+        Console.WriteLine($"PLAYER-ADVISOR-RAPID-CONTINUATION PASS. Two native plays during one verification, no new search, one publication and {suffix.Length} replayed suffix steps.");
+
+        void VerifyPlan(BattleTurnState root, FixtureValue[] steps, FixtureValue expected, FixtureValue expectedOutcome, FixtureValue score)
+        {
+            string parent = JsonSerializer.Serialize(root);
+            BattleTurnState settled = BattlePlannerChecks.Replay(root, steps.Select(ReadStep).ToArray(), out RoomOutcome outcome);
+            Require(keys.Key(settled) == keys.Key(State(expected)) && outcome == expectedOutcome.Deserialize<RoomOutcome>() &&
+                BattlePlanner.Evaluate(settled, outcome) == score.GetDouble() && JsonSerializer.Serialize(root) == parent,
+                "The published forecast does not independently reproduce its result, score and immutable root.");
+        }
+    }
 
     internal static void OffRoute(FixtureValue fixture)
     {

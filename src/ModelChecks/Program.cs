@@ -7726,6 +7726,13 @@ if (args.Length == 2 && args[0] == "--player-advisor-off-route-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--player-advisor-rapid-continuation-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RollingAdviceChecks.RapidContinuation(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--advisor-future-target-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
