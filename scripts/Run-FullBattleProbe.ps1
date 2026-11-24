@@ -600,6 +600,7 @@ param(
     [switch] $OriginalLonelyRoomsBattle,
     [switch] $OriginalShuffleUnitsWitness,
     [switch] $OriginalDoubleFriendlyHealthWitness,
+    [switch] $OriginalDoubleFriendlyHealthBattle,
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalSecondFloorEnemyOpening,
     [switch] $OriginalHealOnAscendWitness,
@@ -1103,9 +1104,11 @@ if ($PlacementSummonBlockOnly -and -not $OriginalPlacementMutatorsWitness) {
     throw 'PlacementSummonBlockOnly requires OriginalPlacementMutatorsWitness.'
 }
 $originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalDoubleStatusEffectsWitness',
-    'OriginalDoubleStatusEffectsBattle', 'OriginalLonelyRoomsBattle', 'OriginalShuffleUnitsWitness', 'OriginalDoubleFriendlyHealthWitness')
+    'OriginalDoubleStatusEffectsBattle', 'OriginalLonelyRoomsBattle', 'OriginalShuffleUnitsWitness',
+    'OriginalDoubleFriendlyHealthWitness', 'OriginalDoubleFriendlyHealthBattle')
 $selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalDoubleStatusEffectsWitness,
-    $OriginalDoubleStatusEffectsBattle, $OriginalLonelyRoomsBattle, $OriginalShuffleUnitsWitness, $OriginalDoubleFriendlyHealthWitness).Where({ $_ })
+    $OriginalDoubleStatusEffectsBattle, $OriginalLonelyRoomsBattle, $OriginalShuffleUnitsWitness,
+    $OriginalDoubleFriendlyHealthWitness, $OriginalDoubleFriendlyHealthBattle).Where({ $_ })
 if ($selectedOriginalMutatorTests.Count -gt 0) {
     $witnessArguments = $originalMutatorArguments + @('GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
@@ -2689,7 +2692,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
     $OriginalHealOnAscendWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
-    $OriginalShuffleUnitsWitness -or $OriginalDoubleFriendlyHealthWitness) {
+    $OriginalShuffleUnitsWitness -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2724,7 +2727,8 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     if ($OriginalShuffleUnitsWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original ShuffleUnits witness requires the pinned 2.3.1 game module.'
     }
-    if ($OriginalDoubleFriendlyHealthWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+    if (($OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle) -and
+        $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original double-friendly-health birth requires the pinned 2.3.1 game module.'
     }
     if (($OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -3133,6 +3137,7 @@ $environment = @{
     MT2_PROBE_LONELY_ROOMS_BATTLE = $(if ($OriginalLonelyRoomsBattle) { '1' } else { '0' })
     MT2_PROBE_SHUFFLE_UNITS_WITNESS = $(if ($OriginalShuffleUnitsWitness) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_FRIENDLY_HEALTH_WITNESS = $(if ($OriginalDoubleFriendlyHealthWitness) { '1' } else { '0' })
+    MT2_PROBE_DOUBLE_FRIENDLY_HEALTH_BATTLE = $(if ($OriginalDoubleFriendlyHealthBattle) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
     MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
@@ -5410,6 +5415,16 @@ if ($OriginalDoubleStatusEffectsBattle) {
         ($owners[0].EffectTypes -join ',') -cne 'RelicEffectAddStatusEffectMultiplier' -or
         $rules.Count -ne 1 -or $rules[0].EffectIndex -ne 0 -or $rules[0].MultiplierPercent -ne 200) {
         throw "The full battle did not capture the original DoubleStatusEffects owner. Inspect $tracePath and $unityLog"
+    }
+}
+if ($OriginalDoubleFriendlyHealthBattle) {
+    $owners = @($trace.Turns[0].Before.Spawn.Train.Context.Relics | Where-Object DataId -ceq 'ca916209-1309-4e3f-985c-f09b87583f93')
+    $rules = @($owners | ForEach-Object PercentageStats)
+    if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        $owners.Count -ne 1 -or $owners[0].AssetKey -cne 'Echoes_DoubleFriendlyUnitHealthUnhealed' -or
+        ($owners[0].EffectTypes -join ',') -cne 'RelicEffectModifyCharacterMaxHealthPercentage' -or
+        $rules.Count -ne 1 -or $rules[0].EffectIndex -ne 0 -or $rules[0].Multiplier -ne 2 -or $rules[0].SourceTeam -cne 'Monsters') {
+        throw "The full battle did not capture the original unhealed friendly health owner. Inspect $tracePath and $unityLog"
     }
 }
 if ($OriginalLonelyRoomsBattle) {

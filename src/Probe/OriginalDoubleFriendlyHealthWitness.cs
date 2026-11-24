@@ -20,6 +20,7 @@ namespace MonsterTrain2Poju.Probe
         private const string FileName = "original-double-friendly-health.mt2f";
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_FRIENDLY_HEALTH_WITNESS") == "1";
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_FRIENDLY_HEALTH_BATTLE") == "1";
         internal static bool Acquired => installed != null;
         private static RelicEffectModifyCharacterMaxHealthPercentage? installed;
         private static object? ownerDefinition;
