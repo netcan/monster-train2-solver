@@ -97,6 +97,9 @@ namespace MonsterTrain2Poju.Probe
         internal static void Start(ManualLogSource log)
         {
             Running = true; recording = true; notifications.Clear();
+#if DEVELOPMENT_PROBE
+            if (devotes == 1) PlayerAdvisorProbe.DevoteStarted(Managers.GetRoomManager().GetSelectedRoom());
+#endif
             Managers.GetSaveManager().StartCoroutine(Run(log));
         }
         private static IEnumerator Run(ManualLogSource log)
@@ -109,12 +112,18 @@ namespace MonsterTrain2Poju.Probe
                     IEnumerator item = stack.Peek(); bool next;
                     try { next = item.MoveNext(); }
                     catch (Exception error) { Error = error.ToString(); log.LogError(Error); break; }
+#if DEVELOPMENT_PROBE
+                    if (devotes == 1) PlayerAdvisorProbe.DevoteProgress();
+#endif
                     if (!next) { (stack.Pop() as IDisposable)?.Dispose(); continue; }
                     if (item.Current is IEnumerator child) stack.Push(child); else yield return item.Current;
                 }
                 observations.Add(new { Phase = "Completed", Number = devotes, Notifications = notifications.ToArray(),
                     Hand = Managers.GetCardManager().GetHand().Select(FullBattleTrace.Active!.CardId).ToArray(),
                     Energy = Managers.GetPlayerManager().GetEnergy(), Devotion = DevotionProbe.Capture(Managers) });
+#if DEVELOPMENT_PROBE
+                if (devotes == 1) PlayerAdvisorProbe.DevoteCompleted();
+#endif
             }
             finally { while (stack.Count > 0) (stack.Pop() as IDisposable)?.Dispose(); Running = false; recording = false; }
         }

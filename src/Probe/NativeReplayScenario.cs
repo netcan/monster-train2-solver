@@ -4305,6 +4305,9 @@ namespace MonsterTrain2Poju.Probe
 #endif
                 try { if (PlannerReplayScenario.AwaitingAdvice(decision)) return; }
                 catch (Exception error) { throw new InvalidOperationException("Asynchronous advisor preparation failed.", error); }
+#if DEVELOPMENT_PROBE
+                if (PlayerAdvisorProbe.AwaitDevoteObservation(decision)) return;
+#endif
                 if (fullBattle && RelicCardModifierScenario.CastTriggerUpgrade)
                     decision = RelicCardModifierScenario.PrepareCastTriggerCardInHand(decision, managers, cards!, log);
                 RelicStatusStackProbe.Matrix();

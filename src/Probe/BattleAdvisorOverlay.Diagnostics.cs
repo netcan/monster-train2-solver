@@ -12,14 +12,16 @@ namespace MonsterTrain2Poju.Probe
         private string SearchScopeLabel => "已知牌序 · " + AdvisorForecastPresentation.SearchScope(wholeBattle, horizon) +
             " · " + toggleKey + " 显示/隐藏";
         internal long DiagnosticCardInputs => journal?.CardInputs ?? 0;
+        internal long DiagnosticDevoteInputs => journal?.DevoteInputs ?? 0;
         private object? DiagnosticHistory => journal == null ? null : new
         {
             Directory = journal.DirectoryPath, journal.Written, journal.Dropped,
             journal.Completed, journal.Error, journal.WriterThreadId
         };
 
-        private bool CanRecordNativeInput => journal != null && !capturing &&
+        private bool IsNativeBattleInput => !capturing &&
             AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active;
+        private bool CanRecordNativeInput => journal != null && IsNativeBattleInput;
 
         private static string ClipDiagnosticText(string value, int limit = 512) =>
             value.Length > limit ? value.Substring(0, limit) : value;
@@ -143,6 +145,22 @@ namespace MonsterTrain2Poju.Probe
         {
             if (!CanRecordNativeInput) return;
             try { journal!.Record(DiagnosticEntry("end-turn-accepted")); }
+            catch (Exception error) { ReportDiagnosticError(error.Message); }
+        }
+
+        private void RecordDiagnosticDevote()
+        {
+            if (!CanRecordNativeInput) return;
+            try
+            {
+                AdviceDiagnosticEntry entry = DiagnosticEntry("devote-accepted");
+                entry.Input = new AdviceDiagnosticInput
+                {
+                    Operation = DevoteModel.Operation,
+                    TargetRoom = AllGameManagers.Instance.GetRoomManager().GetSelectedRoom()
+                };
+                journal!.Record(entry);
+            }
             catch (Exception error) { ReportDiagnosticError(error.Message); }
         }
 

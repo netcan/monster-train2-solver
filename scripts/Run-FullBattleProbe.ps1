@@ -12,6 +12,7 @@ param(
     [switch] $DotNetPlanner,
     [switch] $Advisor,
     [switch] $PlayerAdvisor,
+    [switch] $AdvisorDevoteObservation,
     [switch] $CapturePlayerDeploymentOnly,
     [switch] $ProfileCapture,
     [switch] $AdvisorFloorBrowse,
@@ -1554,10 +1555,19 @@ if ($PlayerAdvisor) {
     if ($Advisor -or $DotNetPlanner) {
         throw 'PlayerAdvisor uses the real in-process player overlay without a development advisor.'
     }
-    $Planner = !$RollingAdvice -and !$EndlessLoop2AdvisorObservation
+    $Planner = !$RollingAdvice -and !$EndlessLoop2AdvisorObservation -and !$AdvisorDevoteObservation
     # Observe the same native mechanisms in the independent development trace.
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
+}
+if ($AdvisorDevoteObservation) {
+    $allowed = @('AdvisorDevoteObservation', 'DevoteBattle', 'PlayerAdvisor', 'BinaryCapture',
+        'NativeWorker', 'GameSpeed', 'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild',
+        'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not ($DevoteBattle -and $PlayerAdvisor -and $BinaryCapture) -or $RollingAdvice -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'AdvisorDevoteObservation requires an isolated binary DevoteBattle with the production PlayerAdvisor.'
+    }
 }
 if ($OuterBossRelentless -and -not $OuterBossPhases) { throw '-OuterBossRelentless requires -OuterBossPhases.' }
 if ($OuterBossRelentlessHealth -and -not $OuterBossRelentless) { throw '-OuterBossRelentlessHealth requires -OuterBossRelentless.' }
@@ -3495,6 +3505,7 @@ $environment = @{
     MT2_PROBE_PLANNER = $(if ($Planner) { '1' } else { '0' })
     MT2_PROBE_ADVISOR = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_PLAYER_ADVISOR = $(if ($PlayerAdvisor) { '1' } else { '0' })
+    MT2_PROBE_ADVISOR_DEVOTE_OBSERVATION = $(if ($AdvisorDevoteObservation) { '1' } else { '0' })
     MT2_PROBE_PLAYER_DEPLOYMENT_ONLY = $(if ($CapturePlayerDeploymentOnly) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_FLOOR_BROWSE = $(if ($AdvisorFloorBrowse) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_PRESENTATION = $(if ($AdvisorPresentation) { '1' } else { '0' })
@@ -6741,6 +6752,10 @@ if ($DevoteBattle -and ($trace.ModifierScenario -cne 'devote-battle' -or
     -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Missing native Devote victory, fourteen complete tribute inputs, rejected no-op controls or full matching successors.'
+}
+if ($AdvisorDevoteObservation) {
+    & (Join-Path $PSScriptRoot 'Check-AdvisorDevoteObservation.ps1') -Trace $trace `
+        -Directory $trace.PlayerAdvisor.Overlay.DiagnosticHistory.Directory
 }
 if ($ZealHordeBattle -and ($trace.ModifierScenario -cne 'zeal-horde-battle' -or
     -not $trace.ZealHordeBattle.Prepared -or $trace.ZealHordeBattle.CompletedControlPlays -ne 5 -or

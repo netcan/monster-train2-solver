@@ -59,6 +59,7 @@ namespace MonsterTrain2Poju.Probe
 
     internal sealed class AdviceDiagnosticInput
     {
+        public string? Operation { get; set; }
         public int? CardInstanceId { get; set; }
         public string? CardDataId { get; set; }
         public string? Card { get; set; }
@@ -88,12 +89,13 @@ namespace MonsterTrain2Poju.Probe
         private readonly int maxFileBytes;
         private readonly string session = Guid.NewGuid().ToString("N");
         private long written, dropped;
-        private long cardInputs;
+        private long cardInputs, devoteInputs;
         private int disposed, completed;
         private string? error;
         internal long Written => Interlocked.Read(ref written);
         internal long Dropped => Interlocked.Read(ref dropped);
         internal long CardInputs => Interlocked.Read(ref cardInputs);
+        internal long DevoteInputs => Interlocked.Read(ref devoteInputs);
         internal bool Completed => Volatile.Read(ref completed) != 0;
         internal string? Error => Volatile.Read(ref error);
         internal string DirectoryPath => directory;
@@ -116,6 +118,7 @@ namespace MonsterTrain2Poju.Probe
                     if (queue.TryAdd(entry))
                     {
                         if (entry.Kind == "card-accepted") Interlocked.Increment(ref cardInputs);
+                        if (entry.Kind == "devote-accepted") Interlocked.Increment(ref devoteInputs);
                         return;
                     }
                 }

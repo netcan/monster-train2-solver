@@ -863,12 +863,12 @@ namespace MonsterTrain2Poju.Probe
         }
         private static void NativeAction(bool preserveContinuation = true, string reason = "native-mutation")
         {
-            if (Active != null && !Active.capturing && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
-                Active.InvalidateState(preserveContinuation, reason);
+            if (Active is { IsNativeBattleInput: true } overlay)
+                overlay.InvalidateState(preserveContinuation, reason);
         }
         internal static void InstallAdvisorPatches(Harmony harmony)
         {
-            foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(EndTurnPatch), typeof(EndTurnRecordedPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch), typeof(MutationPatch),
+            foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(EndTurnPatch), typeof(RecordedBattleInputPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch), typeof(MutationPatch),
                 typeof(ElixirDraftSetupPatch), typeof(ElixirDraftApplyPatch), typeof(ElixirDraftSkipPatch) })
                 harmony.CreateClassProcessor(patch).Patch();
         }
@@ -1059,12 +1059,22 @@ namespace MonsterTrain2Poju.Probe
             }
         }
         [HarmonyPatch(typeof(ReplayManager), nameof(ReplayManager.RecordEntry))]
-        private static class EndTurnRecordedPatch
+        private static class RecordedBattleInputPatch
         {
-            // The native replay entry is issued only after confirmation. A
-            // canceled confirmation or disabled button is not a played turn.
-            private static void Postfix(ReplayEntry replayEntryNew)
-            { if (replayEntryNew is ReplayEntryEndTurn) Active?.RecordDiagnosticEndTurn(); }
+            // The game records accepted inputs before starting their effects.
+            private static void Postfix(ReplayManager __instance, ReplayEntry replayEntryNew)
+            {
+                if (replayEntryNew is ReplayEntryEndTurn)
+                {
+                    Active?.RecordDiagnosticEndTurn();
+                    return;
+                }
+                if (replayEntryNew.GetType().Name != "ReplayEntryMonolithDevote" ||
+                    Active is not { IsNativeBattleInput: true } overlay) return;
+                if (!__instance.IsPlayingBackAReplay()) overlay.RecordDiagnosticDevote();
+                overlay.ShowMessage("正在核对局面…");
+                overlay.InvalidateState(true, "devote");
+            }
         }
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.UndoTurn))]
         private static class UndoPatch { private static void Prefix() { NativeAction(false, "undo"); if (Active != null) Active.manualBattleKey = null; } }

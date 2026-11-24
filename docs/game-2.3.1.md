@@ -930,7 +930,12 @@ Release 构建通过。同一份最终采样产物在 2.2.1 完成七回合原�
 积分评分一致、未支持尝试零，计划重新执行后完整状态匹配。普通出牌、单位/房间技能
 继续沿用原动作路径；新捕获的 2.3.1 规则显式记录 `DevoteEnabled`，旧归档不推断该能力。
 顾问界面识别供奉提示，供奉进行中及手牌选择期间等待结算，不发布中间状态。
-这属于构建和隔离测试证据，尚未进行玩家实局顾问验收。
+发布版顾问读取原版 HUD 的供奉资格。Banished／Pyreborne 隔离场景的候选和建议均
+不含供奉。由原版供奉接口触发的 14 次操作在原版接受后各记录一次，保留楼层。
+首次接受后立即移除旧建议，结算后按新局面发布建议。整场的 15 次操作及 7 次
+结束回合通过完整状态和随机流复放。该受控场景通过原版接口触发供奉。Punished
+玩家从 HUD 点击供奉的验收仍需启用对应 DLC 的原版环境。
+[发布版顾问接口归档](../tests/compatibility/game-2.3.1/mechanics/devote-battle/player-advisor/player-advisor-controlled-helper.mt2f)
 
 归档 `mechanics/devote-battle/full-battle.mt2f` 为 **39,742 字节**，SHA256
 `60b07cce3549d7b33a42285d951d74b9b9ff92e7c1640755dae4e79e3ed76fcc`。

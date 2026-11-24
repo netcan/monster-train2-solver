@@ -9,12 +9,34 @@ internal static class AdviceDiagnosticJournalChecks
         try
         {
             InputTargets();
+            AcceptedOperations(Path.Combine(root, "accepted"));
             Rotation(Path.Combine(root, "rotation"));
             Overflow(Path.Combine(root, "overflow"));
             Failure(Path.Combine(root, "not-a-directory"));
             Console.WriteLine("Advice history: canonical input targets, bounded rotation, UTF-8 JSON, queue overflow, background drain and I/O failure passed.");
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static void AcceptedOperations(string path)
+    {
+        using var journal = new AdviceDiagnosticJournal(path);
+        journal.Record(new AdviceDiagnosticEntry { Kind = "card-accepted" });
+        journal.Record(new AdviceDiagnosticEntry
+        {
+            Kind = "devote-accepted",
+            Input = new AdviceDiagnosticInput { Operation = "Devote", TargetRoom = 2 }
+        });
+        journal.Record(new AdviceDiagnosticEntry { Kind = "end-turn-accepted" });
+        journal.Dispose();
+        Wait(() => journal.Completed);
+        Require(journal.CardInputs == 1 && journal.DevoteInputs == 1 && journal.Written == 3 && journal.Dropped == 0,
+            "Devote changed the separate card count or was missed");
+        var records = File.ReadAllLines(Path.Combine(path, "advice.jsonl")).Select(JObject.Parse).ToArray();
+        var devote = records[1]["Entry"]!;
+        Require((string?)devote["Kind"] == "devote-accepted" && (string?)devote["Input"]?["Operation"] == "Devote" &&
+            (int?)devote["Input"]?["TargetRoom"] == 2 && devote["Input"]?["CardInstanceId"] == null,
+            "Devote lost its original room or acquired a fabricated card identity");
     }
 
     private static void Require(bool condition, string message)

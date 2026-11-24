@@ -43,6 +43,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Native restart advice acceptance failed.' }
     dotnet $checks --native-advisor-undo-only "$current/player-advisor-rolling/native-undo-restored-first-turn.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Native undo advice acceptance failed.' }
+    $devoteArchive = "$current/devote-battle/player-advisor/player-advisor-controlled-helper.mt2f"
+    pwsh -NoProfile -File (Join-Path $PSScriptRoot 'Check-AdvisorDevoteArchive.ps1') -Archive $devoteArchive
+    if ($LASTEXITCODE -ne 0) { throw 'Native Devote player advice acceptance failed.' }
+    dotnet $checks --devote-battle-only $devoteArchive
+    if ($LASTEXITCODE -ne 0) { throw 'Controlled native Devote battle replay failed.' }
     dotnet $checks --player-advisor-mix-prompt-only "$current/player-advisor-mix/native-prompt.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original hand-card Mix prompt acceptance failed.' }
     dotnet $checks --advisor-unit-mix-modal-only "$current/controlled-original-support-units/opening-ability-activations.mt2f"

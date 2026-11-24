@@ -217,11 +217,13 @@ namespace MonsterTrain2Poju.Probe
                         upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray());
                 }).ToArray();
             var forgeUpgrade = new ForgeUpgradeDefinition(Upgrade(defaultForgeData), hasRoomForgeOverride, relicForgeUpgrades);
+            bool devoteOffered = ConditionalActivationProbe.HasVanguard &&
+                (!AdvisorRuntime.PlayerSession || DevotionProbe.IsPlayerDevoteOffered(managers));
             rules = new BattlePlayRules(roomRules, reachable.Values.OrderBy(rule => rule.DataId, StringComparer.Ordinal).ToArray(),
                 new[] { "armor", "valor", "pyregel", "duality" }.Select(id => Status(id, 1)).ToArray(),
                 BattlePlayRules.NeedsUnitCopyCatalog(reachable.Values, spawn.Train, spawn.QueuedOuterBoss?.Actor.Unit)
                     ? UnitCopyCatalogProbe.Capture(reachable.Values.ToArray(), spawn) : null,
-                elixirs, forgeUpgrade, ConditionalActivationProbe.HasVanguard ? true : (bool?)null);
+                elixirs, forgeUpgrade, devoteOffered ? true : (bool?)null);
             return rules;
         }
 

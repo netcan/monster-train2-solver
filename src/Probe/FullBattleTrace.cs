@@ -2150,6 +2150,9 @@ namespace MonsterTrain2Poju.Probe
                 DamagedFloorEnergyBattle = DamagedFloorEnergyBattleScenario.Enabled ? DamagedFloorEnergyBattleScenario.Evidence : null,
                 DevotionSpawnBattle = DevotionSpawnBattleScenario.Enabled ? DevotionSpawnBattleScenario.Evidence : null,
                 DevoteBattle = DevoteBattleScenario.Enabled ? DevoteBattleScenario.Evidence : null,
+#if DEVELOPMENT_PROBE
+                AdvisorDevoteObservation = PlayerAdvisorProbe.DevoteEvidence,
+#endif
                 FloorDamageBattle = FloorDamageBattleScenario.Enabled ? FloorDamageBattleScenario.Evidence : null,
                 RelentlessBattle = RelentlessBattleScenario.Enabled ? RelentlessBattleScenario.Evidence : null,
                 ZealHordeBattle = ZealHordeBattleScenario.Enabled ? ZealHordeBattleScenario.Evidence : null,
