@@ -638,6 +638,7 @@ param(
     [switch] $OriginalDisabledRoomPreviewBattle,
     [switch] $OriginalMoreTreasureUnitsBattle,
     [switch] $OriginalSkullCollectorsWitness,
+    [switch] $SkullCollectorsFullBattle,
     [ValidateRange(1, 3)] [int] $SkullCollectorsTier = 1,
     [ValidateSet('Combined', 'Stock', 'Ephemeral')]
     [string] $OriginalHandAndEmberWitness = '',
@@ -1331,11 +1332,14 @@ if ($OriginalPersistentMonsterHpReload) {
 if ($PSBoundParameters.ContainsKey('SkullCollectorsTier') -and -not $OriginalSkullCollectorsWitness) {
     throw 'SkullCollectorsTier requires OriginalSkullCollectorsWitness.'
 }
+if ($SkullCollectorsFullBattle -and (-not $OriginalSkullCollectorsWitness -or $SkullCollectorsTier -ne 1)) {
+    throw 'SkullCollectorsFullBattle requires the original Tier 1 collector witness.'
+}
 if ($OriginalMoreTreasureUnitsBattle -or $OriginalSkullCollectorsWitness) {
     $treasureArguments = @('OriginalMoreTreasureUnitsBattle', 'OriginalSkullCollectorsWitness', 'InputProfile', 'BattleDistance',
         'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
-    if ($OriginalSkullCollectorsWitness) { $treasureArguments += 'SkullCollectorsTier' }
+    if ($OriginalSkullCollectorsWitness) { $treasureArguments += @('SkullCollectorsTier', 'SkullCollectorsFullBattle') }
     $treasureDistance = if ($OriginalSkullCollectorsWitness) { @(1, 3, 6)[$SkullCollectorsTier - 1] } else { 1 }
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne $treasureDistance -or
         ($OriginalMoreTreasureUnitsBattle -and $OriginalSkullCollectorsWitness) -or
@@ -3788,6 +3792,7 @@ $environment = @{
     MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_MORE_TREASURE_UNITS = $(if ($OriginalMoreTreasureUnitsBattle) { '1' } else { '0' })
     MT2_PROBE_SKULL_COLLECTORS = $(if ($OriginalSkullCollectorsWitness) { [string]$SkullCollectorsTier } else { '0' })
+    MT2_PROBE_SKULL_COLLECTORS_FULL_BATTLE = $(if ($SkullCollectorsFullBattle) { '1' } else { '0' })
     MT2_PROBE_HAND_AND_EMBER_WITNESS = $OriginalHandAndEmberWitness
     MT2_PROBE_ORIGINAL_BATTLE_SETUP = $(if ($OriginalBattleSetupWitness -eq 'Stock') { 'Stock' } elseif ($OriginalBattleSetupWitness) { 'Modified' } else { '' })
     MT2_PROBE_PLACEMENT_MUTATORS_WITNESS = $(if ($PlacementSummonBlockOnly) { 'block' } elseif ($OriginalPlacementMutatorsWitness) { '1' } else { '0' })
@@ -5005,7 +5010,7 @@ if ($OriginalShuffleUnitsWitness) {
     Write-Output "NATIVE-SHUFFLE-UNITS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
-if ($OriginalSkullCollectorsWitness) {
+if ($OriginalSkullCollectorsWitness -and -not $SkullCollectorsFullBattle) {
     $capturePath = Join-Path $profile 'skull-collectors.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original SkullCollectors first treasure birth captured' -Quiet) -or
@@ -6578,6 +6583,11 @@ if ($OriginalMoreTreasureUnitsBattle) {
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($SkullCollectorsFullBattle -and (
+    -not (Test-Path -LiteralPath (Join-Path $profile 'skull-collectors.mt2f') -PathType Leaf) -or
+    (Get-OriginalSignature $checkpoint) -cne $treasureInputSignature)) {
+    throw 'The original SkullCollectors battle requires a captured collector birth and unchanged donor checkpoint.'
+}
 if ($SecondFloorEnemyOpeningFullBattle -and (
     -not (Test-Path -LiteralPath (Join-Path $profile 'second-floor-enemy-opening.mt2f') -PathType Leaf) -or
     (Get-OriginalSignature $checkpoint) -cne $secondFloorInputSignature)) {

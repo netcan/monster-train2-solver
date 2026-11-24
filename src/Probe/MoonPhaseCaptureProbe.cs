@@ -17,7 +17,7 @@ namespace MonsterTrain2Poju.Probe
             Environment.GetEnvironmentVariable("MT2_PROBE_REGION_RUN_INPUT") == "1" ||
             RankThreeRoomSlayScenario.Enabled || OriginalRoomHealthAttackScenario.Enabled || OriginalStatusMagnitudeWitness.Moon ||
             OriginalOpeningUnitsScenario.Enabled || OriginalSecondFloorEnemyOpeningWitness.Enabled ||
-            OriginalFrontReanimationWitness.Enabled ||
+            OriginalFrontReanimationWitness.Enabled || OriginalSkullCollectorsWitness.FullBattle ||
 #endif
             // The isolation probe and live advisor compile separate copies of
             // AdvisorRuntime. A resumed campaign has no clan override, so the

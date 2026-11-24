@@ -18,6 +18,8 @@ namespace MonsterTrain2Poju.Probe
             "1" => 1, "2" => 2, "3" => 3, _ => 0
         };
         internal static bool Enabled => Tier != 0;
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_SKULL_COLLECTORS_FULL_BATTLE") == "1";
+        internal static bool Captured { get; private set; }
         private static int SettledTurn => Tier == 1 ? 2 : 3;
         private static (int Distance, string Scenario, string StockKey) ExpectedSource => Tier switch
         {
@@ -122,6 +124,7 @@ namespace MonsterTrain2Poju.Probe
             });
             using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "skull-collectors.mt2f"));
             archive.Write(stream);
+            Captured = true;
             log.LogInfo("ORIGINAL-SKULL-COLLECTORS OBSERVED " + birth.Original.GetAssetKey() + " -> " +
                 birth.Resolved.GetAssetKey() + " actor=" + birth.ActorId);
             return true;

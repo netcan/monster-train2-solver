@@ -1428,12 +1428,19 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && OriginalSkullCollectorsWitness.Enabled)
+            if (fullBattle && OriginalSkullCollectorsWitness.Enabled && !OriginalSkullCollectorsWitness.Captured)
             {
-                if (OriginalSkullCollectorsWitness.Tick(FullBattleTrace.Active!, managers, log,
-                    () => AdvanceTurn(combat!, record: false)))
+                var trace = FullBattleTrace.Active!;
+                bool continueBattle = OriginalSkullCollectorsWitness.FullBattle;
+                if (continueBattle && combat!.GetTurnCount() > 0)
+                    trace.CompleteEndTurn(RoomOutcome.Exchanged);
+                if (!OriginalSkullCollectorsWitness.Tick(trace, managers, log, () => AdvanceTurn(combat!, record: continueBattle)))
+                    return;
+                if (!continueBattle)
+                {
                     Finish(true, "Original SkullCollectors first treasure birth captured.");
-                return;
+                    return;
+                }
             }
             if (fullBattle && OriginalPyreStewardDamageWitness.Enabled)
             {
