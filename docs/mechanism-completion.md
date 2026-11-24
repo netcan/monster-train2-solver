@@ -1331,6 +1331,10 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 结算时薪火剩余 58 HP。
 [原版整战归档](../tests/compatibility/game-2.3.1/mechanics/lonely-rooms/native-win.mt2f)
 
+原版 `Echoes_DoubleFriendlyUnitHealthUnhealed` 在实体出生回调中将火车乘务员从 25/25 改为 25/50，
+来源卡牌的临时生命增加 25。完整出牌后继、随机流和搜索候选均通过定向对照。
+[原版出生归档](../tests/compatibility/game-2.3.1/mechanics/double-friendly-health/native-steward-birth.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，
