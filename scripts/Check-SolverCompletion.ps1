@@ -39,6 +39,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Current advisor dialog plan failed to replay.' }
     dotnet $checks --advisor-future-target-only "$current/player-advisor-rolling/current-ring9-advisor-deadline.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Verified future-target advice failed.' }
+    dotnet $checks --native-advisor-restart-only "$current/player-advisor-rolling/native-restart-restored-deployment.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Native restart advice acceptance failed.' }
+    dotnet $checks --native-advisor-undo-only "$current/player-advisor-rolling/native-undo-restored-first-turn.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Native undo advice acceptance failed.' }
     dotnet $checks --player-advisor-mix-prompt-only "$current/player-advisor-mix/native-prompt.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original hand-card Mix prompt acceptance failed.' }
     dotnet $checks --advisor-unit-mix-modal-only "$current/controlled-original-support-units/opening-ability-activations.mt2f"
