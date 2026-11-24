@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Probe
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         private static readonly List<Observation> observations = new List<Observation>();
         private static string trialId = "";
+        private static bool offeredByScenario;
         private static SubtypeData[] excludedSubtypes = Array.Empty<SubtypeData>();
         private static int healAmount;
         private static int woundedActor;
@@ -36,8 +37,18 @@ namespace MonsterTrain2Poju.Probe
             TrialData? current = save.GetTrialData(onlyIfEnabled: false);
             TrialData? trial = current?.Sin?.GetID() == OwnerId ? current : save.GetScenarioData(save.GetCurrentDistance())
                 .GetTrialDataList()?.TrialsData.FirstOrDefault(item => item.Sin?.GetID() == OwnerId && item.RewardList.Count > 0);
+            offeredByScenario = trial != null;
             if (trial == null)
-                throw new InvalidOperationException("The original scenario does not offer the Ascend healing trial.");
+            {
+                // The disposable checkpoint can exercise an unchanged published trial
+                // through the same SaveManager setup used by the original trial control.
+                AllGameData data = AllGameManagers.Instance.GetAllGameData();
+                var trials = (List<TrialData>)AccessTools.Field(typeof(AllGameData), "trialDatas").GetValue(data);
+                trial = trials.Where(item => item.Sin?.GetID() == OwnerId && item.RewardList.Count > 0)
+                    .OrderBy(item => item.GetID(), StringComparer.Ordinal).FirstOrDefault();
+            }
+            if (trial == null)
+                throw new InvalidOperationException("No published original Ascend healing trial has a reward for setup.");
             if (trial.Sin.DisallowInDeploymentPhase || trial.Sin.GetEffects() is not [var effect] ||
                 effect.GetEffectClassName() != nameof(RelicEffectHealEnemyOnAscend) ||
                 effect.GetParamInt() != 150 || effect.GetEffectConditions().Count != 0)
@@ -98,7 +109,8 @@ namespace MonsterTrain2Poju.Probe
             using var archive = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, Boundary = "OriginalHealOnAscend", GameVersion = Application.version, GameModuleMvid = Module,
-                OwnerId, TrialId = trialId, HealAmount = healAmount, ExcludedSubtypes = excludedSubtypes.Select(subtype => subtype.Key).ToArray(),
+                OwnerId, TrialId = trialId, OfferedByScenario = offeredByScenario, HealAmount = healAmount,
+                ExcludedSubtypes = excludedSubtypes.Select(subtype => subtype.Key).ToArray(),
                 WoundedActor = woundedActor, Before = beforeTurn, Observations = observations, Actual = trace.CaptureDecision()
             });
             using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, FileName));
