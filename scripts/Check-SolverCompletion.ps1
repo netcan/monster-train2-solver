@@ -64,7 +64,7 @@ try {
         "$current/configured-opening-relics/native-card-play-damage-roster-isolated-rng.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'True Final Boss spell-slot relic guard controls failed.' }
     $campaignOnly = "$current/campaign-only-combat-relics"
-    foreach ($case in @('hallowed-halls', 'awoken-rail-spike')) {
+    foreach ($case in @('hallowed-halls', 'awoken-rail-spike', 'hallowed-halls-and-rail-spike')) {
         dotnet $checks --hallowed-halls-draft-relic-only "$campaignOnly/$case.mt2f" `
             "$current/configured-opening-relics/native-draft-and-deck-owners.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original combat with both campaign-only relics failed for $case." }

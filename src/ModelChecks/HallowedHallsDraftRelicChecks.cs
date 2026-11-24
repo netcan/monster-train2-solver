@@ -66,6 +66,7 @@ internal static class HallowedHallsDraftRelicChecks
         Require(scheduled.Length is 1 or 2 && scheduled.All(id => id is Spell or RailSpike), "Unexpected original paid spell cohort.");
         var recorded = casts.Where(cast => cast.DataId is Spell or RailSpike).ToArray();
         Require(recorded.Select(cast => cast.DataId).SequenceEqual(scheduled), "Missing a scheduled original paid spell witness.");
+        if (scheduled.Length == 2) VerifyRevivedCardStatistics(recorded.Single(cast => cast.DataId == Spell));
         using var keys = new BattleStateKeys();
         foreach (var cast in recorded)
         {
@@ -87,6 +88,25 @@ internal static class HallowedHallsDraftRelicChecks
         RecordedBattleChecks.Native(archive);
         Console.WriteLine("ORIGINAL-CAMPAIGN-RELICS-SPELLS PASS: " + recorded.Length +
             " native paid spells, complete successors, candidate frontiers and active-owner rejection.");
+    }
+
+    private static void VerifyRevivedCardStatistics(RecordedCast cast)
+    {
+        TrainCombatState before = cast.Before.Spawn.Train;
+        TrainCombatState after = cast.Actual.Spawn.Train;
+        var previousUnitIds = before.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
+        var revived = after.Rooms.Single(room => room.RoomIndex == cast.Action.RoomIndex).Units
+            .Where(unit => unit.Team == CombatTeam.Player && unit.SpawnerCardId > 0 && !previousUnitIds.Contains(unit.Id))
+            .Select(unit => unit.SpawnerCardId).ToArray();
+        var historyBefore = before.Context!.Statistics!;
+        var historyAfter = after.Context!.Statistics!;
+        Require(before.Context.Cards.Hand.Any(card => card.DataId == RailSpike) && revived.Length == 6 &&
+            revived.All(id => historyBefore.Values.Any(value => value.CardId == id && value.Duration == "PreviousTurn") &&
+                historyAfter.StoredCards!.Contains(id) &&
+                historyAfter.Values.Count(value => value.CardId == id) == 4 &&
+                historyAfter.Values.Where(value => value.CardId == id).All(value => value.Value == 1 &&
+                    value.Type is "AnyCardPlayed" or "AnyDiscarded" && value.Duration is "ThisTurn" or "ThisBattle")),
+            "Held Rail Spike must refresh each revived unit's statistics before Hallowed Halls adds the new play and discard counts.");
     }
 
     private static void VerifyRailDraw(FixtureValue archive, RecordedCast cast)

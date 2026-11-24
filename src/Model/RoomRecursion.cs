@@ -23,6 +23,10 @@ namespace MonsterTrain2Poju.Model
                 effect, definitions, sourceCardId, out string? error, context.CardRegistry);
             if (error != null) return Fail(error);
             if (eligible.Count == 0) return Result();
+            bool refreshDetachedCardStatistics = context.Statistics?.StoredCards != null &&
+                context.Cards.Hand.Any(token => token.DataId == CardDiscardDrawModel.RailSpikeId &&
+                    context.FindCard(token.InstanceId) is { } held &&
+                    CardExhaustModel.RefreshTraits(held).CombinedTraits?.Any(trait => trait.RuntimeType == CardDiscardDrawModel.Trait) == true);
             ShuffleResult<int> shuffled = context.BattleRng.Shuffle(eligible);
             state = CardSpellModel.WithContext(state, context.WithBattleRng(shuffled.State));
             foreach (int cardId in shuffled.Items)
@@ -52,6 +56,9 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Upgrade != null)
                     card = card.WithModifiers(card.Permanent, UnitModifierModel.Add(card.Temporary, effect.Upgrade));
                 context = context.WithOtherPiles(piles).WithCard(card);
+                // A Rail Spike still in hand refreshes its scaling text while the native card leaves Exhausted.
+                if (refreshDetachedCardStatistics && context.Statistics is { } statistics)
+                    context = context.WithStatistics(statistics.RefreshOwnedCards(statistics.TrackedCards.Where(id => id != cardId)));
                 state = CardSpellModel.WithContext(state, context);
                 room = state.Rooms.Single(item => item.RoomIndex == roomIndex);
                 UnitBirthResult birth = UnitBirthModel.SpawnFront(room, definition, cardId, position, false, null);
@@ -60,6 +67,8 @@ namespace MonsterTrain2Poju.Model
                 context = born.Context!;
                 piles = context.OtherPiles!.Select(pile => pile.Name == "Standby" ?
                     CardPileModel.BindUnit(CardPileModel.Add(pile, token), new UnitStandbyCondition(cardId, birth.UnitId)) : pile).ToArray();
+                if (refreshDetachedCardStatistics && context.Statistics is { } restoredStatistics)
+                    context = context.WithStatistics(restoredStatistics.RefreshOwnedCards(restoredStatistics.TrackedCards.Append(cardId)));
                 state = new TrainCombatState(state.Rooms.Select(item => item.RoomIndex == roomIndex ? born :
                     new RoomCombatState(item.RoomIndex, item.Deployment, item.Units, item.ExternalInteractions,
                         context, item.Preview, item.ActiveCompanionBossIds)).ToArray(), state.Movement, state.EnemySlotsPerRoom, context.WithOtherPiles(piles));

@@ -190,6 +190,10 @@ namespace MonsterTrain2Poju.Probe
         internal const string IsolatedPrefix = "original-isolated-spells:";
         internal static string[]? IsolatedIds => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is string scenario &&
             scenario.StartsWith(IsolatedPrefix, StringComparison.Ordinal) ? scenario.Substring(IsolatedPrefix.Length).Split(',') : null;
+#if DEVELOPMENT_PROBE
+        internal static readonly bool HallowedHallsRailSpikeBatch = IsolatedIds is
+            ["c6484604-b077-43ce-84a4-0179d2f36352", "a6a701f6-cb73-4880-b9b3-ed1abb3b23d4"];
+#endif
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || IsolatedIds != null;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -244,7 +248,17 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
+#if DEVELOPMENT_PROBE
+            // The in-hand Rail Spike query can erase a restored anchor's play statistics during Hallowed Halls.
+            var accepted = HallowedHallsRailSpikeBatch ? FullBattleTrace.Active!.ObservedActions
+                .Where(record => record.Actual != null)
+                .Select(record => record.Action.CardInstanceId).ToHashSet() : null;
+            int index = Array.FindIndex(ids, id => accepted != null
+                ? !accepted.Contains(id)
+                : source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
+#else
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
+#endif
 #if DEVELOPMENT_PROBE
             if (SpawnOrStatusExtraSpawn)
                 return source.Spawn.Turn == 1 && index >= 0 ? new PlayCardAction(ids[index], 0) : null;

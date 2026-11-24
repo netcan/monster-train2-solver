@@ -6,6 +6,7 @@ namespace MonsterTrain2Poju.Model
     public static class CardDiscardDrawModel
     {
         public const string Trait = "CardTraitScalingAddCards";
+        internal const string RailSpikeId = "a6a701f6-cb73-4880-b9b3-ed1abb3b23d4";
         public static StatisticQueryResult Count(CombatContext context, CardInstanceState card, bool wasPlayed)
         {
             if (!wasPlayed || !Present(card)) return new StatisticQueryResult(context, 0);

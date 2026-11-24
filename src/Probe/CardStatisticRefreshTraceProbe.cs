@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class CardStatisticRefreshTraceProbe
     {
         private static readonly bool Enabled = Environment.GetEnvironmentVariable("MT2_PROBE_TRACE_CARD_STATS") == "1";
+        private static readonly bool RoomRecursionBatch = Enabled && OriginalSupportSpellsScenario.HallowedHallsRailSpikeBatch;
         private static readonly ConditionalWeakTable<FullBattleTrace, List<Refresh>> Observed = new ConditionalWeakTable<FullBattleTrace, List<Refresh>>();
         private static readonly List<EquipmentObservation> EquipmentObservations = new List<EquipmentObservation>();
         private static CardState? updatingText;
@@ -22,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
         internal sealed class Refresh : CardStatisticRefreshSample
         {
             internal EquipmentObservation? Equipment { get; set; }
+            internal bool RoomRecursion { get; set; }
         }
 
         internal sealed class EquipmentObservation : IDisposable
@@ -83,8 +85,10 @@ namespace MonsterTrain2Poju.Probe
             if (!Enabled && EquipmentObservations.Count == 0) return;
             FullBattleTrace? trace = FullBattleTrace.Active;
             bool terminalText = Enabled && trace != null && trace.NativeWon == null && updatingText != null;
+            bool roomRecursion = RoomRecursionBatch && trace?.PendingActionIndex == 4 &&
+                AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false;
             EquipmentObservation? equipment = EquipmentObservations.LastOrDefault(item => ReferenceEquals(item.Trace, trace));
-            if (!terminalText && !(Enabled && UnsupportedBranchObservation.Enabled) && equipment == null) return;
+            if (!terminalText && !roomRecursion && !(Enabled && UnsupportedBranchObservation.Enabled) && equipment == null) return;
             AllGameManagers? managers = AllGameManagers.Instance;
             var stored = (Dictionary<CardState, CardStatsEntry>)AccessTools.Field(typeof(CardStatistics), "deckStats").GetValue(__instance);
             var owned = managers?.GetCardManager()?.GetAllCards(new List<CardState>());
@@ -92,7 +96,7 @@ namespace MonsterTrain2Poju.Probe
             var current = owned?.Count > 0 ? owned : managers?.GetSaveManager()?.GetDeckState();
             var removed = current == null ? Array.Empty<CardState>() : stored.Keys.Except(current).ToArray();
             if (missing == null || missing.Length == 0 && removed.Length == 0) return;
-            string[] caller = new StackTrace(1, false).GetFrames().Take(12)
+            string[] caller = new StackTrace(1, false).GetFrames().Take(roomRecursion ? 24 : 12)
                 .Select(frame => frame.GetMethod()?.DeclaringType?.FullName + "." + frame.GetMethod()?.Name)
                 .Select(name => name == "HandUI.DMD<HandUI::UpdateCardUIAtEndOfFrame>" ? "HandUI.UpdateCardUIAtEndOfFrame" : name).ToArray();
             UnityEngine.Debug.Log("CARD-STAT-REFRESH missing=" + string.Join(",", missing.Select(card => card.GetCardDataID())) +
@@ -101,6 +105,12 @@ namespace MonsterTrain2Poju.Probe
             {
                 __state = Capture(equipment.Trace, equipment.Card, stored.Keys, current, caller, equipment.Events.Count + 1);
                 __state.Equipment = equipment;
+                return;
+            }
+            if (roomRecursion && removed.Length > 0 && current != null)
+            {
+                __state = Capture(trace!, updatingText ?? removed[0], stored.Keys, current, caller, 0);
+                __state.RoomRecursion = true;
                 return;
             }
             if (!terminalText || owned?.Count != 0 || removed.Length == 0 || current == null)
@@ -138,6 +148,14 @@ namespace MonsterTrain2Poju.Probe
             if (__state == null || FullBattleTrace.Active is not FullBattleTrace trace) return;
             var stored = (Dictionary<CardState, CardStatsEntry>)AccessTools.Field(typeof(CardStatistics), "deckStats").GetValue(__instance);
             __state.AfterStoredCards = Ids(trace, stored.Keys);
+            if (__state.RoomRecursion)
+            {
+                UnityEngine.Debug.Log("ROOM-RECURSION-STATISTICS turn=" + __state.Turn + " frame=" + __state.Frame +
+                    " removed=" + string.Join(",", __state.BeforeStoredCards.Except(__state.AfterStoredCards)) +
+                    " added=" + string.Join(",", __state.AfterStoredCards.Except(__state.BeforeStoredCards)) +
+                    " textCard=" + (updatingText?.GetCardDataID() ?? "") + " caller=" + string.Join(">", __state.Caller));
+                return;
+            }
             if (__state.Equipment is EquipmentObservation equipment)
             {
                 equipment.Events.Add(__state);

@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalDiscardDrawScenario
     {
         internal const string Name = "original-discard-draw";
-        internal const string CardId = "a6a701f6-cb73-4880-b9b3-ed1abb3b23d4";
+        internal const string CardId = CardDiscardDrawModel.RailSpikeId;
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
