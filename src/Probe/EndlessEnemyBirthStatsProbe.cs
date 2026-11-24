@@ -12,10 +12,14 @@ namespace MonsterTrain2Poju.Probe
         internal static Func<CharacterData, CombatUnit, EndlessEnemyBirthStats?>? Capture(AllGameManagers managers)
         {
             SaveManager save = managers.GetSaveManager();
-            int distance = save.GetCurrentDistance();
             if (!save.IsEndlessRun || typeof(CharacterState).Module.ModuleVersionId != Module ||
-                save.GetRunState().GetLoopIndex() != 1 || distance is not (0 or 1) ||
                 save.GetCovenants().Count != 0 || save.GetMutators().Count != 0)
+                return null;
+            var run = save.GetRunState();
+            int loop = run.GetLoopIndex();
+            int distance = run.GetCurrentDistance();
+            int runLength = save.GetRunLength();
+            if (loop is < 1 or > 3 || runLength != 8 || distance < 0 || distance >= runLength)
                 return null;
 
             var relics = RelicProbe.Current(managers);
@@ -30,15 +34,18 @@ namespace MonsterTrain2Poju.Probe
                 return null;
 
             var balance = save.GetBalanceData().GetEndlessScalingData();
-            int runLength = save.GetRunLength();
-            float attack = balance.GetAttackScaling(1, distance, runLength);
-            float health = balance.GetHealthScaling(1, distance, runLength);
-            float damage = balance.GetCardEffectDamageScaling(1, distance, runLength);
-            float heal = balance.GetCardEffectHealScaling(1, distance, runLength);
-            float buff = balance.GetCardEffectBuffDamageScaling(1, distance, runLength);
+            float attack = balance.GetAttackScaling(loop, distance, runLength);
+            float health = balance.GetHealthScaling(loop, distance, runLength);
+            float damage = balance.GetCardEffectDamageScaling(loop, distance, runLength);
+            float heal = balance.GetCardEffectHealScaling(loop, distance, runLength);
+            float buff = balance.GetCardEffectBuffDamageScaling(loop, distance, runLength);
+            float status = balance.GetStatusScaling(loop, distance, runLength);
+            if (new[] { attack, health, damage, heal, buff, status }.Any(factor =>
+                factor <= 0 || float.IsNaN(factor) || float.IsInfinity(factor)))
+                return null;
             string[] scalable = new[] { "armor", "titanskin", "buff" }.Where(id =>
                 managers.GetStatusEffectManager().GetStatusEffectDataById(id)?.ScalesInEndless() == true).ToArray();
-            var statusScaling = new RelicSpawnStatusScalingRule(balance.GetStatusScaling(1, distance, runLength),
+            var statusScaling = new RelicSpawnStatusScalingRule(status,
                 Array.Empty<string>(), scaleStarting: true, scaleApplied: true, onlyListed: true, scalable, scalable);
 
             return (data, raw) =>
@@ -46,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
                 var baseline = data.GetEndlessBaselineStats();
                 bool statusShape = EndlessEnemyBirthStats.IsStatusShape(raw);
                 if (!baseline.HasHealth() || data.IsOuterTrainBoss() || !EndlessEnemyBirthStats.SupportedShape(raw) ||
-                    statusShape && (distance != 1 || scalable.Length != 3) ||
+                    statusShape && scalable.Length != 3 ||
                     !statusShape && data.GetStartingStatusEffects().Any(status =>
                         managers.GetStatusEffectManager().GetStatusEffectDataById(status.statusId)?.ScalesInEndless() != false))
                     return null;
