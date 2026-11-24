@@ -73,7 +73,7 @@
 | RelicEffectApplyExtraPyreDamage | shared-path | Shared ID-independent ordered post-defense Pyre damage rule captures initialized extraDamage, preserves per-effect signed overflow and nonpositive reset, and records RoomState notifications even in preview except Covenant owners. Four original definition parameters/40 callbacks and 650 native manager cases; unchanged +3 mutator native win, seven authored damage/armor/shield controls and natural attacks, full successors/16 branches/frontiers/serial-parallel root search. Other soul companion effects, mixed Covenants, condition combinations and other tower-damage interfaces are not certified; synchronous GetDamageToTarget and direct HP payments are separate paths. |
 | RelicEffectAutoselectTrainPath | input-only | Native MapScreen.SetUpBranchChoice and ApplyScreenInput consult the map choice restriction and automatic path selection. The automatic action consumes the dedicated AutoselectTrainPath RNG stream before combat. |
 | RelicEffectBlockRoomSummon | shared-path | The pinned original Echoes deployment owner blocks summoning on the bottom and middle floors while leaving the top floor open. The first ordinary decision reopens both floors. The block-only controlled native component verifies the full deployment EndTurn successor and room rules with --native-placement-mutators-only. |
-| RelicEffectBuffPyreForBossKill | input-only | All three original Silver souls dispatch the Pyre modification from SaveManager.BattleComplete after the settled battle snapshot. The next root reads the resulting live Pyre resources. The Silver campaign callback has source evidence. |
+| RelicEffectBuffPyreForBossKill | input-only | All three original Silver souls dispatch from SaveManager.BattleComplete after the settled battle snapshot. Two controlled dispatches of Silver T1 with original completed victories verify +5 persistent attack or +5 current and maximum HP and one Battle RNG draw each. The null controls have identical state and RNG. The next battle reads the resulting live Pyre resources. |
 | RelicEffectBumpOnTurnEnd | shared-path | Both unchanged original mutators run after floor combat and compaction before hero ascension. Capture room rules and physical points, keep owner order and iterate origins opposite movement. Each complete native win proves two turns of actual one-floor movement, no repeated targets in one callback, exact successors, sixteen immutable branches, recorded frontiers and equal serial/parallel search and plan replay. Mixed mutators, complex movement-death chains and special actors remain outside this test scope. |
 | RelicEffectCardDrawOnCardPlay | shared-path | Existing ID-independent ordered consumer reuses card type/subtype/trait and statistic conditions, native draw pipeline and condition records. This review adds unchanged original WarborneT3 carried-owner integration with ten same-turn plays and an actual two-card tenth-play draw; all successors/RNG, 16 branches/frontiers and serial-parallel root search. Other original owners have separate component checks; their complete lifecycle, other condition mixtures, mixed Covenants and all card combinations are not certified here. |
 | RelicEffectCardDuplicator | input-only | Native GrantableRewardData.ShouldOpenDeckScreen and DeckScreen.SetupRelicDataModes select this marker. DeckScreen.DoCardDuplication adds a permanent copy which later battle decisions capture as a deck input. The separate post-battle copy effect reuses the static copy helper. |
@@ -177,10 +177,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `eb54f1e7ca580bc19f583d5bb64402172ab811e2da55997eabf3df3ae49fdc67`。
+- 人工审查索引 SHA-256: `4a4b6c830c42185ba6ef4e540772d0eb3b24979bca59a50e3de962c92870b379`。
 - Model: PDB 校验过的项目源码集合 `95e252cc617f87e59ff9da8369e9a080f9083f6be7e1961a78e782c2b3978b5f`。
-- Probe: PDB 校验过的项目源码集合 `72e0b5c3d798de99765cee5d1a1e83ead85308718d3411c4901d4c40791fad48`。
-- ModelChecks: PDB 校验过的项目源码集合 `45a30ef1b4a950476ccb2f6b0eab8305a83e35d1cc14bac8d3c4fbf763c2def8`。
+- Probe: PDB 校验过的项目源码集合 `3fc33e1ac9b654388389461d7c7d7388c34f80551a831bab0b49353aa5c8e9bb`。
+- ModelChecks: PDB 校验过的项目源码集合 `b86fe11a940c4624fd438ac3001ed23a9cecb974251ac8592e62178a2d4a78b3`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
