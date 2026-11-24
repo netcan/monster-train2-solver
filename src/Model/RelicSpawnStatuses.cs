@@ -232,6 +232,20 @@ namespace MonsterTrain2Poju.Model
                         continue;
                     }
                     if (relic.EffectTypes[effectIndex] == RelicModel.ModifyCharacterMaxHealth &&
+                        RelicBothSidesUnitsModel.Applies(relic))
+                    {
+                        CombatUnit? healthRecipient = state.Units.FirstOrDefault(unit => unit.Id == unitId);
+                        if (healthRecipient == null) return Fail("Original BothSidesUnitsAreStronger birth requires a retained actor.");
+                        if (!RelicBothSidesUnitsModel.HealthApplies(healthRecipient, fromCardId, effectIndex)) continue;
+                        if (!DrainYield()) return failed!;
+                        RoomCombatResult applied = RelicBothSidesUnitsModel.ApplyHealth(state, unitId, fromCardId);
+                        if (!applied.Supported) return applied;
+                        state = applied.State!; callbacks.AddRange(applied.PendingCallbacks); events.AddRange(applied.Events);
+                        if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;
+                        if (!DrainYield()) return failed!;
+                        continue;
+                    }
+                    if (relic.EffectTypes[effectIndex] == RelicModel.ModifyCharacterMaxHealth &&
                         RelicModel.IsSoulSaviorFirstRegionScaling(relic) && fromCardId == 0)
                     {
                         CombatUnit boss = state.Units.Single(unit => unit.Id == unitId);

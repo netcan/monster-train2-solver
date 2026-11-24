@@ -329,12 +329,16 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(IReadOnlyList<CombatRelicState>? relics)
         {
             if (relics == null) return null; // Legacy captures retained their external-effect guard.
+            if (relics.Count(RelicBothSidesUnitsModel.Applies) > 1)
+                return "Duplicate original BothSidesUnitsAreStronger owner.";
             foreach (CombatRelicState relic in relics)
             {
                 string? attackError = RelicStatusAttackModel.Validate(relic);
                 if (attackError != null) return attackError;
                 if (string.IsNullOrEmpty(relic.DataId) || string.IsNullOrEmpty(relic.AssetKey))
                     return "Missing captured relic identity.";
+                string? bothSidesError = RelicBothSidesUnitsModel.Validate(relic);
+                if (bothSidesError != null) return bothSidesError;
                 string? endCombatError = RelicEndCombatModel.Validate(relic);
                 if (endCombatError != null) return endCombatError;
                 foreach (string effect in relic.EffectTypes)

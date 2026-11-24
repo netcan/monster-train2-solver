@@ -5100,6 +5100,16 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatRelicState relic in context.Relics)
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
+                    if (relic.EffectTypes[effectIndex] == RelicModel.ModifyCharacterAttackDamage &&
+                        RelicBothSidesUnitsModel.Applies(relic))
+                    {
+                        if (!unit.Alive || !RelicBothSidesUnitsModel.AttackApplies(unit.Source, kind, effectIndex)) continue;
+                        CombatUnit actor = unit.Freeze();
+                        if (actor.Modifiers is not UnitModifiers stats)
+                        { unsupportedReason = "Original BothSidesUnitsAreStronger trigger requires raw attack modifiers."; return false; }
+                        unit.Apply(actor.WithModifiers(stats.WithDamageBuff(unchecked(stats.DamageBuff + 5))).WithRawAttack(stats.AttackDamage));
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicModel.ModifyCharacterAttackDamage && kind == "OnSpawn" &&
                         unit.Alive && RelicModel.IsSoulSaviorFirstRegionScaling(relic) &&
                         RelicModel.IsObservedSoulSaviorBossStatTarget(unit.Source))

@@ -45,6 +45,7 @@ namespace MonsterTrain2Poju.Probe
                     BattleSpawnPointProbe.Enabled && RelicProbe.SupportsShuffleUnits(managers, owner) ||
                     BattleSpawnPointProbe.Enabled && SupportsLonelyRooms(owner, save) ||
                     SupportsUnhealed(owner) ||
+                    RelicBothSidesUnitsProbe.Matches(owner) ||
                     CardBranchMaskProbe.Enabled && SupportsHandOrEmber(owner, save) ||
                     owner.GetRelicDataID() == RelicUnitSpawnCountModel.DataId &&
                     owner.GetEffects() is [RelicEffectExtraSpawnsFirstUnitPerTurn] ||

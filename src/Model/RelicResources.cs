@@ -355,7 +355,7 @@ namespace MonsterTrain2Poju.Model
         public const string StartTurnRoomEffect = RelicStartTurnStatusModel.Effect;
         public const string PostOpeningDiscardReplacement = RelicJudgesScalesModel.Effect;
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == StartCombatHoard || type == Draw || type == PurgeCountDraw ||
-            type == PyreAttack || type == PyreHealth || type == ExtraPyreDamage || type == GoldOnPyreDamage || type == RelicPileSpawnUpgradeModel.Effect || type == RelicSpawnStatusScalingModel.Effect || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus || type == RelicDamagedFloorEnergyModel.Effect || RelicTurnEnergyModel.IsEffect(type) || type == RelicEntropyDrawModel.Effect ||
+            type == PyreAttack || type == RelicBothSidesUnitsModel.PyreEffect || type == PyreHealth || type == ExtraPyreDamage || type == GoldOnPyreDamage || type == RelicPileSpawnUpgradeModel.Effect || type == RelicSpawnStatusScalingModel.Effect || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus || type == RelicDamagedFloorEnergyModel.Effect || RelicTurnEnergyModel.IsEffect(type) || type == RelicEntropyDrawModel.Effect ||
             type == EnergyOnCardEarlyDiscard || type == RelicEndCombatModel.GrosMichelDestroy || type == RelicPyreResurrectionModel.Effect || type == RelicDecayDeathModel.Effect ||
             type == GoldOnExhaust || type == RelicOpeningSpawnModel.Effect || type == RelicAfterDrawSpawnModel.Effect || type == RelicOpeningDeckSpawnModel.Effect || type == RelicCorruptedAngelsModel.Effect ||
             type == EnergyOnCorruptRestrictedPlayed || type == CorruptionOnCorruptRestrictedPlayed ||
@@ -1033,7 +1033,7 @@ namespace MonsterTrain2Poju.Model
                 for (int ruleIndex = 0; ruleIndex < (owner.ResourceEffects?.Count ?? 0); ruleIndex++)
                 {
                     RelicResourceEffect rule = context.Relics[relicIndex].ResourceEffects![ruleIndex];
-                    if (rule.Type != PyreAttack) continue;
+                    if (rule.Type is not (PyreAttack or RelicBothSidesUnitsModel.PyreEffect)) continue;
                     RelicConditionEvaluation evaluation = RelicConditionModel.Evaluate(context, rule.Conditions);
                     if (!evaluation.Supported) return Fail(evaluation.UnsupportedReason!);
                     context = evaluation.Context;

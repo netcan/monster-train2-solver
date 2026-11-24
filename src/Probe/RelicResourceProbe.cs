@@ -554,6 +554,8 @@ namespace MonsterTrain2Poju.Probe
                     }
                 }
             }
+            else if (effect is RelicEffectTowerDamageDealtModified)
+                amount = data.GetParamInt();
             else if (effect is RelicEffectIncreasePyreAttack || effect is RelicEffectIncreasePyreHealth)
             {
                 amount = (int)AccessTools.Field(effect.GetType(), effect is RelicEffectIncreasePyreAttack ? "_attackAmount" : "_healthAmount").GetValue(effect);

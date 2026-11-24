@@ -279,8 +279,10 @@ namespace MonsterTrain2Poju.Probe
                     .Select(item => StatusMagnitude(item.Effect, item.Index)).ToArray();
                 var decays = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectPreventStatusEffectDecay).Select(item => StatusDecay(item.Effect, item.Index)).ToArray();
+                // This resource definition is accepted only after all seven effects match the original owner.
                 var resources = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => RelicResourceModel.IsEffect(item.Effect.GetType().Name))
+                    .Where(item => RelicResourceModel.IsEffect(item.Effect.GetType().Name) &&
+                        (item.Effect is not RelicEffectTowerDamageDealtModified || RelicBothSidesUnitsProbe.Matches(relic)))
                     .Select(item => RelicResourceProbe.Definition(item.Effect, item.Index, managers)).ToArray();
                 var forgePointModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect.GetType().Name == ForgePointsModel.AdditionalForgeRelic)
