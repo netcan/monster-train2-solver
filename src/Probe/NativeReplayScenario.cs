@@ -203,6 +203,12 @@ namespace MonsterTrain2Poju.Probe
                 try
                 {
 #if DEVELOPMENT_PROBE
+                    if (OriginalEndlessEnemyScalingWitness.AllWaves)
+                    {
+                        OriginalEndlessEnemyScalingWitness.WriteWaves(log, trace.NativeWon);
+                        Finish(true, "Original Endless enemy scaling waves captured.");
+                        return;
+                    }
                     if (RegionRunAlternateObservation.Active is RegionRunAlternateObservation alternate)
                     {
                         if (!CardAnimationSettlement.Ready())
@@ -1270,10 +1276,18 @@ namespace MonsterTrain2Poju.Probe
             }
             if (fullBattle && OriginalEndlessEnemyScalingWitness.Enabled)
             {
-                if (OriginalEndlessEnemyScalingWitness.Tick(FullBattleTrace.Active!, combat!, log,
-                    () => AdvanceTurn(combat!, record: false)))
-                    Finish(true, "Original Endless enemy scaling captured.");
-                return;
+                if (!OriginalEndlessEnemyScalingWitness.AllWaves)
+                {
+                    if (OriginalEndlessEnemyScalingWitness.Tick(FullBattleTrace.Active!, combat!, log,
+                        () => AdvanceTurn(combat!, record: false)))
+                        Finish(true, "Original Endless enemy scaling captured.");
+                    return;
+                }
+                if (OriginalEndlessEnemyScalingWitness.ObserveWaveDecision(FullBattleTrace.Active!, log))
+                {
+                    Finish(true, "Original Endless enemy scaling waves captured.");
+                    return;
+                }
             }
             if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)
             {

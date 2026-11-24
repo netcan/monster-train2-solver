@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using BepInEx.Logging;
 using HarmonyLib;
 using MonsterTrain2Poju.Capture;
@@ -16,17 +17,21 @@ namespace MonsterTrain2Poju.Probe
     {
         private const string OwnerId = "b342ef1d-306b-4d40-aa9d-782bbae58af3";
         private const string OwnerKey = "Enemy_EndlessScaling";
+        private const int ScheduledWaveCount = 6;
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_WITNESS") == "1";
+        internal static bool AllWaves => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_ALL_WAVES") == "1";
         internal static bool ControlledFirstLoop { get; private set; }
         private static object? scenario;
         private static BattleTurnState? deployment;
         private static readonly List<Birth> Births = new List<Birth>();
+        private static readonly List<Wave> Waves = new List<Wave>();
+        private static Wave? activeWave;
 
         internal static void BeginFirstLoop(AllGameManagers managers, ManualLogSource log)
         {
             SaveManager save = managers.GetSaveManager();
-            if (save.IsEndlessRun || save.GetRunType() != RunType.Class ||
+            if (AllWaves || save.IsEndlessRun || save.GetRunType() != RunType.Class ||
                 save.GetGameSequence() != SaveData.GameSequence.DestinationReached)
                 throw new InvalidOperationException("Expected a fresh isolated Class run before opening the original Endless loop.");
             ControlledFirstLoop = true;
@@ -47,11 +52,15 @@ namespace MonsterTrain2Poju.Probe
             int loop = run.GetLoopIndex();
             int distance = run.GetCurrentDistance();
             int length = save.GetRunLength();
+            string? encounter = save.GetCurrentScenarioData()?.name;
+            if (AllWaves && (ControlledFirstLoop || save.InTestScenario || SaveManager.WasDevCheatUsed ||
+                save.GetRunType() != RunType.Class || loop != 1 || distance != 0 || encounter != "TestEndless_Level1Battle2"))
+                throw new InvalidOperationException("Expected the original post-victory Endless opening for the six-wave witness.");
             var balance = save.GetBalanceData().GetEndlessScalingData();
             scenario = new
             {
                 OwnerId, OwnerKey, Loop = loop, Distance = distance, RunLength = length,
-                Scenario = save.GetCurrentScenarioData()?.name, ControlledFirstLoop,
+                Scenario = encounter, ControlledFirstLoop,
                 Attack = balance.GetAttackScaling(loop, distance, length),
                 Health = balance.GetHealthScaling(loop, distance, length),
                 Status = balance.GetStatusScaling(loop, distance, length),
@@ -87,6 +96,92 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
+        internal static bool ObserveWaveDecision(FullBattleTrace trace, ManualLogSource log)
+        {
+            if (deployment == null)
+            {
+                deployment = trace.CaptureDecision();
+                if (scenario == null || deployment.Spawn.Turn != 0 || deployment.Spawn.Phase != 0 ||
+                    deployment.Spawn.Looping || deployment.Spawn.Waves.Count != ScheduledWaveCount)
+                    throw new InvalidOperationException("Expected a deployment with six native scheduled waves.");
+            }
+            else if (Waves.LastOrDefault() is Wave wave && wave.SettledDecision == null)
+            {
+                var decision = trace.CaptureDecision();
+                if (!wave.PhaseAdvanced || decision.Spawn.Phase != wave.Index + 1 || wave.Births.Any(birth => birth.After == null))
+                    throw new InvalidOperationException($"The original enemy wave {wave.Index} did not settle as scheduled.");
+                wave.SettledDecision = decision;
+            }
+
+            if (Waves.Count != ScheduledWaveCount || Waves.Any(wave => wave.SettledDecision == null)) return false;
+            WriteWaves(log, null);
+            return true;
+        }
+
+        internal static void WriteWaves(ManualLogSource log, bool? nativeWon)
+        {
+            int completed = Waves.Count(wave => wave.PhaseAdvanced);
+            if (deployment == null || Births.Count == 0)
+                throw new InvalidOperationException("The original Endless battle ended before any captured wave births.");
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, Boundary = "OriginalEndlessEnemyScalingWaves", GameVersion = Application.version, GameModuleMvid = Module,
+                Scenario = scenario, Deployment = deployment, ScheduledWaves = ScheduledWaveCount, CompletedWaves = completed,
+                NativeWon = nativeWon, Waves, UnscheduledBirths = Births.Except(Waves.SelectMany(wave => wave.Births)).ToArray()
+            });
+            using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "endless-enemy-scaling-waves.mt2f"));
+            document.Write(output);
+            log.LogInfo($"ENDLESS-ENEMY-SCALING-WAVES OBSERVED waves={completed}/{ScheduledWaveCount} callbacks={Births.Count} nativeWon={nativeWon}");
+        }
+
+        private sealed class Wave
+        {
+            public int Index { get; set; }
+            public int NativeTurn { get; set; }
+            public bool PhaseAdvanced { get; set; }
+            public BattleTurnState? SettledDecision { get; set; }
+            public List<Birth> Births { get; } = new List<Birth>();
+        }
+
+        [HarmonyPatch(typeof(HeroManager), "DoSpawning")]
+        private static class ScheduledWavePatch
+        {
+            private static readonly FieldInfo Phase = AccessTools.Field(typeof(HeroManager), "spawnPatternPhase");
+
+            private static void Postfix(HeroManager __instance, ref IEnumerator __result)
+            {
+                if (AllWaves && deployment != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+                    __result = Observe(__result, __instance);
+            }
+
+            private static IEnumerator Observe(IEnumerator native, HeroManager heroes)
+            {
+                // The native scheduler advances this zero-based phase after its roster has entered.
+                int index = (int)Phase.GetValue(heroes);
+                Wave? wave = index < ScheduledWaveCount ? new Wave
+                {
+                    Index = index, NativeTurn = AllGameManagers.Instance!.GetCombatManager().GetTurnCount()
+                } : null;
+                if (wave != null)
+                {
+                    if (index != Waves.Count || activeWave != null)
+                        throw new InvalidOperationException($"Unexpected native Endless wave phase {index}.");
+                    Waves.Add(wave);
+                    activeWave = wave;
+                }
+                try { while (native.MoveNext()) yield return native.Current; }
+                finally
+                {
+                    (native as IDisposable)?.Dispose();
+                    if (wave != null)
+                    {
+                        wave.PhaseAdvanced = (int)Phase.GetValue(heroes) == index + 1;
+                        activeWave = null;
+                    }
+                }
+            }
+        }
+
         private sealed class Birth
         {
             public string AssetKey { get; set; } = "";
@@ -104,6 +199,8 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(RelicEffectEndlessScalingOnSpawn), nameof(RelicEffectEndlessScalingOnSpawn.OnCharacterAdded))]
         private static class ScalingPatch
         {
+            private static readonly FieldInfo ScheduledHeroes = AccessTools.Field(typeof(HeroManager), "toProcessHeroes");
+
             private static void Postfix(CharacterState character, CardState fromCard, ICoreGameManagers coreGameManagers, ref IEnumerator __result)
             {
                 if (Enabled && scenario != null && !coreGameManagers.GetSaveManager().PreviewMode &&
@@ -146,6 +243,9 @@ namespace MonsterTrain2Poju.Probe
                     LateAttackMultiplier = relics.GetLateAttackMultiplierFromRelics(actor.GetTeamType(), actor.IsChampion()), Before = ReadState()
                 };
                 Births.Add(birth);
+                if (activeWave is Wave wave &&
+                    ScheduledHeroes.GetValue(AllGameManagers.Instance!.GetHeroManager()) is List<CharacterState> roster && roster.Contains(actor))
+                    wave.Births.Add(birth);
                 try
                 {
                     while (native.MoveNext()) yield return native.Current;
