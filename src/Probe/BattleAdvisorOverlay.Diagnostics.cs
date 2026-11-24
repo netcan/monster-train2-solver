@@ -118,13 +118,16 @@ namespace MonsterTrain2Poju.Probe
                 int targetRoom = managers.GetRoomManager().IsValidRoomIndex(roomOverride) ? roomOverride :
                     drop?.GetRoomOwner()?.GetRoomIndex() ?? selfTarget?.GetCurrentRoomIndex() ??
                     managers.GetRoomManager().GetSelectedRoom();
+                bool isAbility = actor != null || roomActor != null;
+                CharacterState? target = AdviceDiagnosticInput.TargetCharacter(isAbility,
+                    isAbility && card.DoesAnyEffectTarget(TargetMode.DropTargetCharacter), drop?.GetCharacterState(), selfTarget);
                 entry.Input = new AdviceDiagnosticInput
                 {
                     CardInstanceId = trace != null && trace.TryGetCardId(card, out int cardId) ? cardId : (int?)null,
                     CardDataId = card.GetCardDataID(), Card = ClipDiagnosticText(card.GetTitle()),
                     CardIdentity = ClipDiagnosticText(AdvisorCardPresentation.Describe(card, handIndex, null), 2048),
                     HandIndex = handIndex, TargetRoom = targetRoom, DropSpawnPoint = drop?.GetIndexInRoom() ?? -1,
-                    TargetUnitId = trace != null && (drop?.GetCharacterState() ?? selfTarget) is CharacterState target &&
+                    TargetUnitId = trace != null && target != null &&
                         trace.TryGetUnitId(target, out int targetId) ? targetId : (int?)null,
                     SourceUnitId = trace != null && actor != null && trace.TryGetUnitId(actor, out int actorId) ? actorId : (int?)null,
                     SourceUnit = actor == null ? null : ClipDiagnosticText(actor.GetName()),

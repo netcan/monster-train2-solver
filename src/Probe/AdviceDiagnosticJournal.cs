@@ -72,6 +72,13 @@ namespace MonsterTrain2Poju.Probe
         public string? SourceUnit { get; set; }
         public int SourceRoom { get; set; } = -1;
         public bool FromDirectPlay { get; set; }
+
+        internal static T? TargetCharacter<T>(bool isAbility, bool targetsUnit, T? dropTarget, T? selfTarget) where T : class
+        {
+            // A skill's caster is passed as selfTarget even when it has no selected unit.
+            if (isAbility) return targetsUnit ? dropTarget : null;
+            return dropTarget ?? selfTarget;
+        }
     }
 
     internal sealed class AdviceDiagnosticJournal : IDisposable

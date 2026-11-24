@@ -8,10 +8,11 @@ internal static class AdviceDiagnosticJournalChecks
         string root = Directory.CreateTempSubdirectory("poju-advice-history-").FullName;
         try
         {
+            InputTargets();
             Rotation(Path.Combine(root, "rotation"));
             Overflow(Path.Combine(root, "overflow"));
             Failure(Path.Combine(root, "not-a-directory"));
-            Console.WriteLine("Advice history: bounded rotation, UTF-8 JSON, queue overflow, background drain and I/O failure passed.");
+            Console.WriteLine("Advice history: canonical input targets, bounded rotation, UTF-8 JSON, queue overflow, background drain and I/O failure passed.");
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -20,6 +21,24 @@ internal static class AdviceDiagnosticJournalChecks
     { if (!condition) throw new InvalidOperationException("Advice history: " + message); }
 
     private static void Wait(Func<bool> predicate) => Require(SpinWait.SpinUntil(predicate, TimeSpan.FromSeconds(5)), "worker did not finish");
+
+    private static void InputTargets()
+    {
+        object actor = new(), droppedUnit = new();
+        Require(AdviceDiagnosticInput.TargetCharacter(true, false, null, actor) == null,
+            "an implicit Self skill logged its caster as an explicit target");
+        Require(AdviceDiagnosticInput.TargetCharacter(true, false, droppedUnit, actor) == null,
+            "an occupied skill destination logged its occupant as a selected unit");
+        Require(AdviceDiagnosticInput.TargetCharacter(true, true, droppedUnit, actor) == droppedUnit &&
+            AdviceDiagnosticInput.TargetCharacter(true, true, actor, actor) == actor,
+            "a unit skill lost its explicit target");
+        Require(AdviceDiagnosticInput.TargetCharacter(true, true, droppedUnit, null) == droppedUnit &&
+            AdviceDiagnosticInput.TargetCharacter(true, true, null, actor) == null,
+            "a room skill lost its selected unit or inferred a target from the caster");
+        Require(AdviceDiagnosticInput.TargetCharacter(false, false, droppedUnit, actor) == droppedUnit &&
+            AdviceDiagnosticInput.TargetCharacter(false, false, null, actor) == actor,
+            "a hand play lost its native drop or self target");
+    }
 
     private static void Rotation(string path)
     {
