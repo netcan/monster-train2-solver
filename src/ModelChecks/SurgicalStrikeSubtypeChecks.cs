@@ -40,7 +40,7 @@ internal static class SurgicalStrikeSubtypeChecks
                 row.Actual.Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != row.TargetId) &&
                 (row.Kind == "ActiveFoe" ? target.Team == CombatTeam.Enemy : target.Team == CombatTeam.Player && before.FindCard(target.SpawnerCardId)?.DataId == Dreg) &&
                 OriginalAllSubtypesModel.Active(before, deployment: false) == active && OriginalAllSubtypesModel.Active(actual, deployment: false) == active &&
-                (!active || RelicModel.Validate(before)?.Contains(OriginalAllSubtypesModel.Effect) == true) && row.EffectiveFungus == suppressed &&
+                RelicModel.Validate(before) == null && RelicModel.Validate(actual) == null && row.EffectiveFungus == suppressed &&
                 row.Calls is [var call] && call.Before == 1 && call.After == copies,
                 "Original card, paid kill, registered mutator or native trigger count differs at " + row.Kind);
             Require(row.Copies.Length == copies && actual.Cards.Hand.Where(token => token.InstanceId >= before.NextCardId && token.DataId == Strike)

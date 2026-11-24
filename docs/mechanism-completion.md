@@ -1446,12 +1446,22 @@ GrimFlight 验收程序已就绪，正向运行需要原版客户端确认 Punis
 
 `AllUnitsAllSubtypes` 用原版 2.3.1 对照了 42 项单位匹配、10 项牌堆筛选、8 项升级筛选和 20 组召唤统计。
 普通友军及死亡回调保留 Horde 例外，牌堆统计保留 Champion 例外。查询前后原始子类型与随机流一致。
-整局战斗准入仍待补齐其他子类型调用点。
 [原版查询归档](../tests/compatibility/game-2.3.1/mechanics/all-unit-subtypes/queries.mt2f)
 
 Surgical Strike 的三次原版付费击杀核对了复制回调。普通 Dreg 同场启用变异器后满足 FunGuy 查询，
 复制量从 1 变为 0。敌方击杀仍生成 1 张临时牌。目标筛选复用同一单位查询，保留 Horde 和薪火规则。
 [原版击杀归档](../tests/compatibility/game-2.3.1/mechanics/all-unit-subtypes/surgical-strike.mt2f)
+
+该突变独立启用时，两场第一环原版胜局已验收，共 33 次出牌、12 次结束回合。
+常规战斗从部署开始保留同一个原版突变。Surgical Strike 战斗使用受控生命值和原版法术定义，
+普通友军的致死攻击保持零复制，敌方两次致死攻击各生成一张临时牌。两场的完整状态、随机流、
+出牌及结束回合候选、每场 16 条独立分支和串并行计划复放均通过。实机采样分别耗时 71.97 秒和 54.76 秒。
+[常规整战](../tests/compatibility/game-2.3.1/mechanics/all-unit-subtypes/native-battle.mt2f) ·
+[Surgical Strike 整战](../tests/compatibility/game-2.3.1/mechanics/all-unit-subtypes/native-surgical-strike-battle.mt2f)
+
+阶段回放在 `f5e6a8de` 上通过 509 场已结算战斗，其中 488 场连续、21 场分段。
+共核对 7,797 次战斗操作和 3,024 次结束回合，失败为 0。
+[整战阶段报告](../results/recorded-chain-triage-20261125-061727-27b8edfb/report.tsv)
 
 2.3.1 原版 `DoubleStatusEffects` 已接入共享状态层数管线。原版 SpikePotion 支付 1 余烬，
 使火车乘务员获得 20 层尖刺，完整出牌后继和随机流通过复放。七项查询对照覆盖冷却、无目标、
