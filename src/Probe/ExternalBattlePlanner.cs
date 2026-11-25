@@ -80,7 +80,8 @@ namespace MonsterTrain2Poju.Probe
             bool terminal = plan.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
             if (!ReferenceEquals(verified, plan) || !plan.CompletedHorizon || plan.Cancelled || plan.Steps.Count == 0 ||
                 plan.ExpandedNodes > 256 || plan.TurnsCompleted > horizon ||
-                plan.TurnsCompleted != plan.Steps.Count(step => step.IsEndTurn) || !terminal && plan.TurnsCompleted != horizon ||
+                plan.TurnsCompleted != plan.Steps.Count(step => step.IsEndTurn) ||
+                (!terminal && (plan.TurnsCompleted != horizon || !plan.Steps[plan.Steps.Count - 1].IsEndTurn)) ||
                 plan.Steps.Any(step => step.IsEndTurn != (step.Action == null)) ||
                 BattlePlanner.Evaluate(plan.State, plan.Outcome) != plan.Score)
                 throw new InvalidOperationException("External planner result identity, bounds or score differ.");
