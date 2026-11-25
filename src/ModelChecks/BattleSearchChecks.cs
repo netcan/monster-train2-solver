@@ -298,6 +298,24 @@ internal static class BattleSearchChecks
         Require(keys.Key(root) == parent, "Large-budget search changed its native root.");
         Console.WriteLine($"NATIVE-LARGE-SEARCH-BUDGET PASS: {baseline.DecisionStatesVisited} decisions, two optimal plays, exact serial, parallel and bounded native replay.");
 
+        foreach (int parallelism in new[] { 1, 4 })
+        {
+            using var cancellation = new CancellationTokenSource();
+            int boundCalls = 0;
+            BattleSearchResult interrupted = BattleSearchModel.Minimize(root, Score,
+                new BattleSearchOptions(maxNodes: 2, maxTurns: 0, maxDegreeOfParallelism: parallelism), _ =>
+                {
+                    boundCalls++;
+                    cancellation.Cancel();
+                    return 0d;
+                }, cancellation.Token);
+            Require(boundCalls == 1 && interrupted.Cancelled && !interrupted.ExhaustedEnumeratedFrontier &&
+                interrupted.DecisionStatesVisited == 1 && interrupted.Steps.Count == 0 &&
+                keys.Key(interrupted.BestState!) == parent && keys.Key(root) == parent,
+                "Search priority continued evaluating alternatives after cancellation, or lost the native root.");
+        }
+        Console.WriteLine("NATIVE-SEARCH-CANCELLATION PASS: no remaining branch evaluation after the cancellation boundary.");
+
         int scoredHorizonLeaves = 0;
         BattleSearchResult limited = BattleSearchModel.Minimize(root, LimitedScore,
             new BattleSearchOptions(maxNodes: 4, maxTurns: 1), _ => 0d);

@@ -83,7 +83,8 @@ namespace MonsterTrain2Poju.Model
             SearchLeaf? best = summary.Best;
             return new BattleSearchResult(best?.State, best?.Outcome ?? RoomOutcome.Unsupported, best?.Score,
                 best?.Steps ?? Array.Empty<BattleSearchStep>(), summary.NodesVisited, summary.PrunedBranches,
-                summary.ReachedNodeLimit, summary.ReachedTurnLimit, summary.Cancelled, summary.UnsupportedAttempts);
+                summary.ReachedNodeLimit, summary.ReachedTurnLimit, summary.Cancelled || cancellationToken.IsCancellationRequested,
+                summary.UnsupportedAttempts);
         }
 
         private static SearchSummary Explore(BattleTurnState state, int turnsElapsed, int budget, bool root,
@@ -99,16 +100,12 @@ namespace MonsterTrain2Poju.Model
                 return summary;
             }
             summary.NodesVisited = 1;
-            if (cancellationToken.IsCancellationRequested)
-            {
-                summary.Cancelled = true;
-                summary.Consider(Leaf(state, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), score),
-                    isObjectiveLeaf: turnsElapsed >= options.MaxTurns);
-                return summary;
-            }
+            if (cancellationToken.IsCancellationRequested) return FinishCancelled();
 
-            BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(state);
+            Func<bool>? shouldStop = cancellationToken.CanBeCanceled ? () => cancellationToken.IsCancellationRequested : null;
+            BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(state, null, true, null, shouldStop);
             foreach (UnsupportedActionAttempt attempt in frontier.UnsupportedAttempts) summary.AddUnsupported(attempt);
+            if (frontier.Interrupted || cancellationToken.IsCancellationRequested) return FinishCancelled();
             var branches = new List<SearchBranch>(frontier.SupportedCandidates.Count + 1);
             foreach (SupportedActionCandidate candidate in frontier.SupportedCandidates)
                 branches.Add(new SearchBranch(new BattleSearchStep(candidate.Action, false), candidate.Result.State!,
@@ -116,12 +113,11 @@ namespace MonsterTrain2Poju.Model
 
             if (turnsElapsed < options.MaxTurns)
             {
-                BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(state, Math.Max(0, budget - 1),
-                    () => cancellationToken.IsCancellationRequested);
+                BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(state, Math.Max(0, budget - 1), shouldStop);
                 summary.NodesVisited += ends.ChoiceNodes;
                 summary.ReachedNodeLimit |= ends.ReachedNodeLimit;
-                summary.Cancelled |= ends.Interrupted;
                 foreach (UnsupportedActionAttempt attempt in ends.UnsupportedAttempts) summary.AddUnsupported(attempt);
+                if (ends.Interrupted || cancellationToken.IsCancellationRequested) return FinishCancelled();
                 foreach (BattleEndTurnCandidate end in ends.Candidates)
                     branches.Add(new SearchBranch(end.Step, end.Result.State!, end.Result.Outcome, turnsElapsed + 1));
             }
@@ -132,7 +128,9 @@ namespace MonsterTrain2Poju.Model
                     isObjectiveLeaf: true);
             }
 
-            PrioritizeBranches(branches, Math.Max(1, budget - summary.NodesVisited + 1), root, score, options, lowerBound);
+            PrioritizeBranches(branches, Math.Max(1, budget - summary.NodesVisited + 1), root, score, options, lowerBound,
+                cancellationToken);
+            if (cancellationToken.IsCancellationRequested) return FinishCancelled();
 
             if (branches.Count == 0)
             {
@@ -144,19 +142,21 @@ namespace MonsterTrain2Poju.Model
             if (root && options.MaxDegreeOfParallelism > 1)
             {
                 int[] childBudgets = AllocateBudget(Math.Max(0, budget - summary.NodesVisited), branches);
-                var results = new SearchSummary[branches.Count];
-                Parallel.For(0, branches.Count, new ParallelOptions { MaxDegreeOfParallelism = options.MaxDegreeOfParallelism }, index =>
+                var results = new SearchSummary?[branches.Count];
+                Parallel.For(0, branches.Count, new ParallelOptions { MaxDegreeOfParallelism = options.MaxDegreeOfParallelism }, (index, loop) =>
                 {
+                    if (cancellationToken.IsCancellationRequested) { loop.Stop(); return; }
                     results[index] = ExploreBranch(branches[index], childBudgets[index], score, options,
                         lowerBound, cancellationToken);
                 });
-                for (int index = 0; index < results.Length; index++) summary.Merge(results[index]);
+                foreach (SearchSummary? result in results)
+                    if (result != null) summary.Merge(result);
             }
             else
             {
                 int remaining = Math.Max(0, budget - summary.NodesVisited);
                 int remainingChildren = branches.Count(branch => !IsTerminal(branch.Outcome));
-                for (int index = 0; index < branches.Count; index++)
+                for (int index = 0; index < branches.Count && !cancellationToken.IsCancellationRequested; index++)
                 {
                     SearchBranch branch = branches[index];
                     int childBudget = 0;
@@ -175,20 +175,28 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
             }
-            summary.Cancelled |= cancellationToken.IsCancellationRequested;
-            return summary;
+            return cancellationToken.IsCancellationRequested ? FinishCancelled() : summary;
+
+            SearchSummary FinishCancelled()
+            {
+                summary.Cancelled = true;
+                if (summary.Best == null)
+                    summary.Consider(Leaf(state, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), score),
+                        isObjectiveLeaf: turnsElapsed >= options.MaxTurns);
+                return summary;
+            }
         }
 
         private static void PrioritizeBranches(List<SearchBranch> branches, int budget, bool root,
             Func<BattleTurnState, RoomOutcome, double> score, BattleSearchOptions options,
-            Func<BattleTurnState, double?>? lowerBound)
+            Func<BattleTurnState, double?>? lowerBound, CancellationToken cancellationToken)
         {
             int nonterminal = branches.Count(branch => !IsTerminal(branch.Outcome));
             int remainder = nonterminal == 0 ? 0 : Math.Max(0, budget - 1) % nonterminal;
             bool canUseBoundForOrdering = lowerBound != null && (!root || options.MaxDegreeOfParallelism == 1);
             if (remainder == 0 && !canUseBoundForOrdering) return;
 
-            var ordered = branches.Select((branch, index) => new
+            var ordered = branches.TakeWhile(_ => !cancellationToken.IsCancellationRequested).Select((branch, index) => new
                 {
                     Branch = branch,
                     Index = index,
