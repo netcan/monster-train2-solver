@@ -40,6 +40,8 @@ try {
         dotnet $checks --native-hand-and-ember-ephemeral-only "$handAndEmber/$handArchive"
         if ($LASTEXITCODE -ne 0) { throw "Original Ephemeral cleanup under hand retention failed: $handArchive" }
     }
+    dotnet $checks --original-discounted-flicker-only "$current/discounted-flicker/native-cast.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original first-Spell discount and Flicker copy replay failed.' }
     $offeringToken = "$current/controlled-isolated-spells"
     foreach ($offeringArchive in @('offering-token.mt2f', 'offering-token-discard-drawn.mt2f')) {
         dotnet $checks --offering-token-frontier-only "$offeringToken/$offeringArchive"
