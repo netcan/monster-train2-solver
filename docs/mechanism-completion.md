@@ -1578,10 +1578,12 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 
 第 2 环继续到第二波的原版结算。四次出生回调与完整结束回合通过复放，沉默附魔师从 8 生命缩放到 24，沉默保持 1 层。两个光环分别作用于敌方和玩家单位，其目标、随机流与结算后的状态全部匹配。
 同一原版起点全程不出牌，第四次结束回合时薪火归零。连续完整状态、随机流、结束回合候选及 16 条独立分支均通过。
-最终波另在隔离档用原版接口将薪火生命由 1 提到 3000，推进到第六波。首领以 20 攻击和 3600 生命出生，保留 1 层无情，首次回合开始获得 10 点护甲。出生与首次获得护甲的两个回合均匹配完整战斗状态和随机流。实际出牌路线仍待验收。
+最终波另在隔离档用原版接口将薪火生命由 1 提到 3000，推进到第六波。首领以 20 攻击和 3600 生命出生，保留 1 层无情，首次回合开始获得 10 点护甲。出生与首次获得护甲的两个回合均匹配完整战斗状态和随机流。
+同一受控起点的另一份原版录制在第 5 回合支付 3 点余烬打出 Inferno，击杀三名追猎者，护卫生命从 600 降至 480。此次出牌与随后的两个结束回合均通过完整连续复放。
 [第 2 环第二波原版归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring2-second-wave.mt2f) ·
 [第 2 环原版败局](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring2-defeat.mt2f) ·
-[第六波首领原版归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring2-late-boss-settled.mt2f)
+[第六波首领原版归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring2-late-boss-settled.mt2f) ·
+[Inferno 原版归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring2-paid-boss.mt2f)
 
 无尽第 3 环受控首波复放覆盖三名常规敌人与外侧 Boss Arkion。Arkion 在顶层出生后结算为
 40 攻击、6250 生命，推位参数保持 1。原版出生前后、初始行动、随机流和部署结束后的完整状态均匹配。
