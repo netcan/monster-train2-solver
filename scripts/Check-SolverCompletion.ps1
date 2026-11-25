@@ -135,7 +135,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Native rejected deployment advice acceptance failed.' }
     dotnet $checks --player-advisor-presentation-only "$current/player-advisor-rolling/current-ring1-presentation-after-allocation.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Native advisor presentation acceptance failed.' }
-    dotnet $checks --original-endless-loop2-advisor-first-end-turn-only "$current/endless-enemy-scaling/native-controlled-loop2-advisor-first-end-turn.mt2f"
+    $endless = "$current/endless-enemy-scaling"
+    dotnet $checks --original-endless-ring2-second-wave-only "$endless/native-controlled-ring2-second-wave.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Native Endless Ring 2 second wave failed.' }
+    dotnet $checks --original-endless-loop2-advisor-first-end-turn-only "$endless/native-controlled-loop2-advisor-first-end-turn.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Native Endless Loop 2 advice handoff through the first EndTurn failed.' }
     dotnet $checks --original-lady-ephemeral-attack-only "$current/player-advisor-rolling/native-moon-remnant-sixth-battle-defeat.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original Lady of the House Burnout attack scaling failed.' }
