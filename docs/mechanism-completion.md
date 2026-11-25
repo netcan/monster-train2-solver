@@ -1569,8 +1569,10 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 遗物将后排追猎者移到前排，房间名单、物理槽位、附魔目标及随机流均与原版一致。
 [第 2 环受控原版对照](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring2-first-wave.mt2f)
 
-第 2 环继续到第二波的原版结算。四次出生回调与完整结束回合通过复放，沉默附魔师从 8 生命缩放到 24，沉默保持 1 层。两个光环分别作用于敌方和玩家单位，其目标、随机流与结算后的状态全部匹配。验证覆盖至第二波结算。
-[第 2 环第二波原版归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring2-second-wave.mt2f)
+第 2 环继续到第二波的原版结算。四次出生回调与完整结束回合通过复放，沉默附魔师从 8 生命缩放到 24，沉默保持 1 层。两个光环分别作用于敌方和玩家单位，其目标、随机流与结算后的状态全部匹配。
+同一原版起点全程不出牌，第四次结束回合时薪火归零。连续完整状态、随机流、结束回合候选及 16 条独立分支均通过。付费路线和更晚的首领波次仍待验收。
+[第 2 环第二波原版归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring2-second-wave.mt2f) ·
+[第 2 环原版败局](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring2-defeat.mt2f)
 
 无尽第 3 环受控首波复放覆盖三名常规敌人与外侧 Boss Arkion。Arkion 在顶层出生后结算为
 40 攻击、6250 生命，推位参数保持 1。原版出生前后、初始行动、随机流和部署结束后的完整状态均匹配。
