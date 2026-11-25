@@ -82,6 +82,18 @@ internal static class BattleBeliefChecks
             "Sampled draw order acquired an exact distribution certificate.");
         var cancelled = BattleBeliefPlanner.Plan(belief, cancellationToken: new CancellationToken(true));
         Require(cancelled.Cancelled && cancelled.ExpandedWorlds == 0 && !cancelled.CertifiedFiniteHorizonOptimal, "Belief cancellation certified a result.");
+        using var leafCancellation = new CancellationTokenSource();
+        int evaluatedWorlds = 0;
+        var cancelledLeaf = BattleBeliefPlanner.Plan(belief, new BattleBeliefOptions(maxDecisions: 0), (state, outcome) =>
+        {
+            if (++evaluatedWorlds == belief.Worlds.Count) leafCancellation.Cancel();
+            return BattlePlanner.Evaluate(state, outcome);
+        }, leafCancellation.Token);
+        Require(cancelledLeaf.Policy.CompletedHorizon && cancelledLeaf.Cancelled && !cancelledLeaf.CertifiedFiniteHorizonOptimal,
+            "Belief cancellation during the last native leaf evaluation certified the policy.");
+        var expiredLeaf = BattleBeliefPlanner.Plan(belief, new BattleBeliefOptions(maxDecisions: 0, timeLimit: TimeSpan.Zero));
+        Require(expiredLeaf.Policy.CompletedHorizon && expiredLeaf.TimedOut && !expiredLeaf.CertifiedFiniteHorizonOptimal,
+            "The completed belief leaf bypassed its expired time budget.");
         var expired = BattleBeliefPlanner.Plan(belief, new BattleBeliefOptions(timeLimit: TimeSpan.Zero));
         Require(expired.TimedOut && expired.Policy.IsLeaf && !expired.Policy.CompletedHorizon && !expired.Policy.AllTerminal &&
             !expired.CertifiedFiniteHorizonOptimal, "Belief time cutoff certified a result.");

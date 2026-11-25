@@ -82,7 +82,9 @@ namespace MonsterTrain2Poju.Model
             var watch = Stopwatch.StartNew(); int nodes = 0;
             bool limited = false, timedOut = false, cancelled = false;
             var unsupported = new HashSet<string>(StringComparer.Ordinal);
-            var policy = Visit(belief.Worlds, options.MaxDecisions); watch.Stop();
+            var policy = Visit(belief.Worlds, options.MaxDecisions);
+            watch.Stop();
+            Interrupted();
             return new BattleBeliefResult(policy, nodes, limited, timedOut, cancelled, belief.ExhaustiveDistribution,
                 watch.Elapsed, unsupported.OrderBy(reason => reason, StringComparer.Ordinal).ToArray());
 
