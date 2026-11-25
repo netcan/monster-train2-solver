@@ -663,6 +663,7 @@ param(
     [switch] $EndlessEnemyScalingControlledNextRing,
     [switch] $EndlessEnemyScalingControlledSecondWave,
     [switch] $EndlessEnemyScalingRing2LateBoss,
+    [switch] $EndlessEnemyScalingRing2PaidBoss,
     [switch] $EndlessEnemyScalingControlledLoop2,
     [switch] $EndlessLoop2AdvisorObservation,
     [switch] $EndlessLoop2AdvisorHandoff,
@@ -1170,6 +1171,9 @@ if ($EndlessEnemyScalingRing2LateBoss -and
         $EndlessEnemyScalingWholeBattle -or $EndlessEnemyScalingControlledSecondWave)) {
     throw 'EndlessEnemyScalingRing2LateBoss requires only the controlled Ring 2 opening.'
 }
+if ($EndlessEnemyScalingRing2PaidBoss -and !$EndlessEnemyScalingRing2LateBoss) {
+    throw 'EndlessEnemyScalingRing2PaidBoss requires the original controlled late-boss witness.'
+}
 if ($EndlessEnemyScalingControlledNextRing -and
     (!$OriginalEndlessEnemyScalingWitness -or $EndlessEnemyScalingAllWaves -or !$InputProfile -or $BattleDistance -ne 0)) {
     throw 'EndlessEnemyScalingControlledNextRing requires OriginalEndlessEnemyScalingWitness and the original post-victory InputProfile at BattleDistance 0.'
@@ -1207,7 +1211,7 @@ if ($EndlessEnemyScalingAllWaves -and (!$OriginalEndlessEnemyScalingWitness -or 
 if ($OriginalEndlessEnemyScalingWitness) {
     $witnessArguments = @('OriginalEndlessEnemyScalingWitness', 'EndlessEnemyScalingAllWaves', 'EndlessEnemyScalingWholeBattle',
         'EndlessEnemyScalingControlledNextRing', 'EndlessEnemyScalingControlledLoop2', 'EndlessEnemyScalingControlledDistance',
-        'EndlessEnemyScalingControlledSecondWave', 'EndlessEnemyScalingRing2LateBoss',
+        'EndlessEnemyScalingControlledSecondWave', 'EndlessEnemyScalingRing2LateBoss', 'EndlessEnemyScalingRing2PaidBoss',
         'EndlessEnemyScalingLoop2CorruptionPlan', 'EndlessEnemyScalingLoop2CorruptionTerminal',
         'EndlessLoop2AdvisorObservation', 'EndlessLoop2AdvisorHandoff', 'EndlessLoop2AdvisorFirstEndTurn',
         'InputProfile', 'BattleDistance', 'Seed',
@@ -3794,6 +3798,7 @@ $environment = @{
     MT2_PROBE_ENDLESS_ENEMY_SCALING_WHOLE_BATTLE = $(if ($EndlessEnemyScalingWholeBattle) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_SECOND_WAVE = $(if ($EndlessEnemyScalingControlledSecondWave) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_RING2_LATE_BOSS = $(if ($EndlessEnemyScalingRing2LateBoss) { '1' } else { '0' })
+    MT2_PROBE_ENDLESS_ENEMY_SCALING_RING2_PAID_BOSS = $(if ($EndlessEnemyScalingRing2PaidBoss) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_NEXT_RING = $(if ($EndlessEnemyScalingControlledNextRing) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_LOOP2 = $(if ($EndlessEnemyScalingControlledLoop2) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_LOOP2_ADVISOR_OBSERVATION = $(if ($EndlessLoop2AdvisorObservation) { '1' } else { '0' })
@@ -5305,7 +5310,8 @@ if ($EndlessLoop2AdvisorObservation) {
     return
 }
 if ($OriginalEndlessEnemyScalingWitness) {
-    $captureName = if ($EndlessEnemyScalingRing2LateBoss) { 'endless-enemy-scaling-ring2-late-boss.mt2f' }
+    $captureName = if ($EndlessEnemyScalingRing2PaidBoss) { 'endless-enemy-scaling-ring2-paid-boss.mt2f' }
+        elseif ($EndlessEnemyScalingRing2LateBoss) { 'endless-enemy-scaling-ring2-late-boss.mt2f' }
         elseif ($EndlessEnemyScalingAllWaves) { 'endless-enemy-scaling-waves.mt2f' }
         elseif ($EndlessEnemyScalingControlledLoop2) { 'endless-enemy-scaling-controlled-loop2.mt2f' }
         elseif ($EndlessEnemyScalingControlledNextRing) { 'endless-enemy-scaling-controlled-next-ring.mt2f' }

@@ -356,7 +356,7 @@ internal static class OriginalEndlessFirstWaveChecks
         Console.WriteLine("NATIVE-ENDLESS-RING2-SECOND-WAVE PASS: four original births, unchanged Silence aura and exact EndTurn successor.");
     }
 
-    internal static void Ring2LateBoss(FixtureValue archive, bool fullWorld)
+    internal static void Ring2LateBoss(FixtureValue archive, bool fullWorld, bool requirePaid)
     {
         const string bossKey = "Boss_Level2_BigStats";
         FixtureValue scenario = archive.GetProperty("Scenario"), lastWave = archive.GetProperty("LastWave");
@@ -385,6 +385,10 @@ internal static class OriginalEndlessFirstWaveChecks
         BattleTurnState before = archive.GetProperty("BeforeBossBirth").Deserialize<BattleTurnState>()!;
         BattleTurnState live = archive.GetProperty("AfterBossBirth").Deserialize<BattleTurnState>()!;
         BattleTurnState settled = archive.GetProperty("FirstTurnBegin").Deserialize<BattleTurnState>()!;
+        bool paid = archive.TryGetProperty("PaidPlay", out var paidPlay) && paidPlay.ValueKind != FixtureKind.Null;
+        Require(!requirePaid || paid, "Expected one actual paid Inferno before the late wave.");
+        if (paid)
+            CompareInferno(paidPlay, before);
         BattleTurnResult spawned = BattleTurnModel.EndTurn(before);
         Require(before.Spawn is { Turn: 5, Phase: 5 } && spawned.Outcome == RoomOutcome.Exchanged && spawned.State != null,
             spawned.UnsupportedReason ?? "Expected the complete sixth wave.");
@@ -407,6 +411,33 @@ internal static class OriginalEndlessFirstWaveChecks
         Console.WriteLine("NATIVE-ENDLESS-RING2-LATE-BOSS PASS: exact original birth, unscaled Relentless and first owned Armor application.");
         if (fullWorld)
             Console.WriteLine("NATIVE-ENDLESS-RING2-LATE-BOSS FULL-WORLD PASS: two exact settled successors.");
+        if (paid)
+            Console.WriteLine("NATIVE-ENDLESS-RING2-LATE-BOSS PAID PASS: original Inferno at turn 5, three Ember and full settled successor.");
+
+        static void CompareInferno(FixtureValue record, BattleTurnState beforeBoss)
+        {
+            const string inferno = "887b4b22-7f26-443f-b942-8ad620741617";
+            var input = record.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            var root = record.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var native = record.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            var initialContext = root.Spawn.Train.Context!;
+            Require(root.Spawn is { Turn: 5, Phase: 5 } && root.SelectedRoom == 0 &&
+                input is { RoomIndex: 0, TargetUnitId: 0, PlayerPosition: -1 } &&
+                initialContext.FindCard(input.CardInstanceId)?.DataId == inferno &&
+                initialContext.Cards.Hand.Any(card => card.InstanceId == input.CardInstanceId) &&
+                initialContext.QueryFrame?.Energy == 5 && native.Spawn.Train.Context?.QueryFrame?.Energy == 2 &&
+                record.GetProperty("ActualOutcome").Deserialize<RoomOutcome>() == RoomOutcome.Exchanged,
+                "Expected the original paid Inferno immediately before the final wave.");
+            RoomCombatState ground = root.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0);
+            RoomCombatState burned = native.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0);
+            Require(ground.Units.Count(unit => unit.AssetKey == "AttackerT2_HunterSeeker") == 3 &&
+                burned.Units is [{ AssetKey: "ShieldGuardT3_Enchanter_Chosen", Health: 480 }],
+                "Expected Inferno to kill all three Hunters and damage the original ShieldGuard.");
+            BattleActionResult play = BattleActionModel.PlayCard(root, input);
+            Require(play.Supported && play.Outcome == RoomOutcome.Exchanged, play.Reason ?? "Expected an exact paid Inferno successor.");
+            RecordedBattleChecks.Compare(play.State!, native, terminal: false, "original Endless Ring 2 paid Inferno");
+            RecordedBattleChecks.Compare(native, beforeBoss, terminal: false, "original Endless Ring 2 paid-to-wave continuity");
+        }
 
         CombatUnit CompareBoss(BattleTurnState predicted, BattleTurnState native)
         {

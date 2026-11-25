@@ -97,10 +97,11 @@ if (args.Length == 2 && args[0] == "--original-endless-ring2-second-wave-only")
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--original-endless-ring2-late-boss-only" &&
-    (args.Length == 2 || args[2] == "--full-world"))
+    (args.Length == 2 || args[2] is "--full-world" or "--paid-full-world"))
 {
     using var archive = ModelJson.ReadFixture(args[1]);
-    OriginalEndlessFirstWaveChecks.Ring2LateBoss(archive.RootElement, fullWorld: args.Length == 3);
+    OriginalEndlessFirstWaveChecks.Ring2LateBoss(archive.RootElement, fullWorld: args.Length == 3,
+        requirePaid: args.Length == 3 && args[2] == "--paid-full-world");
     return;
 }
 if (args.Length == 2 && args[0] == "--original-endless-arkion-terminal-only")

@@ -1482,7 +1482,11 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalEndlessEnemyScalingWitness.Ring2LateBoss)
                 {
                     if (OriginalEndlessEnemyScalingWitness.TickRing2LateBoss(FullBattleTrace.Active!, combat!, log,
-                        () => AdvanceTurn(combat!, record: false)))
+                        () => AdvanceTurn(combat!, record: false), action =>
+                        {
+                            pendingPlay = action;
+                            PlayPendingPolicyCard(managers, cards!);
+                        }))
                         Finish(true, "Original Endless Ring 2 late boss captured.");
                     return;
                 }

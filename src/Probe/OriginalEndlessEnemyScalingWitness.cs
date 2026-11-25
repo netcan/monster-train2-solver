@@ -33,6 +33,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool ControlledRing2 => ControlledNextRing && ControlledDistance == 1;
         internal static bool Ring2LateBoss => ControlledRing2 &&
             Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_RING2_LATE_BOSS") == "1";
+        private static bool Ring2PaidBoss => Ring2LateBoss &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_RING2_PAID_BOSS") == "1";
         internal static bool ControlledFirstLoop { get; private set; }
         private static bool controlledAdvanceApplied;
         private static object? scenario;
@@ -265,7 +267,8 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("ENDLESS-ENEMY-SCALING-RING2-SECOND-WAVE OBSERVED callbacks=4 enchanter=EnchanterT3_Silence");
         }
 
-        internal static bool TickRing2LateBoss(FullBattleTrace trace, CombatManager combat, ManualLogSource log, Action advanceTurn)
+        internal static bool TickRing2LateBoss(FullBattleTrace trace, CombatManager combat, ManualLogSource log, Action advanceTurn,
+            Action<PlayCardAction> playCard)
         {
             const int preparedHealth = 3000;
             const string bossKey = "Boss_Level2_BigStats";
@@ -296,7 +299,19 @@ namespace MonsterTrain2Poju.Probe
                 save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
             }
             else if (turn == 5)
+            {
                 ring2BeforeBossBirth = trace.CaptureDecision();
+                if (Ring2PaidBoss && trace.ObservedActions.Count == 0)
+                {
+                    const string inferno = "887b4b22-7f26-443f-b942-8ad620741617";
+                    CombatContext context = ring2BeforeBossBirth.Spawn.Train.Context!;
+                    CardToken[] cards = context.Cards.Hand.Where(card => context.FindCard(card.InstanceId)?.DataId == inferno).ToArray();
+                    if (cards is not [var card] || ring2BeforeBossBirth.SelectedRoom != 0 || context.QueryFrame?.Energy != 5)
+                        throw new InvalidOperationException("Expected the original T5 Inferno in the five-Ember ground-floor decision.");
+                    playCard(new PlayCardAction(card.InstanceId, 0));
+                    return false;
+                }
+            }
             else if (turn == 6)
                 ring2AfterBossBirth = trace.CaptureDecision();
             else if (turn == 7)
@@ -313,16 +328,20 @@ namespace MonsterTrain2Poju.Probe
                     .Single(actor => actor.Id == before.Id && actor.AssetKey == bossKey);
                 if (before.Status("armor")?.Stacks == after.Status("armor")?.Stacks || after.Status("armor") == null)
                     throw new InvalidOperationException("The original boss did not gain armor on its first settled OnTurnBegin.");
+                BattleActionProbe.Record? paidPlay = Ring2PaidBoss ? trace.ObservedActions.Single() : null;
+                if (Ring2PaidBoss && paidPlay?.Actual?.Spawn.Train.Context?.QueryFrame?.Energy != 2)
+                    throw new InvalidOperationException("Expected one settled original Inferno costing three Ember.");
                 using var document = NativeFixtureCapture.Capture(new
                 {
                     Schema = 1, Boundary = "OriginalEndlessEnemyScalingRing2LateBoss",
                     GameVersion = Application.version, GameModuleMvid = Module, Scenario = scenario,
                     PyrePreparation = ring2PyrePreparation, Deployment = deployment,
                     BeforeBossBirth = ring2BeforeBossBirth, AfterBossBirth = ring2AfterBossBirth, FirstTurnBegin = firstTurnBegin,
-                    LastWave = Waves[5]
+                    LastWave = Waves[5], PaidPlay = paidPlay
                 });
+                string fileName = Ring2PaidBoss ? "endless-enemy-scaling-ring2-paid-boss.mt2f" : "endless-enemy-scaling-ring2-late-boss.mt2f";
                 using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
-                    "endless-enemy-scaling-ring2-late-boss.mt2f"));
+                    fileName));
                 document.Write(output);
                 log.LogInfo($"ENDLESS-RING2-LATE-BOSS OBSERVED id={before.Id} attack={before.Attack} health={before.Health} " +
                     $"armor={before.Status("armor")?.Stacks ?? 0}->{after.Status("armor")?.Stacks}");
