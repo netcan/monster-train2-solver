@@ -819,6 +819,9 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 原版 Flicker 同时带有商店的出牌复制升级和首张法术减费。原版录制拥有 23 张可见牌，施放前抽牌堆有 18 张。Flicker 支付 0 余烬，耗用首张法术减费机会，生成一张 Ephemeral 副本。原牌与副本均不再携带这项临时减费。直接回放与求解候选的完整后继和随机流均匹配。
 [原版 Flicker 归档](../tests/compatibility/game-2.3.1/mechanics/discounted-flicker/native-cast.mt2f)
 
+原版 Inferno 用同一首张法术减费后实付 2 余烬，基础费用为 3。生成的一张 Ephemeral 副本保留原版无视护甲特性。直接与候选回放均匹配完整后继及随机流。
+[原版 Inferno 归档](../tests/compatibility/game-2.3.1/mechanics/discounted-inferno/native-cast.mt2f)
+
 原版 The Great Decay 为三个牌堆中的法术添加升级。专项验证费用折扣、Consume、
 X 加成和单位筛选。6 次出牌、5 次结束回合、16 条独立分支与两类候选通过。
 [`great-decay.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/great-decay.mt2f)
