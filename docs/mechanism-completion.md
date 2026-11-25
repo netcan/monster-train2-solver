@@ -1480,6 +1480,9 @@ Hallowed Halls 同场原版胜局另验证了六名友军复活，5 次出牌、
 [五场定向报告](../results/recorded-chain-triage-20261125-080710-3c299af0/report.tsv) ·
 [阶段求解日志](../results/solver-completion-589528fe-20261125.log)
 
+`cb3ed273` 的阶段全量回放通过 521 场，其中 500 场连续、21 场分段。共核对 7,952 次战斗操作和 3,096 次结束回合，失败为 0。
+[整战阶段报告](../results/recorded-chain-triage-20261125-085352-9edd90c5/report.tsv)
+
 顾问界面阶段验收可直接复用 2.3.1 原版首战归档。检查器复放 28 次战斗输入，核对 30 次建议发布，以及待确认时的建议保留、滚动、重置、预算切换和七次无需重新采集的楼层切换。
 [原版首战归档](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring1-presentation-after-allocation.mt2f)
 
