@@ -215,7 +215,7 @@ namespace MonsterTrain2Poju.Model
                     if (relic.EffectTypes[effectIndex] == RelicModel.EndlessEnemyBirthEffect &&
                         state.Units.FirstOrDefault(unit => unit.Id == unitId && unit.Team == CombatTeam.Enemy) is CombatUnit enemy)
                     {
-                        CombatUnit? scaled = endlessBirth?.Apply(enemy);
+                        CombatUnit? scaled = endlessBirth?.Apply(enemy, state);
                         if (scaled == null) return Fail(UnsupportedEndlessEnemyBirth);
                         state = state.WithUnits(state.Units.Select(unit => unit.Id == unitId ? scaled : unit).ToArray());
                         if (endlessBirth!.StatusScaling is RelicSpawnStatusScalingRule statusScaling)

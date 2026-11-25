@@ -319,6 +319,42 @@ internal static class OriginalEndlessFirstWaveChecks
         Console.WriteLine("NATIVE-ENDLESS-FORECAST PASS: complete deployment successor and original first-wave RNG.");
     }
 
+    internal static void Ring2SecondWave(FixtureValue archive)
+    {
+        FixtureValue scenario = archive.GetProperty("Scenario");
+        Require(Number(archive, "Schema") == 1 && Text(archive, "GameVersion") == Game231FixtureCatalog.Version &&
+            Text(archive, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(archive, "Boundary") == "OriginalEndlessEnemyScalingControlledRing2SecondWave" &&
+            Text(scenario, "Scenario") == "TestEndless_Level2Battle1" &&
+            Number(scenario, "Loop") == 1 && Number(scenario, "Distance") == 1,
+            "Expected the pinned original Endless Ring 2 second wave.");
+        FixtureValue[] births = archive.GetProperty("Births").EnumerateArray().ToArray();
+        Require(births.Length == 4 && births.All(birth => birth.GetProperty("Before").GetProperty("Rng").ContentEquals(
+            birth.GetProperty("After").GetProperty("Rng"))), "Expected four original birth callbacks with unchanged RNG.");
+        FixtureValue silence = births.Single(birth => Text(birth, "AssetKey") == "EnchanterT3_Silence");
+        FixtureValue before = silence.GetProperty("Before"), after = silence.GetProperty("After");
+        FixtureValue triggers = before.GetProperty("Triggers");
+        FixtureValue trigger = triggers[0], effects = trigger.GetProperty("Effects"), effect = effects[0];
+        FixtureValue statuses = effect.GetProperty("Statuses"), status = statuses[0];
+        Require(!Flag(silence, "FromCard") && Number(before, "Attack") == 0 && Number(before, "Health") == 8 &&
+            Number(after, "Attack") == 0 && Number(after, "Health") == 24 && Number(after, "MaximumHealth") == 24 &&
+            triggers.GetArrayLength() == 1 && Text(trigger, "Kind") == "AfterSpawnEnchant" &&
+            effects.GetArrayLength() == 1 && Text(effect, "Type") == "CardEffectEnchant" &&
+            Number(effect, "AuthoredInt") == 1 && Number(effect, "RuntimeInt") == 1 && statuses.GetArrayLength() == 1 &&
+            Text(status, "Id") == "silenced" && Number(status, "Stacks") == 1 && !Flag(status, "ScalesInEndless") &&
+            triggers.ContentEquals(after.GetProperty("Triggers")),
+            "Expected the native Silence actor's HP scaling and its unchanged aura.");
+        FixtureValue turn = archive.GetProperty("Turn");
+        var root = turn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnResult advanced = BattleTurnModel.EndTurn(root, RecordedBattleChecks.Decisions(turn));
+        Require(root.Spawn is { Turn: 1, Phase: 1 } && advanced.State?.Spawn is { Turn: 2, Phase: 2 } &&
+            advanced.Outcome == RoomOutcome.Exchanged && turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>() == advanced.Outcome,
+            advanced.UnsupportedReason ?? "Expected the original second EndTurn.");
+        RecordedBattleChecks.RecordedBoundary(advanced.State!, turn.GetProperty("Actual"), terminal: false,
+            "original Endless Ring 2 second wave", trackPreviewPosition: true);
+        Console.WriteLine("NATIVE-ENDLESS-RING2-SECOND-WAVE PASS: four original births, unchanged Silence aura and exact EndTurn successor.");
+    }
+
     internal static void Waves(FixtureValue archive)
     {
         Require(Text(archive, "GameVersion") == Game231FixtureCatalog.Version &&

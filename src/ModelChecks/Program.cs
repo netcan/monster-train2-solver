@@ -90,6 +90,12 @@ if (args.Length == 2 && args[0] == "--original-endless-waves-only")
     OriginalEndlessFirstWaveChecks.Waves(archive.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-endless-ring2-second-wave-only")
+{
+    using var archive = ModelJson.ReadFixture(args[1]);
+    OriginalEndlessFirstWaveChecks.Ring2SecondWave(archive.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-endless-arkion-terminal-only")
 {
     using var archive = ModelJson.ReadFixture(args[1]);

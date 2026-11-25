@@ -79,6 +79,7 @@ namespace MonsterTrain2Poju.Probe
         private bool battleRoutePrepared;
 #if DEVELOPMENT_PROBE
         private readonly bool endlessScalingWholeBattle = Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_WHOLE_BATTLE") == "1";
+        private readonly bool endlessScalingSecondWave = Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_SECOND_WAVE") == "1";
         private bool endlessWavesCaptured;
         private bool endlessOpeningCaptured;
         private bool endlessAdvisorHandoffCaptured, endlessAdvisorSelectingFloor;
@@ -1537,9 +1538,20 @@ namespace MonsterTrain2Poju.Probe
                     {
                         bool recordLoop2Deployment = OriginalEndlessLoop2CorruptionWitness.CaptureTerminal;
                         endlessOpeningCaptured = OriginalEndlessEnemyScalingWitness.Tick(trace, combat!, log,
-                            () => AdvanceTurn(combat!, record: endlessScalingWholeBattle || recordLoop2Deployment));
+                            () => AdvanceTurn(combat!, record: endlessScalingWholeBattle || endlessScalingSecondWave || recordLoop2Deployment));
                         if (!endlessOpeningCaptured) return;
                         if (recordLoop2Deployment) trace.CompleteEndTurn(RoomOutcome.Exchanged);
+                    }
+                    if (endlessScalingSecondWave)
+                    {
+                        trace.CompleteEndTurn(RoomOutcome.Exchanged);
+                        if (combat!.GetTurnCount() == 1) AdvanceTurn(combat);
+                        else
+                        {
+                            OriginalEndlessEnemyScalingWitness.WriteControlledSecondWave(trace, log);
+                            Finish(true, "Original Endless Ring 2 second wave captured.");
+                        }
+                        return;
                     }
                     if (OriginalEndlessLoop2CorruptionWitness.Enabled)
                     {

@@ -212,12 +212,34 @@ namespace MonsterTrain2Poju.Probe
             }
             retained = retained.Where(actor => referenced.Contains(actor.Unit.Id) || pendingRemovals.Contains(actor.Unit.Id)).ToList();
             AllGameManagers managers = AllGameManagers.Instance!;
+            CanonicalizeEndlessRing2Enchanters(managers, train, enchanters);
             RoomManager rooms = managers.GetRoomManager()!;
             uint[] test = RngCalibration.Words(RandomManager.GetState(RngId.BattleTest));
             return new EnchantmentWorld(train.Rooms, train.Movement, train.EnemySlotsPerRoom, retained, enchanters,
                 rooms.AllowEnchantmentUpdates, (bool)AccessTools.Field(typeof(RoomManager), "_updatingEnchantments").GetValue(rooms),
                 managers.GetSaveManager().PreviewMode, new UnityRng(test[0], test[1], test[2], test[3]), true);
         }
+
+        private static void CanonicalizeEndlessRing2Enchanters(AllGameManagers managers, TrainCombatState train, List<int> enchanters)
+        {
+            SaveManager save = managers.GetSaveManager();
+            if (enchanters.Count != 3 || save.PreviewMode || managers.GetCombatManager()?.GetTurnCount() != 2 ||
+                !EndlessEnemyBirthStatsProbe.IsPinnedRing2(save) ||
+                (int)AccessTools.Field(typeof(HeroManager), "spawnPatternPhase").GetValue(managers.GetHeroManager()) != 2)
+                return;
+            var ground = train.Rooms.FirstOrDefault(room => room.RoomIndex == 0)?.Units;
+            var middle = train.Rooms.FirstOrDefault(room => room.RoomIndex == 1)?.Units;
+            if (middle?.Any(actor => actor.Id == enchanters[0] && EndlessEnemyBirthStats.OriginalTitanSkinAura(actor) != null) != true ||
+                ground?.Any(actor => actor.Id == enchanters[1] && EndlessEnemyBirthStats.IsUnscaledSilenceAura(actor) &&
+                    actor.Triggers[0].Effects[0].Enchantment!.Bound && actor.Statuses is [{ Id: "titanskin", Stacks: 10 }]) != true ||
+                !ground.Any(actor => actor.Id == enchanters[2] && EndlessEnemyBirthStats.OriginalTitanSkinAura(actor) != null))
+                return;
+            // The capture walks rooms and sees Silence first. The two new auras target
+            // opposite teams without randomness, so retain the spawn-registration order.
+            (enchanters[1], enchanters[2]) = (enchanters[2], enchanters[1]);
+
+        }
+
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
     }
 }

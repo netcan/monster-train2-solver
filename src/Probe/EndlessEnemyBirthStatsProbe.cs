@@ -9,6 +9,12 @@ namespace MonsterTrain2Poju.Probe
     {
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
 
+        internal static bool IsPinnedRing2(SaveManager save) => save.IsEndlessRun &&
+            typeof(CharacterState).Module.ModuleVersionId == Module && save.GetRunLength() == 8 &&
+            save.GetRunState().GetLoopIndex() == 1 && save.GetRunState().GetCurrentDistance() == 1 &&
+            save.GetCurrentScenarioData()?.name == "TestEndless_Level2Battle1" &&
+            save.GetCovenants().Count == 0 && save.GetMutators().Count == 0;
+
         internal static Func<CharacterData, CombatUnit, EndlessEnemyBirthStats?>? Capture(AllGameManagers managers, bool outerBoss = false)
         {
             SaveManager save = managers.GetSaveManager();
@@ -19,6 +25,7 @@ namespace MonsterTrain2Poju.Probe
             int loop = run.GetLoopIndex();
             int distance = run.GetCurrentDistance();
             int runLength = save.GetRunLength();
+            bool pinnedRing2 = IsPinnedRing2(save);
             if (loop is < 1 or > 3 || runLength != 8 || distance < 0 || distance >= runLength)
                 return null;
             if (outerBoss && (loop != 1 || distance != 2 || save.GetCurrentScenarioData()?.name != "TestEndless_Level3Battle1"))
@@ -71,15 +78,18 @@ namespace MonsterTrain2Poju.Probe
                 }
                 var baseline = data.GetEndlessBaselineStats();
                 bool statusShape = EndlessEnemyBirthStats.IsStatusShape(raw);
+                bool unscaledSilence = EndlessEnemyBirthStats.IsUnscaledSilenceAura(raw);
                 RelicSpawnStatusScalingRule? capturedStatuses = raw.AssetKey == EndlessEnemyBirthStats.CorruptionHorde
                     ? corruptionScaling : statusScaling;
                 if (!baseline.HasHealth() || data.IsOuterTrainBoss() || !EndlessEnemyBirthStats.SupportedShape(raw) ||
                     statusShape && capturedStatuses == null ||
+                    unscaledSilence && (!pinnedRing2 || managers.GetStatusEffectManager()
+                        .GetStatusEffectDataById("silenced")?.ScalesInEndless() != false) ||
                     !statusShape && data.GetStartingStatusEffects().Any(status =>
                         managers.GetStatusEffectManager().GetStatusEffectDataById(status.statusId)?.ScalesInEndless() != false))
                     return null;
                 int baselineAttack = baseline.HasAttack() ? baseline.GetAttack() : raw.BaseAttack;
-                int[] values = statusShape ? Array.Empty<int>() : raw.Triggers.SelectMany(trigger => trigger.Effects).Select(entry => Mathf.CeilToInt(entry.Value *
+                int[] values = statusShape || unscaledSilence ? Array.Empty<int>() : raw.Triggers.SelectMany(trigger => trigger.Effects).Select(entry => Mathf.CeilToInt(entry.Value *
                     (entry.Type == "CardEffectDamage" ? damage : entry.Type == "CardEffectHeal" ? heal : buff))).ToArray();
                 return new EndlessEnemyBirthStats(raw.BaseAttack, raw.Health,
                     Mathf.CeilToInt(baselineAttack * attack), Mathf.CeilToInt(baseline.GetHealth() * health), values,

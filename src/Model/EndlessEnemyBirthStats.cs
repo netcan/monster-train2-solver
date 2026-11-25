@@ -26,17 +26,20 @@ namespace MonsterTrain2Poju.Model
             StatusScaling = statusScaling;
         }
 
-        internal CombatUnit? Apply(CombatUnit actor)
+        internal CombatUnit? Apply(CombatUnit actor, RoomCombatState room)
         {
             bool statusShape = IsStatusShape(actor);
             bool outerBoss = actor.BumpRules?.OuterBoss == true;
+            bool silenceAura = IsUnscaledSilenceAura(actor);
+            bool witnessedAura = silenceAura && HasSettledTitanSkinAura(actor, room);
             if (actor.SpawnerCardId > 0 ||
-                (outerBoss ? !OuterBossInstantiationModel.IsOriginalArkionPushBirth(actor) || actor.Statuses.Count != 0 : !SupportedShape(actor)) ||
+                (outerBoss ? !OuterBossInstantiationModel.IsOriginalArkionPushBirth(actor) || actor.Statuses.Count != 0 :
+                    !SupportedShape(actor) && !witnessedAura) ||
                 statusShape != (StatusScaling != null) ||
                 actor.BaseAttack != InitialAttack || actor.Health != InitialHealth || actor.MaxHealth != InitialHealth ||
                 actor.Modifiers is not { AttackDamageAdded: 0, DamageBuff: 0 } modifiers ||
                 modifiers.AttackDamage != InitialAttack || Attack < 0 || Health < 1 ||
-                (statusShape || outerBoss ? 0 : actor.Triggers.Sum(trigger => trigger.Effects.Count)) != EffectValues.Count ||
+                (statusShape || outerBoss || silenceAura ? 0 : actor.Triggers.Sum(trigger => trigger.Effects.Count)) != EffectValues.Count ||
                 EffectValues.Any(value => value < 0))
                 return null;
 
@@ -61,7 +64,38 @@ namespace MonsterTrain2Poju.Model
                 SupportedTrigger(actor) ||
             actor.IsBoss == true && actor.EndsBattleOnDeath && actor.BumpRules?.OuterBoss != true &&
                 actor.Triggers.Count == 0 && actor.Statuses is [{ Id: "relentless", Stacks: 1 }] ||
-            IsStatusShape(actor);
+            IsStatusShape(actor) || actor.Statuses.Count == 0 && IsUnscaledSilenceAura(actor);
+
+        internal static bool IsUnscaledSilenceAura(CombatUnit actor) => actor is
+        {
+            AssetKey: "EnchanterT3_Silence", Team: CombatTeam.Enemy, IsBoss: false,
+            AbilityRules.AuthoredStartingStatuses: [],
+            Triggers: [{ Kind: "AfterSpawnEnchant", Effects: [{
+                Type: "CardEffectEnchant", Value: 1, Enchantment: {
+                    Targeting: { Type: "AddStatus", Target: "Room", AllowPlayer: true, AllowEnemy: false, Range: null },
+                    StatusPool: [{ Id: "silenced", Stacks: 1 }], HasParentCard: false, Upgrade: null
+                }
+            }] }]
+        };
+
+        // The room can already show the earlier carrier's aura when binding the captured
+        // birth delta. The original callback changes only raw attack and maximum health.
+        private static bool HasSettledTitanSkinAura(CombatUnit actor, RoomCombatState room) =>
+            actor.Statuses is [{ Id: "titanskin", Stacks: 10 }] &&
+            room.Units.Any(owner => OriginalTitanSkinAura(owner) is EnchantmentRule aura &&
+                (room.Preview ? aura.State.PreviewTargets : aura.State.PrimaryTargets)
+                    .Any(target => target.UnitId == actor.Id && target.IsEnchanted));
+
+        internal static EnchantmentRule? OriginalTitanSkinAura(CombatUnit actor) => actor is
+        {
+            AssetKey: "ShieldGuardT3_Enchanter_Chosen", Team: CombatTeam.Enemy, Health: > 0,
+            Triggers: [{ Kind: "AfterSpawnEnchant", Effects: [{
+                Type: "CardEffectEnchant", Enchantment: { Bound: true,
+                    Targeting: { Type: "AddStatus", Target: "Room", AllowEnemy: true, AllowPlayer: false, Range: null },
+                    StatusPool: [{ Id: "titanskin", Stacks: 10 }], HasParentCard: false, Upgrade: null
+                } aura
+            }] }]
+        } ? aura : null;
 
         internal static bool IsStatusShape(CombatUnit actor) => actor.IsBoss == false &&
             actor.Triggers is [var trigger] && (trigger switch

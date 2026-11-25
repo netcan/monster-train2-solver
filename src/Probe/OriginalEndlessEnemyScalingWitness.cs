@@ -235,6 +235,31 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
+        internal static void WriteControlledSecondWave(FullBattleTrace trace, ManualLogSource log)
+        {
+            if (!ControlledNextRing || ControlledDistance != 1 ||
+                !string.Equals(AllGameManagers.Instance!.GetSaveManager().GetCurrentScenarioData()?.name,
+                    "TestEndless_Level2Battle1", StringComparison.Ordinal) ||
+                trace.ObservedTurns.Count != 2 || Waves.Count != 2 || Waves[1] is not { Index: 1, PhaseAdvanced: true })
+                throw new InvalidOperationException("Expected exactly two original Endless Ring 2 waves.");
+            var turn = trace.ObservedTurns[1];
+            Wave wave = Waves[1];
+            if (turn.Before.Spawn is not { Turn: 1, Phase: 1 } || turn.Actual?.Spawn is not { Turn: 2, Phase: 2 } ||
+                turn.ActualOutcome != RoomOutcome.Exchanged || wave.Births.Count != 4 ||
+                wave.Births.Any(birth => birth.After == null) || wave.Births.Count(birth => birth.AssetKey == "EnchanterT3_Silence") != 1)
+                throw new InvalidOperationException("Expected all four original second-wave birth callbacks, including Silence.");
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, Boundary = "OriginalEndlessEnemyScalingControlledRing2SecondWave",
+                GameVersion = Application.version, GameModuleMvid = Module,
+                Scenario = scenario, Turn = turn, Births = wave.Births
+            });
+            using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "endless-enemy-scaling-controlled-ring2-second-wave.mt2f"));
+            document.Write(output);
+            log.LogInfo("ENDLESS-ENEMY-SCALING-RING2-SECOND-WAVE OBSERVED callbacks=4 enchanter=EnchanterT3_Silence");
+        }
+
         internal static bool ObserveWaveDecision(FullBattleTrace trace, ManualLogSource log)
         {
             if (deployment == null)
