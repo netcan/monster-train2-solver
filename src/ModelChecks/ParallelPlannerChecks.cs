@@ -170,6 +170,15 @@ internal static class ParallelPlannerChecks
         var ambiguousSteps = ordinary.Steps.Select(step => step.IsEndTurn
             ? new BattleSearchStep(recordedAction, true, step.RelentlessDecisions) : step).ToArray();
         RejectOrdinaryPlan(ordinary.TurnsCompleted, ordinary.RequestedTurns, "An advice step must contain exactly one input.", ambiguousSteps);
+        RejectOrdinaryPlan(ordinary.TurnsCompleted, ordinary.RequestedTurns, "Advice score differs from the replayed state.",
+            score: ordinary.Score - 1);
+        foreach (double nonfinite in new[] { double.NaN, double.NegativeInfinity, double.PositiveInfinity })
+        {
+            RejectOrdinaryPlan(ordinary.TurnsCompleted, ordinary.RequestedTurns, "Advice scores must be finite.",
+                score: nonfinite);
+            RejectOrdinaryPlan(ordinary.TurnsCompleted, ordinary.RequestedTurns, "Advice scores must be finite.",
+                baseline: nonfinite);
+        }
 
         var lastNativeTurn = fixture.GetProperty("Turns").EnumerateArray().Last();
         var terminalRoot = lastNativeTurn.GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -181,14 +190,15 @@ internal static class ParallelPlannerChecks
         BattleAdviceSession.Verify(terminalRoot, terminal);
 
         Require(keys.Key(root) == rootKey, "The exact forecast mutated its native root.");
-        Console.WriteLine("PARALLEL-SHORTER-FALLBACK PASS: two verified EndTurns from the original Ring 5 root, exact state/RNG, strict and cancelled exclusions, false ordinary horizon rejected, early terminal accepted.");
+        Console.WriteLine("PARALLEL-SHORTER-FALLBACK PASS: two verified EndTurns from the original Ring 5 root, exact state/RNG, strict and cancelled exclusions, false horizon and score rejected, early terminal accepted.");
 
-        void RejectOrdinaryPlan(int completedTurns, int requestedTurns, string reason, IReadOnlyList<BattleSearchStep>? steps = null)
+        void RejectOrdinaryPlan(int completedTurns, int requestedTurns, string reason, IReadOnlyList<BattleSearchStep>? steps = null,
+            double? score = null, double? baseline = null)
         {
-            var changed = new BattlePlanResult(ordinary.State, ordinary.Outcome, steps ?? ordinary.Steps, ordinary.Score,
+            var changed = new BattlePlanResult(ordinary.State, ordinary.Outcome, steps ?? ordinary.Steps, score ?? ordinary.Score,
                 completedTurns, ordinary.ExpandedNodes, ordinary.DuplicateStates, ordinary.BeamPruned, ordinary.Elapsed,
                 ordinary.TimedOut, ordinary.Cancelled, ordinary.ReachedNodeLimit, ordinary.ReachedActionLimit,
-                ordinary.CompletedHorizon, ordinary.UnsupportedAttempts, ordinary.PolicyBaselineScore, requestedTurns);
+                ordinary.CompletedHorizon, ordinary.UnsupportedAttempts, baseline ?? ordinary.PolicyBaselineScore, requestedTurns);
             try { BattleAdviceSession.Verify(root, changed); }
             catch (InvalidOperationException error) when (error.Message == reason) { return; }
             throw new InvalidOperationException("A verified one-turn forecast accepted an inconsistent plan.");

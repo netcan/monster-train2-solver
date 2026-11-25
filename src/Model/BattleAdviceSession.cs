@@ -388,6 +388,9 @@ namespace MonsterTrain2Poju.Model
                 throw new InvalidOperationException("No complete verified continuation within the planning budget. turns=" +
                     plan.TurnsCompleted + " nodes=" + plan.ExpandedNodes + " elapsedMs=" + plan.Elapsed.TotalMilliseconds +
                     " reasons=" + string.Join("; ", plan.UnsupportedAttempts.Select(attempt => attempt.Reason)));
+            if (!double.IsFinite(plan.Score) ||
+                (plan.PolicyBaselineScore is double baseline && !double.IsFinite(baseline)))
+                throw new InvalidOperationException("Advice scores must be finite.");
             if (plan.TurnsCompleted != plan.Steps.Count(step => step.IsEndTurn))
                 throw new InvalidOperationException("Advice turn count differs from its EndTurn steps.");
             bool terminal = plan.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
@@ -430,6 +433,8 @@ namespace MonsterTrain2Poju.Model
             }
             if (keys.Key(plan.State) != keys.Key(replayed) || plan.Outcome != outcome)
                 throw new InvalidOperationException("Advice does not reproduce the full planned state.");
+            if (plan.Score != BattlePlanner.Evaluate(replayed, outcome))
+                throw new InvalidOperationException("Advice score differs from the replayed state.");
             if (plan.PolicyBaselineScore.HasValue && plan.Score > plan.PolicyBaselineScore.Value)
                 throw new InvalidOperationException("Advice lost its completed policy baseline.");
             return roots == null ? null : new VerifiedAdviceContinuation(plan, roots.ToArray(), fullRoots!.ToArray(), unitKeys!.ToArray());
