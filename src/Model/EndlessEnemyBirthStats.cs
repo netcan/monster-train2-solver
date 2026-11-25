@@ -31,15 +31,20 @@ namespace MonsterTrain2Poju.Model
             bool statusShape = IsStatusShape(actor);
             bool outerBoss = actor.BumpRules?.OuterBoss == true;
             bool silenceAura = IsUnscaledSilenceAura(actor);
-            bool witnessedAura = silenceAura && HasSettledTitanSkinAura(actor, room);
+            bool armorBoss = IsRing2ArmorBoss(actor);
+            bool witnessedAura = (silenceAura && actor.Statuses is [{ Id: "titanskin", Stacks: 10 }] ||
+                armorBoss && actor.Statuses is [{ Id: "relentless", Stacks: 1 }, { Id: "titanskin", Stacks: 10 }]) &&
+                HasSettledTitanSkinAura(actor, room);
             if (actor.SpawnerCardId > 0 ||
                 (outerBoss ? !OuterBossInstantiationModel.IsOriginalArkionPushBirth(actor) || actor.Statuses.Count != 0 :
                     !SupportedShape(actor) && !witnessedAura) ||
-                statusShape != (StatusScaling != null) ||
+                (statusShape || armorBoss) != (StatusScaling != null) ||
+                armorBoss && StatusScaling is not { ScaleStarting: false, ScaleApplied: true, OnlyListed: true,
+                    StatusIds: ["armor"], ScalableStatusIds: ["armor"], ExcludedSubtypes: [], RequiredMutatorId: null, Multiplier: 2f } ||
                 actor.BaseAttack != InitialAttack || actor.Health != InitialHealth || actor.MaxHealth != InitialHealth ||
                 actor.Modifiers is not { AttackDamageAdded: 0, DamageBuff: 0 } modifiers ||
                 modifiers.AttackDamage != InitialAttack || Attack < 0 || Health < 1 ||
-                (statusShape || outerBoss || silenceAura ? 0 : actor.Triggers.Sum(trigger => trigger.Effects.Count)) != EffectValues.Count ||
+                (statusShape || outerBoss || silenceAura || armorBoss ? 0 : actor.Triggers.Sum(trigger => trigger.Effects.Count)) != EffectValues.Count ||
                 EffectValues.Any(value => value < 0))
                 return null;
 
@@ -64,7 +69,17 @@ namespace MonsterTrain2Poju.Model
                 SupportedTrigger(actor) ||
             actor.IsBoss == true && actor.EndsBattleOnDeath && actor.BumpRules?.OuterBoss != true &&
                 actor.Triggers.Count == 0 && actor.Statuses is [{ Id: "relentless", Stacks: 1 }] ||
-            IsStatusShape(actor) || actor.Statuses.Count == 0 && IsUnscaledSilenceAura(actor);
+            IsStatusShape(actor) || actor.Statuses.Count == 0 && IsUnscaledSilenceAura(actor) ||
+            IsRing2ArmorBoss(actor) && actor.Statuses is [{ Id: "relentless", Stacks: 1 }];
+
+        internal static bool IsRing2ArmorBoss(CombatUnit actor) => actor is
+        {
+            AssetKey: "Boss_Level2_BigStats", Team: CombatTeam.Enemy, IsBoss: true, EndsBattleOnDeath: true,
+            BumpRules.OuterBoss: false, AbilityRules.AuthoredStartingStatuses: [{ Id: "relentless", Stacks: 1 }],
+            Triggers: [{ Kind: "OnTurnBegin", Effects: [{ Type: "CardEffectAddStatusEffect", Value: 0,
+                Action: { Type: "AddStatus", Target: "Self", AllowPlayer: false, AllowEnemy: false, Range: null,
+                    Statuses: [{ Id: "armor", Stacks: 5 }] } }] }]
+        };
 
         internal static bool IsUnscaledSilenceAura(CombatUnit actor) => actor is
         {
@@ -81,7 +96,6 @@ namespace MonsterTrain2Poju.Model
         // The room can already show the earlier carrier's aura when binding the captured
         // birth delta. The original callback changes only raw attack and maximum health.
         private static bool HasSettledTitanSkinAura(CombatUnit actor, RoomCombatState room) =>
-            actor.Statuses is [{ Id: "titanskin", Stacks: 10 }] &&
             room.Units.Any(owner => OriginalTitanSkinAura(owner) is EnchantmentRule aura &&
                 (room.Preview ? aura.State.PreviewTargets : aura.State.PrimaryTargets)
                     .Any(target => target.UnitId == actor.Id && target.IsEnchanted));

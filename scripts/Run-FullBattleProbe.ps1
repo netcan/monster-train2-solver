@@ -662,6 +662,7 @@ param(
     [switch] $EndlessEnemyScalingWholeBattle,
     [switch] $EndlessEnemyScalingControlledNextRing,
     [switch] $EndlessEnemyScalingControlledSecondWave,
+    [switch] $EndlessEnemyScalingRing2LateBoss,
     [switch] $EndlessEnemyScalingControlledLoop2,
     [switch] $EndlessLoop2AdvisorObservation,
     [switch] $EndlessLoop2AdvisorHandoff,
@@ -1164,6 +1165,11 @@ if ($EndlessEnemyScalingControlledSecondWave -and
     (!$EndlessEnemyScalingControlledNextRing -or $EndlessEnemyScalingControlledDistance -ne 1 -or $EndlessEnemyScalingWholeBattle)) {
     throw 'EndlessEnemyScalingControlledSecondWave requires the controlled Ring 2 opening and a single subsequent EndTurn.'
 }
+if ($EndlessEnemyScalingRing2LateBoss -and
+    (!$EndlessEnemyScalingControlledNextRing -or $EndlessEnemyScalingControlledDistance -ne 1 -or
+        $EndlessEnemyScalingWholeBattle -or $EndlessEnemyScalingControlledSecondWave)) {
+    throw 'EndlessEnemyScalingRing2LateBoss requires only the controlled Ring 2 opening.'
+}
 if ($EndlessEnemyScalingControlledNextRing -and
     (!$OriginalEndlessEnemyScalingWitness -or $EndlessEnemyScalingAllWaves -or !$InputProfile -or $BattleDistance -ne 0)) {
     throw 'EndlessEnemyScalingControlledNextRing requires OriginalEndlessEnemyScalingWitness and the original post-victory InputProfile at BattleDistance 0.'
@@ -1201,7 +1207,7 @@ if ($EndlessEnemyScalingAllWaves -and (!$OriginalEndlessEnemyScalingWitness -or 
 if ($OriginalEndlessEnemyScalingWitness) {
     $witnessArguments = @('OriginalEndlessEnemyScalingWitness', 'EndlessEnemyScalingAllWaves', 'EndlessEnemyScalingWholeBattle',
         'EndlessEnemyScalingControlledNextRing', 'EndlessEnemyScalingControlledLoop2', 'EndlessEnemyScalingControlledDistance',
-        'EndlessEnemyScalingControlledSecondWave',
+        'EndlessEnemyScalingControlledSecondWave', 'EndlessEnemyScalingRing2LateBoss',
         'EndlessEnemyScalingLoop2CorruptionPlan', 'EndlessEnemyScalingLoop2CorruptionTerminal',
         'EndlessLoop2AdvisorObservation', 'EndlessLoop2AdvisorHandoff', 'EndlessLoop2AdvisorFirstEndTurn',
         'InputProfile', 'BattleDistance', 'Seed',
@@ -3783,6 +3789,7 @@ $environment = @{
     MT2_PROBE_ENDLESS_ENEMY_SCALING_ALL_WAVES = $(if ($EndlessEnemyScalingAllWaves) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_WHOLE_BATTLE = $(if ($EndlessEnemyScalingWholeBattle) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_SECOND_WAVE = $(if ($EndlessEnemyScalingControlledSecondWave) { '1' } else { '0' })
+    MT2_PROBE_ENDLESS_ENEMY_SCALING_RING2_LATE_BOSS = $(if ($EndlessEnemyScalingRing2LateBoss) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_NEXT_RING = $(if ($EndlessEnemyScalingControlledNextRing) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_LOOP2 = $(if ($EndlessEnemyScalingControlledLoop2) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_LOOP2_ADVISOR_OBSERVATION = $(if ($EndlessLoop2AdvisorObservation) { '1' } else { '0' })
@@ -5294,12 +5301,14 @@ if ($EndlessLoop2AdvisorObservation) {
     return
 }
 if ($OriginalEndlessEnemyScalingWitness) {
-    $captureName = if ($EndlessEnemyScalingAllWaves) { 'endless-enemy-scaling-waves.mt2f' }
+    $captureName = if ($EndlessEnemyScalingRing2LateBoss) { 'endless-enemy-scaling-ring2-late-boss.mt2f' }
+        elseif ($EndlessEnemyScalingAllWaves) { 'endless-enemy-scaling-waves.mt2f' }
         elseif ($EndlessEnemyScalingControlledLoop2) { 'endless-enemy-scaling-controlled-loop2.mt2f' }
         elseif ($EndlessEnemyScalingControlledNextRing) { 'endless-enemy-scaling-controlled-next-ring.mt2f' }
         else { 'endless-enemy-scaling.mt2f' }
     $secondWavePath = Join-Path $profile 'endless-enemy-scaling-controlled-ring2-second-wave.mt2f'
-    $captureMarker = if ($EndlessEnemyScalingControlledSecondWave) { 'Original Endless Ring 2 second wave captured.' }
+    $captureMarker = if ($EndlessEnemyScalingRing2LateBoss) { 'Original Endless Ring 2 late boss captured.' }
+        elseif ($EndlessEnemyScalingControlledSecondWave) { 'Original Endless Ring 2 second wave captured.' }
         elseif ($EndlessEnemyScalingLoop2CorruptionTerminal) { 'Original Endless Loop 2 paid Horde death and defeat captured.' }
         elseif ($EndlessEnemyScalingLoop2CorruptionPlan) { 'Original Endless Loop 2 paid Horde death captured.' }
         elseif ($controlledEndlessRing2WholeBattle) { 'Original Endless Ring 2 no-card terminal settlement captured.' }
@@ -5318,7 +5327,8 @@ if ($OriginalEndlessEnemyScalingWitness) {
             -not (Test-Path -LiteralPath $wholeBattlePath -PathType Leaf)) -or
         ($EndlessEnemyScalingControlledSecondWave -and -not (Test-Path -LiteralPath $secondWavePath -PathType Leaf)) -or
         ($OuterBossBirth -and -not (Test-Path -LiteralPath $outerBossPath -PathType Leaf)) -or
-        ($EndlessEnemyScalingControlledNextRing -and -not (Select-String -LiteralPath $unityLog -SimpleMatch $controlledMarker -Quiet)) -or
+        ($EndlessEnemyScalingControlledNextRing -and !$EndlessEnemyScalingRing2LateBoss -and
+            -not (Select-String -LiteralPath $unityLog -SimpleMatch $controlledMarker -Quiet)) -or
         ($EndlessEnemyScalingControlledLoop2 -and -not (Select-String -LiteralPath $unityLog -SimpleMatch $loop2Marker -Quiet)) -or
         ($EndlessEnemyScalingLoop2CorruptionPlan -and ((Get-FileHash -LiteralPath $EndlessEnemyScalingLoop2CorruptionPlan -Algorithm SHA256).Hash -cne $loop2PlanHash -or
             -not (Test-Path -LiteralPath $corruptionPath -PathType Leaf))) -or
@@ -5327,7 +5337,10 @@ if ($OriginalEndlessEnemyScalingWitness) {
         ($InputProfile -and (Get-OriginalSignature $checkpoint) -cne $endlessInputSignature)) {
         throw "Original Endless enemy scaling witness failed. Inspect $unityLog"
     }
-    if ($EndlessEnemyScalingAllWaves) {
+    if ($EndlessEnemyScalingRing2LateBoss) {
+        Write-Output "NATIVE-ENDLESS-RING2-LATE-BOSS CAPTURED trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    }
+    elseif ($EndlessEnemyScalingAllWaves) {
         $summary = Select-String -LiteralPath $unityLog -SimpleMatch 'ENDLESS-ENEMY-SCALING-WAVES OBSERVED' | Select-Object -Last 1
         if ($EndlessEnemyScalingWholeBattle) {
             Write-Output "NATIVE-ENDLESS-ENEMY-SCALING-TERMINAL PASS trace=$wholeBattlePath sha256=$((Get-FileHash -LiteralPath $wholeBattlePath -Algorithm SHA256).Hash) waveTrace=$capturePath $($summary.Line)"

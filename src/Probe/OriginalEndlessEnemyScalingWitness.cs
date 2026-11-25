@@ -31,6 +31,8 @@ namespace MonsterTrain2Poju.Probe
             Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_DISTANCE") ?? "1", CultureInfo.InvariantCulture);
         private static bool ObserveOuterBoss => ControlledNextRing && ControlledDistance == 2 && OuterBossBirthProbe.Enabled;
         internal static bool ControlledRing2 => ControlledNextRing && ControlledDistance == 1;
+        internal static bool Ring2LateBoss => ControlledRing2 &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_RING2_LATE_BOSS") == "1";
         internal static bool ControlledFirstLoop { get; private set; }
         private static bool controlledAdvanceApplied;
         private static object? scenario;
@@ -38,6 +40,8 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<Birth> Births = new List<Birth>();
         private static readonly List<Wave> Waves = new List<Wave>();
         private static Wave? activeWave;
+        private static object? ring2PyrePreparation;
+        private static BattleTurnState? ring2BeforeBossBirth, ring2AfterBossBirth;
 
         internal static void CaptureFactorBatch(AllGameManagers managers)
         {
@@ -259,6 +263,76 @@ namespace MonsterTrain2Poju.Probe
                 "endless-enemy-scaling-controlled-ring2-second-wave.mt2f"));
             document.Write(output);
             log.LogInfo("ENDLESS-ENEMY-SCALING-RING2-SECOND-WAVE OBSERVED callbacks=4 enchanter=EnchanterT3_Silence");
+        }
+
+        internal static bool TickRing2LateBoss(FullBattleTrace trace, CombatManager combat, ManualLogSource log, Action advanceTurn)
+        {
+            const int preparedHealth = 3000;
+            const string bossKey = "Boss_Level2_BigStats";
+            SaveManager save = AllGameManagers.Instance!.GetSaveManager();
+            if (scenario == null || !EndlessEnemyBirthStatsProbe.IsPinnedRing2(save))
+                throw new InvalidOperationException("Expected a pinned original Endless Ring 2 late-boss test.");
+            int turn = combat.GetTurnCount();
+            if (turn == 0 && deployment == null)
+            {
+                BattleTurnState before = trace.CaptureDecision();
+                CharacterState pyre = AllGameManagers.Instance.GetRoomManager().GetPyreRoom().GetPyreHeart();
+                if (before.Spawn is not { Turn: 0, Phase: 0 } || before.Spawn.Waves.Count != ScheduledWaveCount ||
+                    pyre.GetHP() != 1 || save.GetTowerHP() != 1)
+                    throw new InvalidOperationException("Expected the original one-HP Endless Ring 2 deployment.");
+                int beforeMaximum = pyre.GetMaxHP(), beforeSavedMaximum = save.GetMaxTowerHP();
+                save.AdjustTowerMaxHP(preparedHealth - beforeSavedMaximum);
+                pyre.SetHealth(preparedHealth, preparedHealth);
+                save.AdjustTowerHP(preparedHealth - save.GetTowerHP());
+                deployment = trace.CaptureDecision();
+                if (pyre.GetHP() != preparedHealth || pyre.GetMaxHP() != preparedHealth ||
+                    save.GetTowerHP() != preparedHealth || save.GetMaxTowerHP() != preparedHealth ||
+                    !before.RngStreams.Select(stream => (stream.Name, stream.Seed, stream.State))
+                        .SequenceEqual(deployment.RngStreams.Select(stream => (stream.Name, stream.Seed, stream.State))))
+                    throw new InvalidOperationException("The controlled original Pyre preparation must preserve gameplay RNG.");
+                ring2PyrePreparation = new { InitialHealth = 1, BeforeMaximum = beforeMaximum, BeforeSavedMaximum = beforeSavedMaximum,
+                    Health = preparedHealth, Maximum = pyre.GetMaxHP(), SaveHealth = save.GetTowerHP(), SaveMaximum = save.GetMaxTowerHP(),
+                    BeforeRng = before.RngStreams, AfterRng = deployment.RngStreams };
+                save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
+            }
+            else if (turn == 5)
+                ring2BeforeBossBirth = trace.CaptureDecision();
+            else if (turn == 6)
+                ring2AfterBossBirth = trace.CaptureDecision();
+            else if (turn == 7)
+            {
+                BattleTurnState firstTurnBegin = trace.CaptureDecision();
+                if (ring2PyrePreparation == null || ring2BeforeBossBirth?.Spawn.Phase != 5 ||
+                    ring2AfterBossBirth?.Spawn.Phase != 6 || firstTurnBegin.Spawn.Phase != 6 ||
+                    Waves.Count != ScheduledWaveCount || Waves.Any(wave => !wave.PhaseAdvanced))
+                    throw new InvalidOperationException("Expected all six original waves and the first settled boss turn.");
+                Birth bossBirth = Waves[5].Births.Single(birth => birth.AssetKey == bossKey && !birth.FromCard && birth.After != null);
+                CombatUnit before = ring2AfterBossBirth.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Single(actor => actor.Id == bossBirth.UnitId && actor.AssetKey == bossKey);
+                CombatUnit after = firstTurnBegin.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Single(actor => actor.Id == before.Id && actor.AssetKey == bossKey);
+                if (before.Status("armor")?.Stacks == after.Status("armor")?.Stacks || after.Status("armor") == null)
+                    throw new InvalidOperationException("The original boss did not gain armor on its first settled OnTurnBegin.");
+                using var document = NativeFixtureCapture.Capture(new
+                {
+                    Schema = 1, Boundary = "OriginalEndlessEnemyScalingRing2LateBoss",
+                    GameVersion = Application.version, GameModuleMvid = Module, Scenario = scenario,
+                    PyrePreparation = ring2PyrePreparation, Deployment = deployment,
+                    BeforeBossBirth = ring2BeforeBossBirth, AfterBossBirth = ring2AfterBossBirth, FirstTurnBegin = firstTurnBegin,
+                    LastWave = Waves[5]
+                });
+                using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                    "endless-enemy-scaling-ring2-late-boss.mt2f"));
+                document.Write(output);
+                log.LogInfo($"ENDLESS-RING2-LATE-BOSS OBSERVED id={before.Id} attack={before.Attack} health={before.Health} " +
+                    $"armor={before.Status("armor")?.Stacks ?? 0}->{after.Status("armor")?.Stacks}");
+                return true;
+            }
+            if (deployment == null || turn is < 0 or > 6)
+                throw new InvalidOperationException("The bounded Endless Ring 2 late-boss witness missed its decision.");
+            log.LogInfo($"ENDLESS-RING2-LATE-BOSS PROGRESS turn={turn} waves={Waves.Count} pyre={save.GetTowerHP()}");
+            advanceTurn();
+            return false;
         }
 
         internal static bool ObserveWaveDecision(FullBattleTrace trace, ManualLogSource log)

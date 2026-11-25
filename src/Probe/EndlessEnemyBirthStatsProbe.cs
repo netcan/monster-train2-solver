@@ -61,6 +61,12 @@ namespace MonsterTrain2Poju.Probe
                 ? new RelicSpawnStatusScalingRule(status, Array.Empty<string>(), scaleStarting: true, scaleApplied: true,
                     onlyListed: true, corruption, corruption)
                 : null;
+            var armorBossScaling = pinnedRing2 && status == 2f &&
+                managers.GetStatusEffectManager().GetStatusEffectDataById("armor")?.ScalesInEndless() == true &&
+                managers.GetStatusEffectManager().GetStatusEffectDataById("relentless")?.ScalesInEndless() == false
+                ? new RelicSpawnStatusScalingRule(status, Array.Empty<string>(), scaleStarting: false, scaleApplied: true,
+                    onlyListed: true, new[] { "armor" }, new[] { "armor" })
+                : null;
 
             return (data, raw) =>
             {
@@ -79,21 +85,22 @@ namespace MonsterTrain2Poju.Probe
                 var baseline = data.GetEndlessBaselineStats();
                 bool statusShape = EndlessEnemyBirthStats.IsStatusShape(raw);
                 bool unscaledSilence = EndlessEnemyBirthStats.IsUnscaledSilenceAura(raw);
-                RelicSpawnStatusScalingRule? capturedStatuses = raw.AssetKey == EndlessEnemyBirthStats.CorruptionHorde
+                bool armorBoss = EndlessEnemyBirthStats.IsRing2ArmorBoss(raw);
+                RelicSpawnStatusScalingRule? capturedStatuses = armorBoss ? armorBossScaling : raw.AssetKey == EndlessEnemyBirthStats.CorruptionHorde
                     ? corruptionScaling : statusScaling;
                 if (!baseline.HasHealth() || data.IsOuterTrainBoss() || !EndlessEnemyBirthStats.SupportedShape(raw) ||
-                    statusShape && capturedStatuses == null ||
+                    (statusShape || armorBoss) && capturedStatuses == null || armorBoss && !baseline.HasAttack() ||
                     unscaledSilence && (!pinnedRing2 || managers.GetStatusEffectManager()
                         .GetStatusEffectDataById("silenced")?.ScalesInEndless() != false) ||
                     !statusShape && data.GetStartingStatusEffects().Any(status =>
                         managers.GetStatusEffectManager().GetStatusEffectDataById(status.statusId)?.ScalesInEndless() != false))
                     return null;
                 int baselineAttack = baseline.HasAttack() ? baseline.GetAttack() : raw.BaseAttack;
-                int[] values = statusShape || unscaledSilence ? Array.Empty<int>() : raw.Triggers.SelectMany(trigger => trigger.Effects).Select(entry => Mathf.CeilToInt(entry.Value *
+                int[] values = statusShape || unscaledSilence || armorBoss ? Array.Empty<int>() : raw.Triggers.SelectMany(trigger => trigger.Effects).Select(entry => Mathf.CeilToInt(entry.Value *
                     (entry.Type == "CardEffectDamage" ? damage : entry.Type == "CardEffectHeal" ? heal : buff))).ToArray();
                 return new EndlessEnemyBirthStats(raw.BaseAttack, raw.Health,
                     Mathf.CeilToInt(baselineAttack * attack), Mathf.CeilToInt(baseline.GetHealth() * health), values,
-                    statusShape ? capturedStatuses : null);
+                    statusShape || armorBoss ? capturedStatuses : null);
             };
         }
     }

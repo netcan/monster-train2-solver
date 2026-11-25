@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -353,6 +354,80 @@ internal static class OriginalEndlessFirstWaveChecks
         RecordedBattleChecks.RecordedBoundary(advanced.State!, turn.GetProperty("Actual"), terminal: false,
             "original Endless Ring 2 second wave", trackPreviewPosition: true);
         Console.WriteLine("NATIVE-ENDLESS-RING2-SECOND-WAVE PASS: four original births, unchanged Silence aura and exact EndTurn successor.");
+    }
+
+    internal static void Ring2LateBoss(FixtureValue archive)
+    {
+        const string bossKey = "Boss_Level2_BigStats";
+        FixtureValue scenario = archive.GetProperty("Scenario"), lastWave = archive.GetProperty("LastWave");
+        FixtureValue preparation = archive.GetProperty("PyrePreparation");
+        Require(Number(archive, "Schema") == 1 && Text(archive, "GameVersion") == Game231FixtureCatalog.Version &&
+            Text(archive, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(archive, "Boundary") == "OriginalEndlessEnemyScalingRing2LateBoss" &&
+            Text(scenario, "Scenario") == "TestEndless_Level2Battle1" && Number(scenario, "Loop") == 1 &&
+            Number(scenario, "Distance") == 1 && Number(lastWave, "Index") == 5 && Flag(lastWave, "PhaseAdvanced") &&
+            Number(preparation, "InitialHealth") == 1 && Number(preparation, "Health") == 3000 &&
+            preparation.GetProperty("BeforeRng").ContentEquals(preparation.GetProperty("AfterRng")),
+            "Expected the pinned original Endless test and its controlled Pyre preparation with unchanged RNG.");
+        FixtureValue[] births = lastWave.GetProperty("Births").EnumerateArray().ToArray();
+        Require(births.Select(birth => Text(birth, "AssetKey")).SequenceEqual(
+            new[] { "ShieldGuardT3_Enchanter_Chosen", bossKey, "ShieldGuardT3_Enchanter_Chosen" }),
+            "Expected the original sixth wave.");
+        FixtureValue birth = births[1], raw = birth.GetProperty("Before"), scaled = birth.GetProperty("After");
+        Require(!Flag(birth, "FromCard") && Number(birth, "BaselineAttack") == 16 && Number(birth, "BaselineHealth") == 1800 &&
+            Number(raw, "Attack") == 7 && Number(raw, "Health") == 260 &&
+            Number(scaled, "Attack") == 20 && Number(scaled, "Health") == 3600 &&
+            raw.GetProperty("Statuses").ContentEquals(scaled.GetProperty("Statuses")) &&
+            raw.GetProperty("Rng").ContentEquals(scaled.GetProperty("Rng")) &&
+            OwnedArmor(raw) == 5 && OwnedArmor(scaled) == 10,
+            "Expected the exact original birth callback with only the authored armor trigger scaled.");
+
+        BattleTurnState before = archive.GetProperty("BeforeBossBirth").Deserialize<BattleTurnState>()!;
+        BattleTurnState live = archive.GetProperty("AfterBossBirth").Deserialize<BattleTurnState>()!;
+        BattleTurnState settled = archive.GetProperty("FirstTurnBegin").Deserialize<BattleTurnState>()!;
+        BattleTurnResult spawned = BattleTurnModel.EndTurn(before);
+        Require(before.Spawn is { Turn: 5, Phase: 5 } && spawned.Outcome == RoomOutcome.Exchanged && spawned.State != null,
+            spawned.UnsupportedReason ?? "Expected the complete sixth wave.");
+        BattleTurnResult advanced = BattleTurnModel.EndTurn(live);
+        Require(advanced.Outcome == RoomOutcome.Exchanged && advanced.State != null,
+            advanced.UnsupportedReason ?? "Expected the original boss's settled OnTurnBegin.");
+        int id = Number(birth, "UnitId");
+        CombatUnit beforeTurn = CompareBoss(spawned.State!, live);
+        CombatUnit afterTurn = CompareBoss(advanced.State!, settled);
+        Require(live.Spawn is { Turn: 6, Phase: 6 } && settled.Spawn is { Turn: 7, Phase: 6 } &&
+            beforeTurn.AssetKey == bossKey && beforeTurn.Status("armor") == null && afterTurn.AssetKey == bossKey &&
+            afterTurn.Status("armor")?.Stacks == 10 && afterTurn.Status("relentless")?.Stacks == 1 &&
+            afterTurn.Triggers[0].Effects[0].Action!.Statuses is [{ Id: "armor", Stacks: 10 }],
+            "Expected Armor to stay attached to the original boss's own turn trigger.");
+        Console.WriteLine("NATIVE-ENDLESS-RING2-LATE-BOSS PASS: exact original birth, unscaled Relentless and first owned Armor application.");
+
+        CombatUnit CompareBoss(BattleTurnState predicted, BattleTurnState native)
+        {
+            var expected = Locate(native);
+            var actual = Locate(predicted);
+            string? diff = ModelJson.Difference(JsonSerializer.Serialize(actual.Actor, ModelJson.Options),
+                JsonSerializer.Serialize(expected.Actor, ModelJson.Options));
+            Require(diff == null && actual.Room == expected.Room && predicted.Spawn.Phase == native.Spawn.Phase &&
+                predicted.Spawn.Turn == native.Spawn.Turn && predicted.Spawn.Rng.Equals(native.Spawn.Rng) &&
+                predicted.RngStreams.Select(stream => (stream.Name, stream.Seed, stream.State))
+                    .SequenceEqual(native.RngStreams.Select(stream => (stream.Name, stream.Seed, stream.State))),
+                "Original Endless boss actor or gameplay RNG differs " + diff);
+            return expected.Actor;
+
+            (int Room, CombatUnit Actor) Locate(BattleTurnState state) => state.Spawn.Train.Rooms
+                .SelectMany(room => room.Units.Where(actor => actor.Id == id).Select(actor => (room.RoomIndex, actor))).Single();
+        }
+
+        static int OwnedArmor(FixtureValue actor)
+        {
+            FixtureValue triggers = actor.GetProperty("Triggers"), effect = triggers[0].GetProperty("Effects")[0];
+            FixtureValue statuses = effect.GetProperty("Statuses");
+            Require(triggers.GetArrayLength() == 1 && Text(triggers[0], "Kind") == "OnTurnBegin" &&
+                triggers[0].GetProperty("Effects").GetArrayLength() == 1 && Text(effect, "Type") == "CardEffectAddStatusEffect" &&
+                statuses.GetArrayLength() == 1 && Text(statuses[0], "Id") == "armor" && Flag(statuses[0], "ScalesInEndless"),
+                "Expected the pinned original self Armor trigger.");
+            return Number(statuses[0], "Stacks");
+        }
     }
 
     internal static void Waves(FixtureValue archive)

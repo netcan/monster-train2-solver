@@ -1479,6 +1479,13 @@ namespace MonsterTrain2Poju.Probe
             }
             if (fullBattle && OriginalEndlessEnemyScalingWitness.Enabled)
             {
+                if (OriginalEndlessEnemyScalingWitness.Ring2LateBoss)
+                {
+                    if (OriginalEndlessEnemyScalingWitness.TickRing2LateBoss(FullBattleTrace.Active!, combat!, log,
+                        () => AdvanceTurn(combat!, record: false)))
+                        Finish(true, "Original Endless Ring 2 late boss captured.");
+                    return;
+                }
                 if (PlayerAdvisorProbe.ObserveEndlessLoop2)
                 {
                     FullBattleTrace observation = FullBattleTrace.Active!;
