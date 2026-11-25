@@ -155,20 +155,21 @@ namespace MonsterTrain2Poju.Model
             }
             // A cutoff prevents further expansions, but the frontier already
             // contains fully simulated successors. Keep finished leaves and turn boundaries in stack order.
-            cancelled |= cancellationToken.IsCancellationRequested;
-            stoppedEarly |= earlyStop?.Reached == true;
+            CheckStop();
             if (!cancelled && (timedOut || limited || stoppedEarly))
                 foreach (var (completed, work) in pending)
                 {
                     if (cancellationToken.IsCancellationRequested) { cancelled = true; break; }
                     if (work == Expansion.Full && completed.Step != null) ConsiderCompletedResult(completed);
                 }
-            watch.Stop();
             Node chosen = best ?? fallback;
+            if (best == null && !ReferenceEquals(fallback, root)) score = Value(fallback);
             var steps = new List<BattleSearchStep>();
             for (Node? node = chosen; node?.Step != null; node = node.Parent) steps.Add(node.Step);
             steps.Reverse();
-            return new ExactBattleResult(chosen.State, chosen.Outcome, Value(chosen), steps, nodes, duplicates,
+            CheckStop();
+            watch.Stop();
+            return new ExactBattleResult(chosen.State, chosen.Outcome, score, steps, nodes, duplicates,
                 terminals, horizons, limited, timedOut, cancelled, watch.Elapsed, unsupported, workspace.Metrics,
                 actionLimit, stepLimit, stoppedEarly);
 

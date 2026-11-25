@@ -7,6 +7,7 @@ internal static class ExactBattleChecks
     internal static void NativeMultiTurn(string workspace)
     {
         string directory = Game231FixtureCatalog.DirectoryFor(workspace);
+        NativeFinalEvaluationDeadline(directory);
         var registration = Game231FixtureCatalog.Load(directory)["mechanics/tenacious/full-battle.mt2f"];
         using var document = FixtureDocument.Read(registration.Verify(directory));
         FixtureValue fixture = document.RootElement;
@@ -79,6 +80,32 @@ internal static class ExactBattleChecks
             Require(!frontier.HasUnsupportedAttempts, "The recorded Tenacious decision has unsupported plays.");
             return frontier.SupportedCandidates.Count;
         }
+    }
+
+    private static void NativeFinalEvaluationDeadline(string directory)
+    {
+        var registration = Game231FixtureCatalog.Load(directory)["mechanics/player-advisor-rolling/native-wurmkin-first-battle.mt2f"];
+        using var document = FixtureDocument.Read(registration.Verify(directory));
+        var fixture = document.RootElement;
+        Require(Game231FixtureCatalog.Classify(registration, fixture) == Game231FixtureKind.SettledBattle &&
+            fixture.GetProperty("NativeWon").GetBoolean(), "Expected the original 2.3.1 Wurmkin victory.");
+        var turn = fixture.GetProperty("Turns").EnumerateArray().Last();
+        var root = turn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var actual = turn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        bool deadline = false;
+        var result = ExactBattleSolver.MinimizeCore(root, (state, outcome) =>
+        {
+            if (outcome == RoomOutcome.BattleWon) deadline = true;
+            return BattlePlanner.Evaluate(state, outcome);
+        }, new ExactBattleOptions(64), CancellationToken.None, () => deadline);
+        Require(deadline && result.TimedOut && !result.Cancelled && !result.CertifiedTerminalOptimal &&
+            result.TerminalLeaves == 1 && result.Outcome == RoomOutcome.BattleWon && result.ExpandedNodes == 1 &&
+            result.Steps.Count == 1 && result.Steps[0].IsEndTurn,
+            "A deadline reached while scoring the final native leaf must keep the winning move without certifying optimality.");
+        var replay = BattlePlannerChecks.Replay(root, result.Steps, out var replayOutcome);
+        Require(replayOutcome == result.Outcome && Json(replay) == Json(result.State) &&
+            result.Score == BattlePlanner.Evaluate(replay, replayOutcome), "The last completed exact result failed replay.");
+        RecordedBattleChecks.Compare(replay, actual, terminal: true, "Exact Wurmkin deadline terminal");
     }
 
     private static void NativeParallelEndgame(string directory)
