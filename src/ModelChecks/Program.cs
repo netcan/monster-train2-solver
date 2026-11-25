@@ -2622,6 +2622,12 @@ if (args.Length == 2 && args[0] == "--card-corruption-attack-queries-only")
     CardCorruptionAttackUpgradeChecks.NaturalQueries(source.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-lady-ephemeral-attack-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    OriginalLadyEphemeralAttackChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--triple-juice-starstruck-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

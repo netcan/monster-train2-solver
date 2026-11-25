@@ -9,13 +9,13 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | inspect-projection-normalization | 44 | 44 | 44 |
-| inspect-guard-links | 40 | 40 | 40 |
+| inspect-guard-links | 39 | 39 | 39 |
 | review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 281 | 0 | 0 |
-| scoped-review-recorded | 136 | 131 | 131 |
+| scoped-review-recorded | 137 | 132 | 132 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 143 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 144 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -165,6 +165,7 @@
 | RoomStateAddEffectPreCombatModifier | shared-path | Unchanged Echoes Inferno installs the original Inferno Room on all three battle floors. The installed-inferno-rooms/battle.mt2f archive records an exact 50-damage enemy hit on floor zero and passes --installed-inferno-rooms-only. Other target and owner payloads require their own evidence. |
 | RoomStateHivemindModifier | shared-path | Original phase receipts cover publication for new owners, preserving the existing attack modifier before next draw, transfer of active room markers during ascent and casting movement, and cleanup when a holder dies. The complete Infested routes and both candidate sets are checked. |
 | RoomStateSelfDamagePerMissingHp | shared-path | The native query matrix includes original coefficient-one ZealotsHalo and coefficient-two Savagery, room position requirements and integer boundaries. The upgraded Fel's paid deployment and candidates match the native battle state. A controlled 3 HP difference gives 6 extra stat attack with unchanged RNG. |
+| RoomStateSelfDamagePerStatusEffectStack | shared-path | The original Lady of the House adds five attack per Ephemeral stack on its placed actor. The natural Moon/Remnant sixth battle contains 994 exact native attack getters across three actors and eight observed stack counts from one through eleven. All 41 recorded plays and seven EndTurns match full decisions and RNG. The receipt covers this owner and its positive stack counts. |
 | RoomStateSpawnUnitOnUnitSpawnModifier | shared-path | The original Hall of Mirrors copies a paid Twisted Assistant with one unmodified graft. The hall-grafted-birth/predicted-birth.mt2f archive passes --native-hall-grafted-birth-only for ordered callbacks, distinct graft ownership, physical slots, Battle and Draw RNG, and EndTurn at the observed root. Triggered or generated births have separate call sites. |
 | RoomStateUnitCostModifier | shared-path | Shardtail's original paid upgrade grants a same-floor Imp template discount. The paired native zero-cost play leaves energy and RNG unchanged. A model control using the same archived provider extends the local discount to the non-Imp Monster when the exact original wildcard is active. |
 | StatusEffectBurstState | shared-path | Original Dutiful Burst has three native PostCombat grants and seven native consumptions. Its settled whole battle matches 23 plays, four EndTurns, both frontiers and sixteen branches. Combined extra-attack sources retain separate guards. |
@@ -194,10 +195,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `7277dbce805c9067d08e93ea0a1cbec51966bc151ece95d47ba5bbd8446ba971`。
-- Model: PDB 校验过的项目源码集合 `b6bf0b7d29e74e64e37f5c09e73949a424730a74525c458084791d97a336e467`。
-- Probe: PDB 校验过的项目源码集合 `a4547efccc3984fe7e4af50bac549e3db866aed11e109ee63467f145c479a7b7`。
-- ModelChecks: PDB 校验过的项目源码集合 `8c05f8f7dd1c7d0c1adc5b4111e859e327abadd73bfc1c45721972fd57b8e0ff`。
+- 人工审查索引 SHA-256: `a220518d930f4b2d6a60e126fb344b5c81a0dd8b36cc94b68bca7fd2abd91ae4`。
+- Model: PDB 校验过的项目源码集合 `96bb54e0b87c997c5945f05e0c2f6842421699286ddac92964c841a6a8a4f661`。
+- Probe: PDB 校验过的项目源码集合 `e93fadae8644cff863b0fd37fee7aa1f7bbe8fbef66701fad2402f4880172296`。
+- ModelChecks: PDB 校验过的项目源码集合 `2710a92925347623b6466a81e6dceba70fe5b22fe30e23541551e7510b3ce85b`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
