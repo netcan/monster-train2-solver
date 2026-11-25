@@ -140,6 +140,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Native Endless Ring 2 second wave failed.' }
     dotnet $checks --recorded-chain-diagnose "$endless/native-controlled-ring2-defeat.mt2f" --frontiers
     if ($LASTEXITCODE -ne 0) { throw 'Native Endless Ring 2 no-card battle failed.' }
+    dotnet $checks --original-endless-ring2-late-boss-only "$endless/native-controlled-ring2-late-boss-settled.mt2f" --full-world
+    if ($LASTEXITCODE -ne 0) { throw 'Native Endless Ring 2 late boss and its first Armor turn failed.' }
     dotnet $checks --original-endless-loop2-advisor-first-end-turn-only "$endless/native-controlled-loop2-advisor-first-end-turn.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Native Endless Loop 2 advice handoff through the first EndTurn failed.' }
     dotnet $checks --original-lady-ephemeral-attack-only "$current/player-advisor-rolling/native-moon-remnant-sixth-battle-defeat.mt2f"
