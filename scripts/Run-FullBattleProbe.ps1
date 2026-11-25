@@ -1332,8 +1332,8 @@ if ($OriginalPersistentMonsterHpReload) {
 if ($PSBoundParameters.ContainsKey('SkullCollectorsTier') -and -not $OriginalSkullCollectorsWitness) {
     throw 'SkullCollectorsTier requires OriginalSkullCollectorsWitness.'
 }
-if ($SkullCollectorsFullBattle -and (-not $OriginalSkullCollectorsWitness -or $SkullCollectorsTier -ne 1)) {
-    throw 'SkullCollectorsFullBattle requires the original Tier 1 collector witness.'
+if ($SkullCollectorsFullBattle -and -not $OriginalSkullCollectorsWitness) {
+    throw 'SkullCollectorsFullBattle requires the original collector witness.'
 }
 if ($OriginalMoreTreasureUnitsBattle -or $OriginalSkullCollectorsWitness) {
     $treasureArguments = @('OriginalMoreTreasureUnitsBattle', 'OriginalSkullCollectorsWitness', 'InputProfile', 'BattleDistance',
@@ -1349,6 +1349,10 @@ if ($OriginalMoreTreasureUnitsBattle -or $OriginalSkullCollectorsWitness) {
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
+    if ($SkullCollectorsFullBattle -and $SkullCollectorsTier -eq 3) {
+        $SettleCardAnimations = $true
+        $SettleDeathDissolves = $true
+    }
 }
 if ($SecondFloorEnemyOpeningFullBattle -and -not $OriginalSecondFloorEnemyOpening) {
     throw 'SecondFloorEnemyOpeningFullBattle requires OriginalSecondFloorEnemyOpening.'
