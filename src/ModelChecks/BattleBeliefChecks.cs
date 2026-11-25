@@ -118,6 +118,21 @@ internal static class BattleBeliefChecks
         RejectPolicy(mixedLeaf, "Replay accepted different initial visible observations as a single belief.", horizon: 0,
             source: mixedObservations);
 
+        var rules = root.PlayRules ?? throw new InvalidOperationException("The original decision must expose room rules.");
+        var capacity = rules.Rooms.First(room => room.Enabled && !room.IsPyre);
+        var changedRules = rules.WithRooms(rules.Rooms.Select(room => room == capacity
+            ? room.WithCapacities(room.PlayerCapacity + 1, room.EnemyCapacity) : room).ToArray());
+        var expandedRoom = new BattleTurnState(root.Spawn, root.Energy, root.EnergyPerTurn, root.DrawPerTurn,
+            root.ForgePoints, root.DragonsHoard, root.MoonPhase, root.RngStreams, root.OtherPiles, root.ExternalInteractions,
+            changedRules, root.BattlePreviewEnabled, root.UiRngIsolated, root.CanonicalDecisionReferences,
+            root.CanonicalPhysicalReferences, root.SelectedRoom, root.MoonPhaseTrackingActive);
+        var differentCapacity = new BattleBelief([new BattleBeliefWorld(root, 1), new BattleBeliefWorld(expandedRoom, 1)],
+            true, "VisibleRoomCapacity");
+        double capacityScore = differentCapacity.Worlds.Sum(world => world.Weight * BattlePlanner.Evaluate(world.State, world.Outcome));
+        var capacityLeaf = new BattleBeliefPolicy(null, false, true, capacityScore, true, false, []);
+        RejectPolicy(capacityLeaf, "Replay grouped different visible room capacities into one belief.", horizon: 0,
+            source: differentCapacity, reason: "Initial hypotheses must have the same visible observation.");
+
         var terminalState = turns[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         var terminalOutcome = turns[^1].GetProperty("ActualOutcome").Deserialize<RoomOutcome>();
         Require(terminalOutcome == RoomOutcome.BattleWon, "The terminal-policy check requires a recorded native win.");

@@ -25,11 +25,18 @@ namespace MonsterTrain2Poju.Model
             return VerifyCore(belief, policy, decisionHorizon, evaluate);
         }
 
+        internal static BattleBeliefReplayResult VerifyLegacyObservation(BattleBelief belief, BattleBeliefPolicy policy,
+            int decisionHorizon)
+        {
+            if (decisionHorizon < 0) throw new ArgumentOutOfRangeException(nameof(decisionHorizon));
+            return VerifyCore(belief, policy, decisionHorizon, null, includeRoomRules: false);
+        }
+
         private static BattleBeliefReplayResult VerifyCore(BattleBelief belief, BattleBeliefPolicy policy,
-            int? decisionHorizon, Func<BattleTurnState, RoomOutcome, double>? evaluate)
+            int? decisionHorizon, Func<BattleTurnState, RoomOutcome, double>? evaluate, bool includeRoomRules = true)
         {
             evaluate ??= BattlePlanner.Evaluate;
-            using var observations = new BattleObservationKeys(); using var stateKeys = new BattleStateKeys();
+            using var observations = new BattleObservationKeys(includeRoomRules); using var stateKeys = new BattleStateKeys();
             if (belief.Worlds.Select(world => observations.Key(world.State, world.Outcome)).Distinct().Count() != 1)
                 throw new InvalidOperationException("Initial hypotheses must have the same visible observation.");
             var totals = new Dictionary<BattleBeliefPolicy,

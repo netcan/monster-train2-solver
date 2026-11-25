@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="ModelChecks" />
+    <InternalsVisibleTo Include="FixtureTools" />
     <InternalsVisibleTo Include="Probe" />
     <InternalsVisibleTo Include="MonsterTrain2Poju.Advisor" />
   </ItemGroup>

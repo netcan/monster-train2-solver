@@ -108,12 +108,17 @@ namespace MonsterTrain2Poju.Model
     public sealed class BattleObservationKeys : IDisposable
     {
         private readonly BattleStateKeys keys = new BattleStateKeys();
+        private readonly bool includeRoomRules;
+
+        public BattleObservationKeys() : this(true) { }
+        internal BattleObservationKeys(bool includeRoomRules) => this.includeRoomRules = includeRoomRules;
+
         // Public card/room state and known pile contents, with hidden draw order
         // and all RNG words omitted. No action may depend on the hypothesis ID.
         public string Key(BattleTurnState state, RoomOutcome outcome = RoomOutcome.Exchanged)
         {
             var context = state.Spawn.Train.Context ?? throw new ArgumentException("Missing observable context.");
-            return keys.SnapshotKey(new {
+            var visible = new {
                 Outcome = outcome, state.Spawn.Turn, state.Energy, state.EnergyPerTurn, state.DrawPerTurn,
                 state.ForgePoints, state.DragonsHoard, state.MoonPhase, state.SelectedRoom, context.Gold,
                 Rooms = state.Spawn.Train.Rooms.Select(room => new { room.RoomIndex, room.Deployment, room.Units }).ToArray(),
@@ -121,7 +126,10 @@ namespace MonsterTrain2Poju.Model
                 DrawPool = context.Cards.Draw.OrderBy(card => card.InstanceId).Select(card => context.FindCard(card.InstanceId)).ToArray(),
                 Discard = context.Cards.Discard.Select(card => context.FindCard(card.InstanceId)).ToArray(),
                 state.OtherPiles, context.MaxHandSize, context.Cards.DrawModifier, context.Cards.DeckDrawDisabledThisTurn
-            });
+            };
+            return includeRoomRules
+                ? keys.SnapshotKey(new { State = visible, RoomRules = state.PlayRules?.Rooms.OrderBy(room => room.RoomIndex).ToArray() })
+                : keys.SnapshotKey(visible);
         }
         public void Dispose() => keys.Dispose();
     }

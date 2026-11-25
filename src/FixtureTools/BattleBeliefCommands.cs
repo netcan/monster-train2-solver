@@ -5,6 +5,8 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattleBeliefCommands
 {
+    private const int CurrentSchema = 2;
+
     internal static void Run(string input, string output, int worlds, int decisions, int nodes, int milliseconds, int? nativeTurn)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
@@ -26,7 +28,7 @@ internal static class BattleBeliefCommands
         var belief = DrawOrderBelief.Create(root, worlds);
         var result = BattleBeliefPlanner.Plan(belief, new BattleBeliefOptions(nodes, decisions, TimeSpan.FromMilliseconds(milliseconds)));
         var replay = BattleBeliefReplay.Verify(belief, result.Policy, decisionHorizon: decisions);
-        using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelPrediction", Verified = true,
+        using var document = NativeFixtureCapture.Capture(new { Schema = CurrentSchema, EvidenceKind = "ModelPrediction", Verified = true,
             ProofScope = "FiniteCurrentDrawOrderBelief", SourceArchive = Path.GetFileName(input),
             SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
             NativeTurnIndex = nativeTurn, Belief = belief, Policy = result.Policy, FinalWorlds = replay.FinalWorlds,
@@ -41,14 +43,16 @@ internal static class BattleBeliefCommands
     internal static void Verify(string input)
     {
         using var fixture = FixtureDocument.Read(input); var source = fixture.RootElement;
-        Require(source.GetProperty("Schema").GetInt32() == 1 && source.GetProperty("ProofScope").GetString() == "FiniteCurrentDrawOrderBelief",
+        int schema = source.GetProperty("Schema").GetInt32();
+        Require(schema is 1 or CurrentSchema && source.GetProperty("ProofScope").GetString() == "FiniteCurrentDrawOrderBelief",
             "Unknown belief policy archive.");
         var prior = source.GetProperty("Belief");
         var belief = BattleBelief.FromNormalizedWeights(prior.GetProperty("Worlds").Deserialize<BattleBeliefWorld[]>()!,
             prior.GetProperty("ExhaustiveDistribution").GetBoolean(), prior.GetProperty("Uncertainty").GetString()!);
         var policy = source.GetProperty("Policy").Deserialize<BattleBeliefPolicy>()!;
         int horizon = source.GetProperty("Options").GetProperty("MaxDecisions").GetInt32();
-        var replay = BattleBeliefReplay.Verify(belief, policy, decisionHorizon: horizon);
+        var replay = schema == 1 ? BattleBeliefReplay.VerifyLegacyObservation(belief, policy, horizon)
+            : BattleBeliefReplay.Verify(belief, policy, decisionHorizon: horizon);
         Require(replay.ExpectedScore == source.GetProperty("ExpectedScore").GetDouble(), "Archived policy score differs.");
         var actual = source.GetProperty("FinalWorlds").Deserialize<BattleBeliefWorld[]>()!;
         using var keys = new BattleStateKeys();
