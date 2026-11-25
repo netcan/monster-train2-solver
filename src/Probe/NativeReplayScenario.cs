@@ -218,6 +218,13 @@ namespace MonsterTrain2Poju.Probe
                             return;
                         }
                         trace.Write();
+                        if (OriginalEndlessEnemyScalingWitness.ControlledRing2)
+                        {
+                            Finish(endlessOpeningCaptured, endlessOpeningCaptured
+                                ? "Original Endless Ring 2 no-card terminal settlement captured."
+                                : "The original Endless Ring 2 battle ended before the opening receipt was captured.");
+                            return;
+                        }
                         Finish(endlessOpeningCaptured, endlessOpeningCaptured
                             ? "Original Endless Arkion no-card terminal settlement captured."
                             : "The original Endless battle ended before the Arkion opening receipt was captured.");

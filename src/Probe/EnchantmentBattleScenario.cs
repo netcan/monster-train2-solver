@@ -223,21 +223,26 @@ namespace MonsterTrain2Poju.Probe
         private static void CanonicalizeEndlessRing2Enchanters(AllGameManagers managers, TrainCombatState train, List<int> enchanters)
         {
             SaveManager save = managers.GetSaveManager();
-            if (enchanters.Count != 3 || save.PreviewMode || managers.GetCombatManager()?.GetTurnCount() != 2 ||
-                !EndlessEnemyBirthStatsProbe.IsPinnedRing2(save) ||
-                (int)AccessTools.Field(typeof(HeroManager), "spawnPatternPhase").GetValue(managers.GetHeroManager()) != 2)
+            if (enchanters.Count is not (3 or 4) || save.PreviewMode || !EndlessEnemyBirthStatsProbe.IsPinnedRing2(save))
                 return;
-            var ground = train.Rooms.FirstOrDefault(room => room.RoomIndex == 0)?.Units;
-            var middle = train.Rooms.FirstOrDefault(room => room.RoomIndex == 1)?.Units;
-            if (middle?.Any(actor => actor.Id == enchanters[0] && EndlessEnemyBirthStats.OriginalTitanSkinAura(actor) != null) != true ||
-                ground?.Any(actor => actor.Id == enchanters[1] && EndlessEnemyBirthStats.IsUnscaledSilenceAura(actor) &&
-                    actor.Triggers[0].Effects[0].Enchantment!.Bound && actor.Statuses is [{ Id: "titanskin", Stacks: 10 }]) != true ||
-                !ground.Any(actor => actor.Id == enchanters[2] && EndlessEnemyBirthStats.OriginalTitanSkinAura(actor) != null))
+            int phase = (int)AccessTools.Field(typeof(HeroManager), "spawnPatternPhase").GetValue(managers.GetHeroManager());
+            if (phase is not (2 or 3) || enchanters.Count != phase + 1)
+                return;
+            var pairRoom = train.Rooms.FirstOrDefault(room => room.Units.Any(actor => actor.Id == enchanters[1] &&
+                EndlessEnemyBirthStats.IsUnscaledSilenceAura(actor)));
+            if (pairRoom == null ||
+                !train.Rooms.Any(room => room.RoomIndex == pairRoom.RoomIndex + 1 && room.Units.Any(actor =>
+                    actor.Id == enchanters[0] && EndlessEnemyBirthStats.OriginalTitanSkinAura(actor) != null)) ||
+                !pairRoom.Units.Any(actor => actor.Id == enchanters[1] &&
+                    actor.Triggers[0].Effects[0].Enchantment!.Bound && actor.Statuses is [{ Id: "titanskin", Stacks: 10 }]) ||
+                !pairRoom.Units.Any(actor => actor.Id == enchanters[2] &&
+                    EndlessEnemyBirthStats.OriginalTitanSkinAura(actor) != null) ||
+                phase == 3 && !train.Rooms.Any(room => room.RoomIndex == pairRoom.RoomIndex - 1 && room.Units.Any(actor =>
+                    actor.Id == enchanters[3] && EndlessEnemyBirthStats.OriginalTitanSkinAura(actor) != null)))
                 return;
             // The capture walks rooms and sees Silence first. The two new auras target
             // opposite teams without randomness, so retain the spawn-registration order.
             (enchanters[1], enchanters[2]) = (enchanters[2], enchanters[1]);
-
         }
 
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);

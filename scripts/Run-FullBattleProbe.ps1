@@ -1150,10 +1150,12 @@ if ($EndlessEnemyScalingFactorBatch) {
         throw 'EndlessEnemyScalingFactorBatch requires isolated main-menu binary capture and no campaign inputs.'
     }
 }
+$controlledEndlessRing2WholeBattle = $EndlessEnemyScalingWholeBattle -and $EndlessEnemyScalingControlledNextRing -and
+    $EndlessEnemyScalingControlledDistance -eq 1 -and !$OuterBossBirth -and !$OuterBossTurns
 $controlledEndlessWholeBattle = $EndlessEnemyScalingWholeBattle -and $EndlessEnemyScalingControlledNextRing -and
     $EndlessEnemyScalingControlledDistance -eq 2 -and $OuterBossBirth -and $OuterBossTurns
-if ($EndlessEnemyScalingWholeBattle -and !$EndlessEnemyScalingAllWaves -and !$controlledEndlessWholeBattle) {
-    throw 'EndlessEnemyScalingWholeBattle requires EndlessEnemyScalingAllWaves or controlled Ring 3 with OuterBossBirth and OuterBossTurns.'
+if ($EndlessEnemyScalingWholeBattle -and !$EndlessEnemyScalingAllWaves -and !$controlledEndlessWholeBattle -and !$controlledEndlessRing2WholeBattle) {
+    throw 'EndlessEnemyScalingWholeBattle requires all waves, controlled Ring 2, or controlled Ring 3 with the outer-boss witnesses.'
 }
 if ($PSBoundParameters.ContainsKey('EndlessEnemyScalingControlledDistance') -and !$EndlessEnemyScalingControlledNextRing) {
     throw 'EndlessEnemyScalingControlledDistance requires EndlessEnemyScalingControlledNextRing.'
@@ -5300,6 +5302,7 @@ if ($OriginalEndlessEnemyScalingWitness) {
     $captureMarker = if ($EndlessEnemyScalingControlledSecondWave) { 'Original Endless Ring 2 second wave captured.' }
         elseif ($EndlessEnemyScalingLoop2CorruptionTerminal) { 'Original Endless Loop 2 paid Horde death and defeat captured.' }
         elseif ($EndlessEnemyScalingLoop2CorruptionPlan) { 'Original Endless Loop 2 paid Horde death captured.' }
+        elseif ($controlledEndlessRing2WholeBattle) { 'Original Endless Ring 2 no-card terminal settlement captured.' }
         elseif ($controlledEndlessWholeBattle) { 'Original Endless Arkion no-card terminal settlement captured.' }
         elseif ($EndlessEnemyScalingWholeBattle) { 'Original Endless enemy scaling terminal settlement captured.' }
         elseif ($EndlessEnemyScalingAllWaves) { 'Original Endless enemy scaling waves captured.' }
@@ -5335,6 +5338,9 @@ if ($OriginalEndlessEnemyScalingWitness) {
     }
     elseif ($controlledEndlessWholeBattle) {
         Write-Output "NATIVE-ENDLESS-ARKION-TERMINAL PASS trace=$wholeBattlePath sha256=$((Get-FileHash -LiteralPath $wholeBattlePath -Algorithm SHA256).Hash) openingTrace=$capturePath outerBossTrace=$outerBossPath"
+    }
+    elseif ($controlledEndlessRing2WholeBattle) {
+        Write-Output "NATIVE-ENDLESS-RING2-TERMINAL CAPTURED trace=$wholeBattlePath sha256=$((Get-FileHash -LiteralPath $wholeBattlePath -Algorithm SHA256).Hash) openingTrace=$capturePath"
     }
     elseif ($EndlessEnemyScalingControlledSecondWave) {
         Write-Output "NATIVE-ENDLESS-RING2-SECOND-WAVE PASS trace=$secondWavePath sha256=$((Get-FileHash -LiteralPath $secondWavePath -Algorithm SHA256).Hash) openingTrace=$capturePath"

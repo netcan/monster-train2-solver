@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
         private static int ControlledDistance => int.Parse(
             Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_DISTANCE") ?? "1", CultureInfo.InvariantCulture);
         private static bool ObserveOuterBoss => ControlledNextRing && ControlledDistance == 2 && OuterBossBirthProbe.Enabled;
+        internal static bool ControlledRing2 => ControlledNextRing && ControlledDistance == 1;
         internal static bool ControlledFirstLoop { get; private set; }
         private static bool controlledAdvanceApplied;
         private static object? scenario;
