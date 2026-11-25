@@ -223,9 +223,14 @@ namespace MonsterTrain2Poju.Probe
         private static void CanonicalizeEndlessRing2Enchanters(AllGameManagers managers, TrainCombatState train, List<int> enchanters)
         {
             SaveManager save = managers.GetSaveManager();
-            if (enchanters.Count is not (3 or 4) || save.PreviewMode || !EndlessEnemyBirthStatsProbe.IsPinnedRing2(save))
+            if (enchanters.Count is not (3 or 4 or 9) || save.PreviewMode || !EndlessEnemyBirthStatsProbe.IsPinnedRing2(save))
                 return;
             int phase = (int)AccessTools.Field(typeof(HeroManager), "spawnPatternPhase").GetValue(managers.GetHeroManager());
+            if (phase == 6 && enchanters.Count == 9)
+            {
+                CanonicalizeEndlessRing2BossWave(train, managers.GetCombatManager()?.GetTurnCount(), enchanters);
+                return;
+            }
             if (phase is not (2 or 3) || enchanters.Count != phase + 1)
                 return;
             var pairRoom = train.Rooms.FirstOrDefault(room => room.Units.Any(actor => actor.Id == enchanters[1] &&
@@ -243,6 +248,36 @@ namespace MonsterTrain2Poju.Probe
             // The capture walks rooms and sees Silence first. The two new auras target
             // opposite teams without randomness, so retain the spawn-registration order.
             (enchanters[1], enchanters[2]) = (enchanters[2], enchanters[1]);
+        }
+
+        private static void CanonicalizeEndlessRing2BossWave(TrainCombatState train, int? turn, List<int> enchanters)
+        {
+            if (turn is not (6 or 7))
+                return;
+            int secondId = enchanters[7], firstId = enchanters[8], bossId = firstId + 1;
+            if (secondId != firstId + 2)
+                return;
+            var room = train.Rooms.FirstOrDefault(candidate => candidate.RoomIndex == turn.Value - 6);
+            CombatUnit? first = room?.Units.FirstOrDefault(actor => actor.Id == firstId);
+            CombatUnit? second = room?.Units.FirstOrDefault(actor => actor.Id == secondId);
+            CombatUnit? boss = room?.Units.FirstOrDefault(actor => actor.Id == bossId);
+            if (first == null || second == null ||
+                boss is not { AssetKey: "Boss_Level2_BigStats", Team: CombatTeam.Enemy, IsBoss: true } ||
+                boss.Status("titanskin")?.Stacks != 20 ||
+                EndlessEnemyBirthStats.OriginalTitanSkinAura(first) is not EnchantmentRule firstAura ||
+                EndlessEnemyBirthStats.OriginalTitanSkinAura(second) is not EnchantmentRule secondAura ||
+                !MatchesTargets(firstAura, bossId, secondId) || !MatchesTargets(secondAura, firstId, bossId))
+                return;
+            // The room walk sees the later birth first. Both identical deterministic auras
+            // have completed in the opposite, captured callback order.
+            (enchanters[7], enchanters[8]) = (firstId, secondId);
+
+            bool MatchesTargets(EnchantmentRule aura, int left, int right) =>
+                aura.State.PrimaryTargets is [{ IsEnchanted: true, NextAction: 0, AppliedUpgrade: null } a,
+                    { IsEnchanted: true, NextAction: 0, AppliedUpgrade: null } b] && a.UnitId == left && b.UnitId == right &&
+                (turn == 6 ? aura.State.PreviewTargets.Count == 0 :
+                    aura.State.PreviewTargets is [{ IsEnchanted: true, NextAction: 1, AppliedUpgrade: null } x,
+                        { IsEnchanted: true, NextAction: 1, AppliedUpgrade: null } y] && x.UnitId == left && y.UnitId == right);
         }
 
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);

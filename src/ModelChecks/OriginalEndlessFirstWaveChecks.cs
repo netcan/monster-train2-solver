@@ -356,7 +356,7 @@ internal static class OriginalEndlessFirstWaveChecks
         Console.WriteLine("NATIVE-ENDLESS-RING2-SECOND-WAVE PASS: four original births, unchanged Silence aura and exact EndTurn successor.");
     }
 
-    internal static void Ring2LateBoss(FixtureValue archive)
+    internal static void Ring2LateBoss(FixtureValue archive, bool fullWorld)
     {
         const string bossKey = "Boss_Level2_BigStats";
         FixtureValue scenario = archive.GetProperty("Scenario"), lastWave = archive.GetProperty("LastWave");
@@ -391,6 +391,11 @@ internal static class OriginalEndlessFirstWaveChecks
         BattleTurnResult advanced = BattleTurnModel.EndTurn(live);
         Require(advanced.Outcome == RoomOutcome.Exchanged && advanced.State != null,
             advanced.UnsupportedReason ?? "Expected the original boss's settled OnTurnBegin.");
+        if (fullWorld)
+        {
+            RecordedBattleChecks.Compare(spawned.State!, live, terminal: false, "original Endless Ring 2 boss wave");
+            RecordedBattleChecks.Compare(advanced.State!, settled, terminal: false, "original Endless Ring 2 first boss turn");
+        }
         int id = Number(birth, "UnitId");
         CombatUnit beforeTurn = CompareBoss(spawned.State!, live);
         CombatUnit afterTurn = CompareBoss(advanced.State!, settled);
@@ -400,6 +405,8 @@ internal static class OriginalEndlessFirstWaveChecks
             afterTurn.Triggers[0].Effects[0].Action!.Statuses is [{ Id: "armor", Stacks: 10 }],
             "Expected Armor to stay attached to the original boss's own turn trigger.");
         Console.WriteLine("NATIVE-ENDLESS-RING2-LATE-BOSS PASS: exact original birth, unscaled Relentless and first owned Armor application.");
+        if (fullWorld)
+            Console.WriteLine("NATIVE-ENDLESS-RING2-LATE-BOSS FULL-WORLD PASS: two exact settled successors.");
 
         CombatUnit CompareBoss(BattleTurnState predicted, BattleTurnState native)
         {
