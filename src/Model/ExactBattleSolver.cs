@@ -76,7 +76,7 @@ namespace MonsterTrain2Poju.Model
             Func<BattleTurnState, RoomOutcome, double>? evaluate, ExactBattleOptions? options,
             CancellationToken cancellationToken, Func<bool>? deadlineReached = null,
             int? maxSteps = null, int? maxActionsPerTurn = null, BattleEarlyStop? earlyStop = null,
-            bool useAdvisorOrdering = false)
+            bool useAdvisorOrdering = false, bool preferCompletedPrefixOnCutoff = false)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             evaluate ??= BattlePlanner.Evaluate; options ??= new ExactBattleOptions();
@@ -162,8 +162,10 @@ namespace MonsterTrain2Poju.Model
                     if (cancellationToken.IsCancellationRequested) { cancelled = true; break; }
                     if (work == Expansion.Full && completed.Step != null) ConsiderCompletedResult(completed);
                 }
-            Node chosen = best ?? fallback;
-            if (best == null && !ReferenceEquals(fallback, root)) score = Value(fallback);
+            bool retainPrefix = preferCompletedPrefixOnCutoff && !cancelled && (timedOut || limited || stepLimit) &&
+                fallback.Turns > 0 && (best?.Outcome is RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate);
+            Node chosen = retainPrefix ? fallback : best ?? fallback;
+            if (!ReferenceEquals(chosen, best) && !ReferenceEquals(chosen, root)) score = Value(chosen);
             var steps = new List<BattleSearchStep>();
             for (Node? node = chosen; node?.Step != null; node = node.Parent) steps.Add(node.Step);
             steps.Reverse();

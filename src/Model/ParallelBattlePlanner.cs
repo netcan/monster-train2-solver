@@ -102,7 +102,7 @@ namespace MonsterTrain2Poju.Model
             ExactBattleResult exact = ExactBattleSolver.MinimizeCore(source, null,
                 new ExactBattleOptions(options.MaxNodes, options.TimeLimit), cancellationToken,
                 maxSteps: options.MaxSteps, maxActionsPerTurn: options.MaxActionsPerTurn, earlyStop: earlyStop,
-                useAdvisorOrdering: true);
+                useAdvisorOrdering: true, preferCompletedPrefixOnCutoff: options.AllowShorterHorizon);
             bool complete = exact.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
             // The exact search retains the last completed turn at a cutoff.
             bool shorter = options.AllowShorterHorizon && !exact.Cancelled && exact.Outcome == RoomOutcome.Exchanged &&

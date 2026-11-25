@@ -145,12 +145,29 @@ internal static class ParallelPlannerChecks
 
         var alternate = ParallelBattlePlanner.ExploreTerminalRoutes(root, Options(2), null, CancellationToken.None);
         VerifyPrefix(alternate, budget: 2);
+        var boundedLoss = ParallelBattlePlanner.ExploreTerminalRoutes(root, Options(4), null, CancellationToken.None);
+        VerifyPrefix(boundedLoss, budget: 4);
+        Require(keys.Key(boundedLoss.State) == keys.Key(alternate.State),
+            "Finding one native-root defeat must preserve the completed prefix while the search is still incomplete.");
+        var strictLoss = ParallelBattlePlanner.ExploreTerminalRoutes(root, Options(4, allowShorter: false), null, CancellationToken.None);
+        Require(strictLoss.CompletedHorizon && strictLoss.ReachedNodeLimit && !strictLoss.UsedShorterHorizon &&
+            strictLoss.Outcome == RoomOutcome.PlayerDefeated && strictLoss.TurnsCompleted == 3,
+            "Strict whole-battle planning must retain the full defeat found on the same native root.");
+        BattleAdviceSession.Verify(root, strictLoss);
+        var exact = ExactBattleSolver.MinimizeCore(root, null, new ExactBattleOptions(4), CancellationToken.None,
+            maxSteps: 256, maxActionsPerTurn: 12, useAdvisorOrdering: true);
+        Require(exact.Outcome == strictLoss.Outcome && keys.Key(exact.State) == keys.Key(strictLoss.State),
+            "Default exact result selection must keep its terminal witness.");
         if (Environment.ProcessorCount >= 3)
         {
             var portfolio = ParallelBattlePlanner.Plan(root, Options(4));
             Require(portfolio.SearchWorkers == 2 && keys.Key(portfolio.State) == keys.Key(alternate.State),
                 "The normal two-worker portfolio discarded the exact worker's longer verified prefix.");
             VerifyPrefix(portfolio, budget: 4);
+            var widerPortfolio = ParallelBattlePlanner.Plan(root, Options(8));
+            VerifyPrefix(widerPortfolio, budget: 8);
+            Require(keys.Key(widerPortfolio.State) == keys.Key(boundedLoss.State),
+                "The wider portfolio must consider the retained prefix when ranking the two workers' forecasts.");
         }
         var strict = ParallelBattlePlanner.ExploreTerminalRoutes(root, Options(2, allowShorter: false), null, CancellationToken.None);
         Require(strict.ReachedNodeLimit && !strict.CompletedHorizon && !strict.UsedShorterHorizon && strict.Steps.Count == 0,
@@ -190,7 +207,7 @@ internal static class ParallelPlannerChecks
         BattleAdviceSession.Verify(terminalRoot, terminal);
 
         Require(keys.Key(root) == rootKey, "The exact forecast mutated its native root.");
-        Console.WriteLine("PARALLEL-SHORTER-FALLBACK PASS: two verified EndTurns from the original Ring 5 root, exact state/RNG, strict and cancelled exclusions, false horizon and score rejected, early terminal accepted.");
+        Console.WriteLine("PARALLEL-SHORTER-FALLBACK PASS: two verified EndTurns from the original Ring 5 root, prefix retained after a bounded defeat, exact state/RNG, strict and cancelled exclusions, false horizon and score rejected, early terminal accepted.");
 
         void RejectOrdinaryPlan(int completedTurns, int requestedTurns, string reason, IReadOnlyList<BattleSearchStep>? steps = null,
             double? score = null, double? baseline = null)
