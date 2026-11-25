@@ -6,6 +6,9 @@ installed player payload. The installation evidence below predates the game
 update and does not establish 2.3.1 player compatibility. See
 [the current migration evidence](game-2.3.1.md).
 
+The Windows Advisor built from `26b77878` passed Undo Turn again in an isolated original 2.3.1 profile. Independent replay matched the restored state and RNG, retired advice, and fresh publication. The runner verified the source checkpoint and installed game files after exit.
+[Native run log](../results/windows-26b77878-advisor-undo.log)
+
 On 2026-11-24 the separately built Windows Advisor rendered a partial forecast at the original
 Endless Loop 2 deployment in an isolated profile. The observation recorded zero battle inputs and
 unchanged battle state and RNG. In a second run the native game accepted one matching deployment.
