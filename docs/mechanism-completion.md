@@ -1476,6 +1476,10 @@ Hallowed Halls 同场原版胜局另验证了六名友军复活，5 次出牌、
 [整战阶段报告](../results/recorded-chain-triage-20261125-070233-829edafb/report.tsv) ·
 [阶段求解日志](../results/solver-completion-67b9088c-20261125.log)
 
+随后的五场定向回放共核对 85 次出牌和 30 次结束回合，两类录制候选均通过。第 2 环无尽的 4 次结束回合另通过定向回放。阶段求解验收通过跨回合搜索、顾问界面归档和精确方案复放，证据清单在 521 场已结算归档中仍核对了 601 张收藏卡和 236 件收藏遗物。
+[五场定向报告](../results/recorded-chain-triage-20261125-080710-3c299af0/report.tsv) ·
+[阶段求解日志](../results/solver-completion-589528fe-20261125.log)
+
 顾问界面阶段验收可直接复用 2.3.1 原版首战归档。检查器复放 28 次战斗输入，核对 30 次建议发布，以及待确认时的建议保留、滚动、重置、预算切换和七次无需重新采集的楼层切换。
 [原版首战归档](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring1-presentation-after-allocation.mt2f)
 
