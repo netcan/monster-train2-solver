@@ -140,6 +140,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Verified future-target advice failed.' }
     dotnet $checks --winning-advice-only tests/fixtures/advisor/presentation/full-battle-player-boss-search.mt2f
     if ($LASTEXITCODE -ne 0) { throw 'Verified winning continuation after original previews failed.' }
+    dotnet $checks --player-advisor-rapid-continuation-only "$current/player-advisor-rapid/native-rapid-continuation.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Native consecutive inputs during advisor verification failed.' }
     dotnet $checks --native-advisor-restart-only "$current/player-advisor-rolling/native-restart-restored-deployment.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Native restart advice acceptance failed.' }
     dotnet $checks --native-advisor-undo-only "$current/player-advisor-rolling/native-undo-restored-first-turn.mt2f"
