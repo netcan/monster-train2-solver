@@ -11,6 +11,8 @@ namespace MonsterTrain2Poju.Model
         public const string StrongerCorruptionSpellId = "4de04eeb-76d9-4ad0-b5cd-8c2b997395f5";
         public const string WurmkinSpikeSpellId = "83c87c23-39a9-4c92-a6d0-3f640c35534d";
         public const string MoonbeamSpellId = "8916c550-474d-49db-89bf-75bacdc95db4";
+        internal const string InfernoId = "887b4b22-7f26-443f-b942-8ad620741617";
+        private const string IgnoreArmor = "CardTraitIgnoreArmor";
         public const string IntrinsicSpikeUpgradeId = "62ea77cc-4f97-476f-9ccc-a23e28bc788d";
         public const string PermafrostUpgradeId = "e0af4fe5-75c0-4017-ae5e-5a87099aa6c5";
         private const string ReverseConsumeOrder = "Copy-on-play requires Consume to precede the copy callback, as in the original calibrated upgrade order.";
@@ -28,7 +30,8 @@ namespace MonsterTrain2Poju.Model
             if (descriptor.SourceTraits.Count != 1 || descriptor.BaseTraits.Count == 0) return false;
             CardSourceTrait authored = descriptor.SourceTraits[0];
             CardTraitValue runtime = descriptor.BaseTraits[0];
-            return authored.Type == "CardTraitExhaustState" && authored.Int == 0 && authored.Int2 == 0 && authored.Int3 == 0 &&
+            return (authored.Type == "CardTraitExhaustState" || IsOriginalInfernoPiercing(descriptor)) &&
+                authored.Int == 0 && authored.Int2 == 0 && authored.Int3 == 0 &&
                 !authored.Bool && authored.Str == "" && authored.Float == 0 && !authored.Scaling &&
                 authored.TrackedValue == "SubtypeInDeck" && authored.EntryDuration == "ThisTurn" &&
                 authored.StatusQueryTeam == null && authored.StatusQueryStatuses == null && authored.HandCostTargetType == null &&
@@ -37,6 +40,12 @@ namespace MonsterTrain2Poju.Model
                 runtime.RuntimeType == authored.Type && runtime.DeclaredName == authored.Type && runtime.DefinitionParamInt == 0 &&
                 runtime.ParamInt == 0 && runtime.StackMode == 0 && runtime.Removable && runtime.DefinitionRemovable == true && !runtime.TemporaryReplacement;
         }
+
+        private static bool IsOriginalInfernoPiercing(CardMaskDescriptor descriptor) =>
+            descriptor.Definition is { DataId: InfernoId, CardType: "Spell", XCost: false } && descriptor.BaseCost == 3 &&
+            descriptor.SourceTraits is [{ Type: IgnoreArmor }] &&
+            descriptor.BaseTraits.Count(trait => trait.RuntimeType == IgnoreArmor) == 1 &&
+            descriptor.BaseTraits[0].RuntimeType == IgnoreArmor;
 
         private static bool SupportedUndyingSource(CardMaskDescriptor descriptor)
         {
@@ -220,6 +229,7 @@ namespace MonsterTrain2Poju.Model
             if (traits.Length == 0) return null;
             if (!SupportedSourceTraits(card.MaskDescriptor!) ||
                 card.MaskDescriptor.BaseTraits.Any(trait => trait.RuntimeType is not (Trait or "CardTraitExhaustState") &&
+                    !(trait.RuntimeType == IgnoreArmor && IsOriginalInfernoPiercing(card.MaskDescriptor)) &&
                     !(SupportedUndyingSource(card.MaskDescriptor) && trait.RuntimeType == "CardTraitScalingAddStatusEffect") &&
                     !(SupportedWurmkinSpikeSource(card.MaskDescriptor) && trait.RuntimeType == "CardTraitScalingAddStatusEffect") &&
                     !(SupportedMoonbeamSource(card.MaskDescriptor) && trait.RuntimeType == CardEffectApplicationsModel.Trait) &&

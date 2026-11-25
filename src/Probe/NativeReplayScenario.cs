@@ -605,8 +605,8 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalFirstCardCostScenario.Enabled && !OriginalFirstCardCostScenario.Acquired)
                         OriginalFirstCardCostScenario.AcquireBeforeBattle(managers!, log);
 #if DEVELOPMENT_PROBE
-                    if (fullBattle && OriginalDiscountedFlickerWitness.Enabled && !OriginalFirstCardCostScenario.Acquired)
-                        OriginalDiscountedFlickerWitness.Prepare(managers!, log);
+                    if (fullBattle && OriginalDiscountedSpellCopyWitness.Enabled && !OriginalFirstCardCostScenario.Acquired)
+                        OriginalDiscountedSpellCopyWitness.Prepare(managers!, log);
 #endif
                     if (fullBattle && OriginalRebalanceValorScenario.Enabled && !OriginalRebalanceValorScenario.Acquired)
                         OriginalRebalanceValorScenario.AcquireBeforeBattle(managers!, log);
@@ -1357,15 +1357,15 @@ namespace MonsterTrain2Poju.Probe
                     Finish(true, "Original hand and Ember component captured.");
                 return;
             }
-            if (fullBattle && OriginalDiscountedFlickerWitness.Enabled)
+            if (fullBattle && OriginalDiscountedSpellCopyWitness.Enabled)
             {
                 if (combat!.IsPlacementPhase)
                 {
                     save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
                     AdvanceTurn(combat, record: false);
                 }
-                else if (OriginalDiscountedFlickerWitness.Tick(FullBattleTrace.Active!, managers))
-                    Finish(true, "Original discounted Flicker captured.");
+                else if (OriginalDiscountedSpellCopyWitness.Tick(FullBattleTrace.Active!, managers))
+                    Finish(true, OriginalDiscountedSpellCopyWitness.CompletionMessage);
                 return;
             }
             if (fullBattle && OriginalEntropyDrawWitness.Enabled)

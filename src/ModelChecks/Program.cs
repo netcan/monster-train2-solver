@@ -147,10 +147,10 @@ if (args.Length is 2 or 3 && args[0] == "--original-fecundity-oncast-only" &&
     OriginalFullCostReductionChecks.NativeCast(observation.RootElement, observeOnly: args.Length == 3);
     return;
 }
-if (args.Length == 2 && args[0] == "--original-discounted-flicker-only")
+if (args.Length == 2 && args[0] is "--original-discounted-flicker-only" or "--original-discounted-inferno-only")
 {
     using var observation = ModelJson.ReadFixture(args[1]);
-    OriginalDiscountedFlickerChecks.Native(observation.RootElement);
+    OriginalDiscountedSpellCopyChecks.Native(observation.RootElement, inferno: args[0] == "--original-discounted-inferno-only");
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--original-full-cost-reduction-only")
