@@ -157,7 +157,7 @@
 | RelicEffectShuffleUnitsEndOfTurn | shared-path | Original two-unit and three-unit captures compare deployment and the first ordinary EndTurn, per-team Battle RNG, positions and ordered callbacks. After a shuffle the native room refresh compacts both teams. The original whole battle matches 18 plays, six EndTurns, 49 room stages, 11 train stages and both frontiers. Additional turn-end or floor-rearrangement relic callbacks retain the compatibility guard. |
 | RelicEffectSpawnMonsterOnTurnStart | shared-path | Both original mutators use the ordered after-draw callback. The current native wins record five Follower births and fifteen Morsel births, including the settled deployment callbacks, physical groups and Battle RNG. Exact successors, sixteen branches, all recorded frontiers and equal serial and parallel search and plan replay pass. The original CultLeader and Lonely Rooms combination additionally retries two full floors before a birth and skips an empty disabled floor without a birth. Both Battle RNG transitions match. A combined CultLeader and Echoes Morsels native win observes ten owner-ordered callbacks with twenty births. Each second callback inherits the first callback's Battle RNG, and five EndTurns replay exactly. |
 | RelicEffectSubstituteTreasureUnitOnSpawn | shared-path | The three original Class routes fix the collector tier at Rings 2, 4 and 7. The indexed candidate projection retains native substitution provenance. Exact spawned successors cover each tier's attributes, physical slot, treasure counter and Spawning RNG. |
-| RelicEffectSuppressHandDiscard | shared-path | The original HandDoesntDiscard custom run and same-seed stock control both discard during deployment. On the next ordinary turn the owner keeps two unplayed cards in order after three new draws. The two paid actions and four EndTurns match complete successors and RNG. Combined Ephemeral cleanup requires its own witness. |
+| RelicEffectSuppressHandDiscard | shared-path | The original HandDoesntDiscard custom run and same-seed stock control both discard during deployment. On the next ordinary turn the owner keeps two unplayed cards in order after three new draws. Separate original Pyre Attack and Entropy Scourge witnesses move each Ephemeral card to the discard buffer. Entropy Scourge deals three Pyre damage before that move with no discard or purge callback. Complete successors and RNG match. |
 | RelicEffectTowerDamageDealtModified | shared-path | The exact original seven-effect owner adds ten to the shared Pyre attack query. The authored base 45, native query 55 and refreshed combat attack 55 match during deployment and turn one. The original whole battle passes 21 plays, seven EndTurns and both frontiers. The scope covers this owner's unconditional Pyre effect. |
 | RelicEffectTrainRoomAttachmentsAlwaysEmbedded | shared-path | A paid original attachment and the first-room replication relic install one embedded attachment and four extra capacity on each of three floors. Full successor and RNG match. The original effect test and model both reject subsequent primary replacement on all three floors. |
 | RelicEffectUpgradeCardOnPurchasingUpgrade | input-only | Native DeckScreen.SetupRelicDataModes uses RelicManager.GetAdditionalCardUpgrades for Merchant or StoryEvent screens. The resulting permanent modifiers are captured on cards entering battle. |
@@ -195,10 +195,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `a220518d930f4b2d6a60e126fb344b5c81a0dd8b36cc94b68bca7fd2abd91ae4`。
-- Model: PDB 校验过的项目源码集合 `0fd8cc4a6198c439ae9712a954e215d26f64df179912bcdc68e19bbdaca4387d`。
-- Probe: PDB 校验过的项目源码集合 `31412ba4a22cae563f3e44d2fcb573e29df0cc3836f0573279a4e7a733656cee`。
-- ModelChecks: PDB 校验过的项目源码集合 `c26157fa4f874588b4f1893d3127c9bd26d60c840f12b4dcc1e0b3b5ef95be82`。
+- 人工审查索引 SHA-256: `0fad5805bd18ca7510ffa6627e4f79643465cffd82e34a4f645ae6be76087362`。
+- Model: PDB 校验过的项目源码集合 `7a62f145565d2340092bc67b9f4fb4fcc5de2e8d5589bf67e9a5e9b799ecd8da`。
+- Probe: PDB 校验过的项目源码集合 `3c93d89e468061d9334f9670d515912ed43bd8fafa4b7d6aafa2aeba1a65da05`。
+- ModelChecks: PDB 校验过的项目源码集合 `967fb2cc3c6b4dea6a246e225c04533509e3ff9eceb7ae86a70da0ccbb07d5b1`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
