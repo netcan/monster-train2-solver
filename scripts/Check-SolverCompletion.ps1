@@ -33,6 +33,13 @@ try {
     dotnet $checks --atomic-advice-budget-only tests/fixtures/planning/search/advisor-atomic-budget-failure.mt2f
     if ($LASTEXITCODE -ne 0) { throw 'Advice budget acceptance failed.' }
     $current = 'tests/compatibility/game-2.3.1/mechanics'
+    dotnet $checks --battle-search-only "$current/affordable-nonplayable/affordable-nonplayable.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Native bounded search cancellation and pruning failed.' }
+    $handAndEmber = "$current/hand-and-ember"
+    foreach ($handArchive in @('ephemeral.mt2f', 'ephemeral-scourge.mt2f')) {
+        dotnet $checks --native-hand-and-ember-ephemeral-only "$handAndEmber/$handArchive"
+        if ($LASTEXITCODE -ne 0) { throw "Original Ephemeral cleanup under hand retention failed: $handArchive" }
+    }
     $offeringToken = "$current/controlled-isolated-spells"
     foreach ($offeringArchive in @('offering-token.mt2f', 'offering-token-discard-drawn.mt2f')) {
         dotnet $checks --offering-token-frontier-only "$offeringToken/$offeringArchive"
