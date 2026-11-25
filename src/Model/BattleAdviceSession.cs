@@ -394,8 +394,14 @@ namespace MonsterTrain2Poju.Model
             if (plan.TurnsCompleted != plan.Steps.Count(step => step.IsEndTurn))
                 throw new InvalidOperationException("Advice turn count differs from its EndTurn steps.");
             bool terminal = plan.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
-            if (plan.CompletedHorizon && !plan.SearchedToBattleEnd && !terminal && plan.TurnsCompleted != plan.RequestedTurns)
-                throw new InvalidOperationException("Completed ordinary advice must reach the requested turns.");
+            if (plan.CompletedHorizon && !plan.SearchedToBattleEnd)
+            {
+                if (plan.RequestedTurns > 0 && (plan.TurnsCompleted > plan.RequestedTurns ||
+                    plan.TurnsCompleted == plan.RequestedTurns && !plan.Steps[plan.Steps.Count - 1].IsEndTurn))
+                    throw new InvalidOperationException("Ordinary advice exceeds the requested turns.");
+                if (!terminal && plan.TurnsCompleted != plan.RequestedTurns)
+                    throw new InvalidOperationException("Completed ordinary advice must reach the requested turns.");
+            }
             if (plan.UsedShorterHorizon && (plan.CompletedHorizon || plan.TurnsCompleted < 1 ||
                 plan.TurnsCompleted >= plan.RequestedTurns || (!plan.TimedOut && !plan.ReachedNodeLimit && !plan.ReachedStepLimit) ||
                 plan.PolicyBaselineScore.HasValue || !plan.Steps[plan.Steps.Count - 1].IsEndTurn || terminal))

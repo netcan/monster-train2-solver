@@ -44,11 +44,34 @@ internal static class ExactBattleChecks
             "The exact two-turn plan failed independent replay or changed its root.");
         var native = turns[1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         RecordedBattleChecks.Compare(replay, native, terminal: true, "Exact Tenacious terminal");
+        BattleAdviceSession.Verify(root, OrdinaryAdvice(2));
+        BattleAdviceSession.Verify(root, OrdinaryAdvice(3));
+        RejectBeyondHorizon(OrdinaryAdvice(1));
+        BattleTurnResult firstEndTurn = BattleTurnModel.EndTurn(root);
+        Require(firstEndTurn.Supported && firstEndTurn.Outcome == RoomOutcome.Exchanged,
+            "Expected the recorded nonterminal first turn.");
+        SupportedActionCandidate nextTurnPlay = BattleActionModel.EnumerateActions(firstEndTurn.State!).SupportedCandidates.First();
+        var extraPlay = new BattlePlanResult(nextTurnPlay.Result.State!, nextTurnPlay.Result.Outcome,
+            [new BattleSearchStep(null, true), new BattleSearchStep(nextTurnPlay.Action, false)],
+            BattlePlanner.Evaluate(nextTurnPlay.Result.State!, nextTurnPlay.Result.Outcome), 1, 2, 0, 0, TimeSpan.Zero,
+            false, false, false, false, true, [], null, requestedTurns: 1);
+        RejectBeyondHorizon(extraPlay);
         Console.WriteLine($"EXACT-NATIVE-MULTI-TURN PASS turn={firstTurn} legalPlays={string.Join("/", legalPlays)} " +
             $"nodes={result.ExpandedNodes} duplicates={result.DuplicateStates} terminals={result.TerminalLeaves} " +
             $"steps={result.Steps.Count} score={result.Score} seconds={result.Elapsed.TotalSeconds:F3}");
 
         NativeParallelEndgame(directory);
+
+        BattlePlanResult OrdinaryAdvice(int requestedTurns) => new(result.State, result.Outcome, result.Steps,
+            result.Score, 2, result.ExpandedNodes, result.DuplicateStates, 0, result.Elapsed,
+            false, false, false, false, true, result.UnsupportedAttempts, null, requestedTurns);
+
+        void RejectBeyondHorizon(BattlePlanResult advice)
+        {
+            try { BattleAdviceSession.Verify(root, advice); }
+            catch (InvalidOperationException error) when (error.Message == "Ordinary advice exceeds the requested turns.") { return; }
+            throw new InvalidOperationException("An executable forecast went beyond a one-turn planning horizon.");
+        }
 
         static int LegalPlays(BattleTurnState state)
         {
