@@ -1223,6 +1223,10 @@ if ($OriginalEndlessEnemyScalingWitness) {
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
+    if ($EndlessEnemyScalingRing2LateBoss) {
+        $SettleCardAnimations = $true
+        $SettleDeathDissolves = $true
+    }
 }
 if ($OriginalRandomSpellTargetsWitness -or $OriginalRandomSpellTargetsBattle -or $OriginalRandomJustCauseWitness) {
     $witnessArguments = @('OriginalRandomSpellTargetsWitness', 'OriginalRandomSpellTargetsBattle', 'OriginalRandomJustCauseWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
