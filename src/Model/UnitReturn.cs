@@ -49,7 +49,10 @@ namespace MonsterTrain2Poju.Model
             if (points != null)
             {
                 SpawnPointReference? point = points.Units.FirstOrDefault(unit => unit.UnitId == targetId)?.Current;
-                if (!handSpace || target.Team != CombatTeam.Player || target.Health <= 0 || target.Statuses.Count > 0 ||
+                bool supportedStatuses = target.Statuses.Count == 0 ||
+                    (rule is { KeepTemporaryUpgrades: true, OverflowToDraw: true, ReturnEquipment: true } &&
+                    target.Statuses is [{ Id: "armor", DisplayCategory: "Persistent", MarkedForRemovalAfterCardPlayed: false }]);
+                if (!handSpace || target.Team != CombatTeam.Player || target.Health <= 0 || !supportedStatuses ||
                     point == null || point.RoomIndex != room.RoomIndex || point.Team != target.Team ||
                     point.PreviewCopyId.HasValue || point.OuterBossAnchor || context.Enchantments != null ||
                     context.RoomCapacities?.Any(floor => floor.RoomIndex == room.RoomIndex && floor.Attachments?.Count > 0) == true)

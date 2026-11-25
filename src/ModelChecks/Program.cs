@@ -153,6 +153,12 @@ if (args.Length == 2 && args[0] is "--original-discounted-flicker-only" or "--or
     OriginalDiscountedSpellCopyChecks.Native(observation.RootElement, inferno: args[0] == "--original-discounted-inferno-only");
     return;
 }
+if (args.Length == 2 && args[0] == "--original-armored-unit-recall-only")
+{
+    using var observation = ModelJson.ReadFixture(args[1]);
+    OriginalArmoredUnitRecallChecks.Native(observation.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--original-full-cost-reduction-only")
 {
     using var observation = ModelJson.ReadFixture(args[1]);

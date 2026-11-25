@@ -840,6 +840,7 @@ param(
     [switch] $OriginalFirstCardCost,
     [switch] $OriginalDiscountedFlicker,
     [switch] $OriginalDiscountedInferno,
+    [switch] $OriginalArmoredUnitRecall,
     [switch] $OriginalRebalanceValor,
     [switch] $OriginalNefariousOverflow,
     [switch] $OriginalUncontrolledGroup,
@@ -2442,6 +2443,16 @@ if ($OriginalDiscountedFlicker -or $OriginalDiscountedInferno) {
         'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (!$BinaryCapture -or $NativeWorker -lt 2 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'Original discounted spell copy requires a separate isolated first-battle binary capture.'
+    }
+    $PrimaryClan = 'Hellhorned'; $SecondaryClan = 'Awoken'
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleCardAnimations = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalArmoredUnitRecall) {
+    $allowed = @('OriginalArmoredUnitRecall', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+        'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if (!$BinaryCapture -or $NativeWorker -lt 2 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'Original armored unit recall requires a separate isolated first-battle binary capture.'
     }
     $PrimaryClan = 'Hellhorned'; $SecondaryClan = 'Awoken'
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleCardAnimations = $true
@@ -4433,6 +4444,7 @@ if ($OriginalSummonWithAvarice) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
 if ($OriginalFirstCardCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-first-spell-cost-per-deck-size' }
 if ($OriginalDiscountedFlicker -or $OriginalDiscountedInferno) { $environment['MT2_PROBE_DISCOUNTED_SPELL_COPY'] = $discountedSpell }
+if ($OriginalArmoredUnitRecall) { $environment['MT2_PROBE_ARMORED_UNIT_RECALL'] = '1' }
 if ($OriginalRebalanceValor) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rebalance-valor' }
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
 if ($OriginalUncontrolledGroup) { $environment['MT2_PROBE_MODIFIERS'] = 'original-uncontrolled-group' }
@@ -5823,6 +5835,14 @@ if ($OriginalDiscountedFlicker -or $OriginalDiscountedInferno) {
         -not (Select-String -LiteralPath $unityLog -Pattern "DEPTH-PASS Original discounted $discountedSpell captured" -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "Original discounted $discountedSpell capture failed. Inspect $unityLog" }
     Write-Output "NATIVE-DISCOUNTED-$($discountedSpell.ToUpperInvariant()) PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalArmoredUnitRecall) {
+    $capturePath = Join-Path $profile 'armored-unit-recall.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original armored unit recall captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original armored unit recall capture failed. Inspect $unityLog" }
+    Write-Output "NATIVE-ARMORED-UNIT-RECALL PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalFullCostReduction) {

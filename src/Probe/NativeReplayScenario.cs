@@ -1368,6 +1368,13 @@ namespace MonsterTrain2Poju.Probe
                     Finish(true, OriginalDiscountedSpellCopyWitness.CompletionMessage);
                 return;
             }
+            if (fullBattle && OriginalArmoredUnitRecallWitness.Enabled)
+            {
+                if (OriginalArmoredUnitRecallWitness.Tick(FullBattleTrace.Active!, managers,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original armored unit recall captured.");
+                return;
+            }
             if (fullBattle && OriginalEntropyDrawWitness.Enabled)
             {
                 var next = OriginalEntropyDrawWitness.Tick(FullBattleTrace.Active!, managers);
