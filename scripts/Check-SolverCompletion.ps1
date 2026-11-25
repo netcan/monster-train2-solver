@@ -44,6 +44,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Original first-Spell discount and Flicker copy replay failed.' }
     dotnet $checks --original-discounted-inferno-only "$current/discounted-inferno/native-cast.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original first-Spell discount and Inferno copy replay failed.' }
+    dotnet $checks --original-armored-unit-recall-only "$current/armored-unit-recall/native-cast.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original Magnetic Relay armored recall and redeployment failed.' }
     $offeringToken = "$current/controlled-isolated-spells"
     foreach ($offeringArchive in @('offering-token.mt2f', 'offering-token-discard-drawn.mt2f')) {
         dotnet $checks --offering-token-frontier-only "$offeringToken/$offeringArchive"
