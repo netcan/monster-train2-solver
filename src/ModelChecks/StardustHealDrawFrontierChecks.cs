@@ -62,6 +62,19 @@ internal static class StardustHealDrawFrontierChecks
         Require(direct.Supported && keys.Key(direct.State!) == actualKey &&
             keys.Key(choices[drawn].Result.State!) == actualKey,
             "Direct and enumerated Stardust plays must match the complete native successor and RNG.");
+        int absentEffectIndex = rule.Effects.Count + rule.OnCastEffects.Count;
+        var strayCardChoice = new PlayCardAction(recorded.CardInstanceId, recorded.RoomIndex, recorded.PlayerPosition,
+            recorded.TargetUnitId, recorded.ActivatorUnitId, recorded.TargetSpawnPointIndex,
+            [selection, new CardRecursionSelection(absentEffectIndex, [drawn])],
+            recorded.MixSelections, recorded.ActivatorRoomIndex, recorded.Operation, recorded.SummonSelections);
+        var strayMixChoice = new PlayCardAction(recorded.CardInstanceId, recorded.RoomIndex, recorded.PlayerPosition,
+            recorded.TargetUnitId, recorded.ActivatorUnitId, recorded.TargetSpawnPointIndex,
+            recorded.RecursionSelections, [new ElixirMixSelection(absentEffectIndex, 0, 0)],
+            recorded.ActivatorRoomIndex, recorded.Operation, recorded.SummonSelections);
+        Require(!BattleActionModel.PlayCard(before, strayCardChoice).Supported,
+            "Replay must reject an extra card choice with no resolved effect.");
+        Require(!BattleActionModel.PlayCard(before, strayMixChoice).Supported,
+            "Replay must reject an extra Mix choice with no resolved effect.");
         var alternate = choices[held];
         var replay = BattleActionModel.PlayCard(before, alternate.Action);
         Require(replay.Supported && replay.Outcome == alternate.Result.Outcome &&

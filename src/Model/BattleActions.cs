@@ -523,6 +523,11 @@ namespace MonsterTrain2Poju.Model
                 playingInstance?.MaskDescriptor?.RandomTargetsFromRelic != true)
                 return Unsupported("Random spell targeting requires the settled native hand mutation.");
             var choiceEffects = rule.Effects.Concat(rule.OnCastEffects).ToArray();
+            string? selectionError = CardRecursionModel.ValidateSelections(choiceEffects, action.RecursionSelections);
+            if (selectionError != null) return Unsupported(selectionError);
+            // Mix inputs are consumed by the main cast. OnCast has no Mix input route.
+            if (action.MixSelections.Any(selection => selection.EffectIndex >= rule.Effects.Count))
+                return Unsupported("Mix requires one captured draft choice per effect and repetition.");
             if (action.SummonSelections.Any(selection => selection.EffectIndex < 0 || selection.EffectIndex >= choiceEffects.Length ||
                 choiceEffects[selection.EffectIndex].Type != "SummonChoice" || string.IsNullOrEmpty(selection.CardDataId)) ||
                 action.SummonSelections.GroupBy(selection => selection.EffectIndex).Any(group => group.Count() != 1))
@@ -958,7 +963,7 @@ namespace MonsterTrain2Poju.Model
                 TrainSpellResult result = CardSpellModel.ApplyForCardPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
                     card.InstanceId, source.PlayRules, piles, recursionSelections: action.RecursionSelections
                         .Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
-                    mixSelections: action.MixSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
+                    mixSelections: action.MixSelections,
                     summonSelections: action.SummonSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
                     observeCardChoice: observeCardChoice);
                 if (!result.Supported) return result.IllegalChoice ? Illegal(result.UnsupportedReason!) : Unsupported(result.UnsupportedReason!);
