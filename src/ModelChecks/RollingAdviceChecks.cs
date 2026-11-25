@@ -195,9 +195,8 @@ internal static class RollingAdviceChecks
         string rank = entitlement.GetProperty("RankId").GetString()!;
         string checkpoint = entitlement.GetProperty("CheckpointSha256").GetString()!;
         Require(entitlement.GetProperty("Installed").GetBoolean() && entitlement.GetProperty("EnabledInRun").GetBoolean() &&
-            champion == "c58f8d77-8578-4d97-bcf1-beb4cdbe2f27" && entitlement.GetProperty("Rank").GetInt32() is >= 1 and <= 3 &&
-            Guid.TryParseExact(ability, "D", out Guid abilityId) && abilityId != Guid.Empty &&
-            Guid.TryParseExact(rank, "D", out Guid rankId) && rankId != Guid.Empty &&
+            champion == "c58f8d77-8578-4d97-bcf1-beb4cdbe2f27" &&
+            OriginalSummonChoiceChecks.MatchesGrimFlightRank(entitlement.GetProperty("Rank").GetInt32(), rank, ability) &&
             checkpoint.Length == 64 && checkpoint.All(Uri.IsHexDigit),
             "The original DLC, champion and checkpoint provenance is missing.");
 

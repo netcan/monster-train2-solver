@@ -64,7 +64,6 @@ internal static class PunishedChampionDefinitionChecks
                 Items(row.GetProperty("Rule"), "ExternalInteractions").Select(item => item.GetString()).SequenceEqual(new[] { "Upgrade room modifiers" }),
                 "Original room modifier or its explicit projection boundary changed.");
         }
-        string[] abilities = { "2160ff0b-3d1f-4d77-97e0-26b5df37590e", "c0d006a1-ed15-45ff-bb51-7664a8c4f11c", "24daf0a7-40fd-4f15-b6d1-60522568cad4" };
         string[][] tokens = {
             new[] { "6c3eb0bb-4871-438d-9b5c-fcef1f94bf70", "c847d9b0-5af4-4076-9d99-111b81224ef5", "0127e3c2-b60d-4ac3-acf7-6395d44eb5ef" },
             new[] { "983495d0-11cb-49d7-9f3e-8531c6f18676", "841340c7-76e3-4336-b8a2-41f308a787fb", "491acbc6-c766-4ecf-8b10-6c51b5ae94e5" },
@@ -72,8 +71,14 @@ internal static class PunishedChampionDefinitionChecks
         };
         for (int rank = 0; rank < 3; rank++)
         {
-            Require(Text(upgrades["Punished1Path3" + (char)('a' + rank)], "Ability") == abilities[rank], "GrimFlight upgrade link changed.");
-            var card = cards[abilities[rank]]; var effects = Items(card, "Effects");
+            var upgrade = upgrades["Punished1Path3" + (char)('a' + rank)];
+            string? upgradeId = Text(upgrade, "Id");
+            string? abilityId = Text(upgrade, "Ability");
+            int recordedRank = upgrade.GetProperty("Rank").GetInt32();
+            Require(OriginalSummonChoiceChecks.MatchesGrimFlightRank(recordedRank, upgradeId, abilityId) &&
+                !OriginalSummonChoiceChecks.MatchesGrimFlightRank(recordedRank % 3 + 1, upgradeId, abilityId),
+                "GrimFlight must match the captured rank and reject the same upgrade and ability under another rank.");
+            var card = cards[abilityId!]; var effects = Items(card, "Effects");
             Require(card.GetProperty("IsUnitAbility").GetBoolean() && !card.GetProperty("AppearsInLogbook").GetBoolean() &&
                 effects.Length == 2 && Text(effects[0], "Type") == "CardEffectUnitAbilityTeleport" &&
                 Text(effects[1], "Type") == "CardEffectChooseMonsterToSpawnInBack" && Text(effects[1], "Target") == "Room" &&

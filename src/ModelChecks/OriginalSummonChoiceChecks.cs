@@ -4,6 +4,16 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalSummonChoiceChecks
 {
+    private static readonly (string UpgradeId, string AbilityId)[] GrimFlightRanks =
+    [
+        ("823ab526-9cfe-4383-9e17-a033d49a7fa9", "2160ff0b-3d1f-4d77-97e0-26b5df37590e"),
+        ("6b9e1108-af4e-468f-a912-48853b0f0413", "c0d006a1-ed15-45ff-bb51-7664a8c4f11c"),
+        ("3de67996-0562-41ce-b892-1cedabf0bffc", "24daf0a7-40fd-4f15-b6d1-60522568cad4")
+    ];
+
+    internal static bool MatchesGrimFlightRank(int rank, string? upgradeId, string? abilityId) =>
+        rank >= 1 && rank <= GrimFlightRanks.Length && GrimFlightRanks[rank - 1] == (upgradeId, abilityId);
+
     private static void Require(bool condition, string reason) => TrueFinalBossChecks.Require(condition, reason);
     internal static void Native(string path, bool searchOnly = false, bool repeatedSearchOnly = false)
     {
@@ -18,15 +28,14 @@ internal static class OriginalSummonChoiceChecks
         if (searchOnly) { SelectionSearch(root); return; }
         var definitions = root.GetProperty("OriginalSummonChoiceDefinitions");
         Require(definitions.GetProperty("Profile").GetString() == "installed-control", "Missing explicit isolated DLC input.");
-        string[] upgradeIds = { "823ab526-9cfe-4383-9e17-a033d49a7fa9", "6b9e1108-af4e-468f-a912-48853b0f0413", "3de67996-0562-41ce-b892-1cedabf0bffc" };
         var upgrades = definitions.GetProperty("Upgrades").EnumerateArray().ToArray();
-        Require(upgrades.Length == 3 && upgrades.Select(row => row.GetProperty("Id").GetString()).SequenceEqual(upgradeIds), "Original Flight upgrade identities changed.");
-        string[] abilityIds = { "2160ff0b-3d1f-4d77-97e0-26b5df37590e", "c0d006a1-ed15-45ff-bb51-7664a8c4f11c", "24daf0a7-40fd-4f15-b6d1-60522568cad4" };
+        Require(upgrades.Length == GrimFlightRanks.Length, "Original GrimFlight rank count changed.");
         var abilities = upgrades.Select(row => row.GetProperty("Ability").Deserialize<CardPlayRule>()!).ToArray();
         for (int rank = 0; rank < 3; rank++)
         {
             var rule = abilities[rank];
-            Require(rule.DataId == abilityIds[rank] && rule.ExternalInteractions.Count == 0 && rule.Effects.Count == 2 &&
+            Require(MatchesGrimFlightRank(rank + 1, upgrades[rank].GetProperty("Id").GetString(), rule.DataId) &&
+                rule.ExternalInteractions.Count == 0 && rule.Effects.Count == 2 &&
                 rule.Effects[0].Type == "AbilityTeleport" && rule.Effects[1] is { Type: "SummonChoice", Target: "Room",
                     SummonChoice: { Count: 3, OnePerFloorSubtype: "SubtypesData_Darkshard", CardlessStatus.Id: "cardless" } },
                 "Original teleport/choice definition changed at rank " + rank);
@@ -53,7 +62,7 @@ internal static class OriginalSummonChoiceChecks
                 var before = Before(index); var actual = After(index); var rule = abilities[rank].Effects[1].SummonChoice!;
                 string expectedId = rule.Pool[choice].CardDataId;
                 Require(action.SummonSelections is [{ EffectIndex: 1 }] && action.SummonSelections[0].CardDataId == expectedId &&
-                    before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!.DataId == abilityIds[rank], "Original selected skill/fragment differs.");
+                    before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!.DataId == abilities[rank].DataId, "Original selected skill/fragment differs.");
                 var draft = drafts[rank * 3 + choice];
                 Require(draft.GetProperty("Cards").Deserialize<string[]>()!.SequenceEqual(rule.Pool.Select(card => card.CardDataId)) &&
                     draft.GetProperty("Choice").GetString() == expectedId, "Actual native dialog differs from ordered pool/selection.");
