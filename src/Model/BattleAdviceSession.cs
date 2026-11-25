@@ -300,8 +300,9 @@ namespace MonsterTrain2Poju.Model
                             throw new InvalidOperationException(retained == null ? "Captured state differs from its full-state key." :
                                 "Captured state differs from the retained continuation.");
                     }
-                    bool browsed = observations.Any(item => item.Root == null);
-                    VerifiedAdviceContinuation? matched = retained?.MatchObserved(root, observations, browsed ? key : null);
+                    VerifiedAdviceContinuation? matched = retained?.MatchObserved(root, observations);
+                    if (matched != null && !matched.MatchesFullRoot(key))
+                        matched = SelectionAdviceReuse.ReplayMatched(matched, root, token);
                     bool exhaustedTurn = candidate != null && ConsumedFinalTurn(candidate, root);
                     if (matched == null && candidate != null && !exhaustedTurn && !SelectionAdviceReuse.SameBattle(candidate.Root, root))
                         matched = SelectionAdviceReuse.MatchAfterObservations(candidate, observations, root, token);

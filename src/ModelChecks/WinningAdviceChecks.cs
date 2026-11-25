@@ -56,8 +56,16 @@ internal static class WinningAdviceChecks
                     advice.Plan.TurnsCompleted == steps.Skip(index).Count(step => step.IsEndTurn) &&
                     ReferenceEquals(advice.Root, state) && advice.RootKey == Key(state) && session.Generation > generation,
                     "A native successor lost its independently verified winning continuation at step " + index);
-                Require(advice.Plan.PolicyBaselineScore == null && Key(advice.Plan.State) == Key(plan.State),
-                    "Continuation retained a root-specific baseline or changed its proven final state.");
+                Require(advice.Plan.PolicyBaselineScore == null, "Continuation retained a root-specific baseline.");
+                if (index == 1)
+                {
+                    BattleTurnState replayed = BattlePlannerChecks.Replay(state, advice.Plan.Steps, out RoomOutcome outcome);
+                    Require(outcome == advice.Plan.Outcome && Key(advice.Plan.State) == Key(replayed),
+                        "Continuation claimed the old final preview allocator after the native prefix.");
+                }
+                using var continuationKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+                Require(continuationKeys.Key(advice.Plan.State) == continuationKeys.Key(plan.State),
+                    "Continuation changed its proven gameplay outcome.");
             }
             session.InvalidateForInput();
             session.Observe(native.Last(), Key(native.Last())); Pump(session, BattleAdviceStatus.Unavailable);

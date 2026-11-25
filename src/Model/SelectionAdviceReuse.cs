@@ -68,6 +68,11 @@ namespace MonsterTrain2Poju.Model
                 advice.Continuation, advice.SelectionCache, key);
         }
 
+        // A normalized prefix can identify the same gameplay after extra native
+        // previews. Replay from the observed allocator to publish an exact state.
+        internal static VerifiedAdviceContinuation? ReplayMatched(VerifiedAdviceContinuation matched, BattleTurnState root,
+            CancellationToken token) => Replay(matched.Remaining(), root, true, token, out _, out var proof, matched) ? proof : null;
+
         // Called after an actual input, never by a floor-view event. Reproduce
         // every recorded native selection callback before matching the next
         // complete decision/RNG against the original line's prefixes.

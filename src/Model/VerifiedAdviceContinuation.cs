@@ -20,6 +20,7 @@ namespace MonsterTrain2Poju.Model
         internal int ReusedVerifiedSteps { get; }
         internal bool SamePosition(VerifiedAdviceContinuation other) =>
             ReferenceEquals(original, other.original) && offset == other.offset;
+        internal bool MatchesFullRoot(string key) => fullRoots[offset] == key;
         internal static bool CanRetain(BattlePlanResult plan) => plan.Steps.Count > 0 &&
             plan.Outcome is RoomOutcome.Exchanged or RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
 
@@ -90,7 +91,7 @@ namespace MonsterTrain2Poju.Model
         // Do not let recorded view callbacks replace that stronger proof, but
         // reject any observed intermediate state outside the verified suffix.
         internal VerifiedAdviceContinuation? MatchObserved(BattleTurnState state,
-            IReadOnlyList<SelectionAdviceReuse.Observation> observations, string? requiredFullKey)
+            IReadOnlyList<SelectionAdviceReuse.Observation> observations)
         {
             using var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
             VerifiedAdviceContinuation? matched = this;
@@ -100,11 +101,7 @@ namespace MonsterTrain2Poju.Model
                 matched = matched.MatchKey(keys.Key(observation.Root));
                 if (matched == null) return null;
             }
-            matched = matched.MatchKey(keys.Key(state));
-            if (matched == null || requiredFullKey == null) return matched;
-            // Otherwise use selection replay to update the full final snapshot
-            // when even the unused preview allocator differs after browsing.
-            return matched.fullRoots[matched.offset] == requiredFullKey ? matched : null;
+            return matched.MatchKey(keys.Key(state));
         }
 
         private VerifiedAdviceContinuation? MatchKey(string key)
