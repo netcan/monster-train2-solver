@@ -1605,6 +1605,9 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 首次结束回合的玩家版归档核对了 6 次付费出牌、第一次结束回合与 5 名缩放后的敌人。顾问在首波出现后复用了后续 10 步，搜索次数保持为 1。该归档已接入阶段验收。
 [玩家版首回合交接归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-advisor-first-end-turn.mt2f)
 
+第六环原版战役归档记录了三名 Lady of the House 的 994 次实际攻击力查询。模型与原版查询逐项一致，每层燃尽增加 5 攻击。相同战斗的 41 次出牌和 7 次结束回合也已通过定向复放。
+[原版查询与整战归档](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/native-moon-remnant-sixth-battle-defeat.mt2f)
+
 三阶原版 Silver 灵魂的薪火升级由 `SaveManager.BattleComplete` 在战斗终局快照之后调用，
 同一灵魂的额外奖励在战后生成。顾问识别原版灵魂和完整有序效果列表，并在下一场读取薪火的实际数值。
 Silver T1、T2、T3 分别用两份真实胜局后的隔离存档调用原版调度器。三阶各观察到一次生命分支和一次攻击分支，

@@ -137,6 +137,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Native advisor presentation acceptance failed.' }
     dotnet $checks --original-endless-loop2-advisor-first-end-turn-only "$current/endless-enemy-scaling/native-controlled-loop2-advisor-first-end-turn.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Native Endless Loop 2 advice handoff through the first EndTurn failed.' }
+    dotnet $checks --original-lady-ephemeral-attack-only "$current/player-advisor-rolling/native-moon-remnant-sixth-battle-defeat.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original Lady of the House Burnout attack scaling failed.' }
     $persistentHealth = "$current/persistent-monster-health/campaign"
     dotnet $checks --native-persistent-monster-hp-campaign-only "$persistentHealth/campaign-battle-replay.mt2f" `
         "$persistentHealth/persistent-monster-hp-campaign-checkpoint.mt2f" "$persistentHealth/persistent-monster-hp-campaign-reload.mt2f"
