@@ -147,6 +147,12 @@ if (args.Length is 2 or 3 && args[0] == "--original-fecundity-oncast-only" &&
     OriginalFullCostReductionChecks.NativeCast(observation.RootElement, observeOnly: args.Length == 3);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-discounted-flicker-only")
+{
+    using var observation = ModelJson.ReadFixture(args[1]);
+    OriginalDiscountedFlickerChecks.Native(observation.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--original-full-cost-reduction-only")
 {
     using var observation = ModelJson.ReadFixture(args[1]);

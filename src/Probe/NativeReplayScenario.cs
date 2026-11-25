@@ -604,6 +604,10 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCheaperSpellCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalFirstCardCostScenario.Enabled && !OriginalFirstCardCostScenario.Acquired)
                         OriginalFirstCardCostScenario.AcquireBeforeBattle(managers!, log);
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalDiscountedFlickerWitness.Enabled && !OriginalFirstCardCostScenario.Acquired)
+                        OriginalDiscountedFlickerWitness.Prepare(managers!, log);
+#endif
                     if (fullBattle && OriginalRebalanceValorScenario.Enabled && !OriginalRebalanceValorScenario.Acquired)
                         OriginalRebalanceValorScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Acquired)
@@ -1351,6 +1355,17 @@ namespace MonsterTrain2Poju.Probe
                 if (next == OriginalHandAndEmberWitness.Step.EndTurn) AdvanceTurn(combat!, record: false);
                 else if (next == OriginalHandAndEmberWitness.Step.Complete)
                     Finish(true, "Original hand and Ember component captured.");
+                return;
+            }
+            if (fullBattle && OriginalDiscountedFlickerWitness.Enabled)
+            {
+                if (combat!.IsPlacementPhase)
+                {
+                    save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
+                    AdvanceTurn(combat, record: false);
+                }
+                else if (OriginalDiscountedFlickerWitness.Tick(FullBattleTrace.Active!, managers))
+                    Finish(true, "Original discounted Flicker captured.");
                 return;
             }
             if (fullBattle && OriginalEntropyDrawWitness.Enabled)

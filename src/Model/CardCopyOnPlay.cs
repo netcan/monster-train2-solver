@@ -243,7 +243,7 @@ namespace MonsterTrain2Poju.Model
                 "CardTraitSelfPurge" or "CardTraitPersistent" or "CardTraitInfusion" or
                 "CardTraitScalingAddCards" or "CardTraitScalingAddEnergy" or CardRetainModel.Trait or CardMoonUpgradeModel.Trait))
                 return "Copy-on-play combined discard callbacks require native ordering calibration.";
-            if (card.Temporary.Upgrades.Any(upgrade => upgrade.RemoveOnDiscard))
+            if (card.Temporary.Upgrades.Any(upgrade => upgrade.RemoveOnDiscard && !RelicFirstCardCostModel.IsDiscountUpgrade(upgrade)))
                 return "Copy-on-play with discard-removing temporary upgrades requires native ordering calibration.";
             int consumeIndex = Array.FindIndex(active, trait => trait.RuntimeType == "CardTraitExhaustState");
             if (consumeIndex >= Array.FindIndex(active, trait => trait.RuntimeType == Trait) &&

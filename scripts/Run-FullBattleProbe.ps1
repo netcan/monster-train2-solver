@@ -838,6 +838,7 @@ param(
     [switch] $OriginalEarlyDiscardEnergy,
     [switch] $OriginalCheaperSpellCost,
     [switch] $OriginalFirstCardCost,
+    [switch] $OriginalDiscountedFlicker,
     [switch] $OriginalRebalanceValor,
     [switch] $OriginalNefariousOverflow,
     [switch] $OriginalUncontrolledGroup,
@@ -2434,6 +2435,16 @@ if ($OriginalExtraFeedTrigger) { $BranchCardMasks = $true; $Policy = 'units-and-
 if ($OriginalSummonWithAvarice) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFirstCardCost) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($OriginalDiscountedFlicker) {
+    $allowed = @('OriginalDiscountedFlicker', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+        'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if (!$BinaryCapture -or $NativeWorker -lt 2 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'Original discounted Flicker requires a separate isolated first-battle binary capture.'
+    }
+    $PrimaryClan = 'Hellhorned'; $SecondaryClan = 'Awoken'
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleCardAnimations = $true
+    $Policy = 'units-spells-and-junk'
+}
 if ($OriginalRebalanceValor) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDominionMothersRemnantWitness) {
@@ -4419,6 +4430,7 @@ if ($OriginalExtraFeedTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalSummonWithAvarice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-summon-with-avarice' }
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
 if ($OriginalFirstCardCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-first-spell-cost-per-deck-size' }
+if ($OriginalDiscountedFlicker) { $environment['MT2_PROBE_DISCOUNTED_FLICKER'] = '1' }
 if ($OriginalRebalanceValor) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rebalance-valor' }
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
 if ($OriginalUncontrolledGroup) { $environment['MT2_PROBE_MODIFIERS'] = 'original-uncontrolled-group' }
@@ -5801,6 +5813,14 @@ if ($OriginalFecundityOnCast) {
         (Get-OriginalSignature) -cne $originalBefore) { throw "Original Fecundity paid cast observation failed; inspect $unityLog" }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         Cases=1; Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } | ConvertTo-Json
+    return
+}
+if ($OriginalDiscountedFlicker) {
+    $capturePath = Join-Path $profile 'discounted-flicker.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original discounted Flicker captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original discounted Flicker capture failed. Inspect $unityLog" }
+    Write-Output "NATIVE-DISCOUNTED-FLICKER PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalFullCostReduction) {

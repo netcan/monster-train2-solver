@@ -19,6 +19,16 @@ namespace MonsterTrain2Poju.Model
         internal const string DataId = "64d9943e-02e7-469d-b516-c483a3ad8ccf";
         internal const string AssetKey = "ReduceFirstSpellCostPerDeckSize";
 
+        internal static bool IsDiscountUpgrade(CardUpgradeModifier upgrade) =>
+            upgrade.DataId == Effect && upgrade.Unique && upgrade.ExcludeFromClones && upgrade.RemoveOnDiscard &&
+            upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.Stats.Cost <= 0 &&
+            upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 && upgrade.Stats.XCost >= 0 &&
+            upgrade.Stats.XCost == -upgrade.Stats.Cost && upgrade.Stats.EquipmentLimit == 0 &&
+            upgrade.Stats.UpgradeSlotCount == 0 && upgrade.Statuses.Count == 0 &&
+            upgrade.ExternalInteractions.Count == 0 && upgrade.TriggerUpgrades?.Count is not > 0 &&
+            upgrade.AbilityUpgrade == null && upgrade.Lifecycle?.AddedTraits.Count is not > 0 &&
+            upgrade.Lifecycle?.RemovedRuntimeTypes.Count is not > 0 && upgrade.Lifecycle?.Triggers.Count is not > 0;
+
         internal static string? Validate(CombatRelicState owner, RelicCardTypeCost rule)
         {
             CardUpgradeModifier? upgrade = rule.FirstCardUpgrade;
@@ -26,15 +36,7 @@ namespace MonsterTrain2Poju.Model
                 owner.EffectTypes[rule.EffectIndex] != Effect || owner.DisallowedInPlacementPhase != false ||
                 rule.CardType != "Spell" || rule.Amount != 15 || rule.IgnoreRestrictions ||
                 rule.RequiredSubtype != null || rule.ConditionCount != 0 || rule.PileType != "DeckPile" ||
-                !rule.WaitingForFirstCard.HasValue || upgrade == null || upgrade.DataId != Effect ||
-                !upgrade.Unique || !upgrade.ExcludeFromClones || !upgrade.RemoveOnDiscard ||
-                upgrade.Stats.Damage != 0 || upgrade.Stats.Health != 0 || upgrade.Stats.Cost > 0 ||
-                upgrade.Stats.Heal != 0 || upgrade.Stats.Size != 0 || upgrade.Stats.XCost < 0 ||
-                upgrade.Stats.XCost != -upgrade.Stats.Cost || upgrade.Stats.EquipmentLimit != 0 ||
-                upgrade.Stats.UpgradeSlotCount != 0 || upgrade.Statuses.Count != 0 ||
-                upgrade.ExternalInteractions.Count != 0 || upgrade.TriggerUpgrades?.Count > 0 ||
-                upgrade.AbilityUpgrade != null || upgrade.Lifecycle?.AddedTraits.Count > 0 ||
-                upgrade.Lifecycle?.RemovedRuntimeTypes.Count > 0 || upgrade.Lifecycle?.Triggers.Count > 0)
+                !rule.WaitingForFirstCard.HasValue || upgrade == null || !IsDiscountUpgrade(upgrade))
                 return "Missing or changed native first-Spell-per-pile cost payload.";
             return null;
         }
