@@ -8,7 +8,6 @@ namespace MonsterTrain2Poju.Model
         internal const string HandOwnerId = "2dd0e035-96a9-46f3-8c52-eacbe82e871b";
         internal const string EmberOwnerId = "0421d885-09a3-48ec-ad5e-762127ac336e";
         internal const string ConserveOwnerId = "3e200d1f-7ba9-4a6e-a09d-5625f25b01ac";
-        internal const string EphemeralCardId = "9f9afce5-44fe-40ff-aee5-1df851b30263";
         internal const string SuppressDiscardEffect = "RelicEffectSuppressHandDiscard";
         internal const string SuppressBaseEnergyEffect = "RelicEffectConserveEnergyStartOfTurn";
         internal const string StartingRelicEffect = "RelicEffectAddRelicStartOfRun";
@@ -33,8 +32,5 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool SupportsEnergyOwner(IEnumerable<CombatRelicState> owners) =>
             owners.Count(OriginalEmber) == 1 && owners.Count(OriginalConserve) == 1;
-
-        internal static bool OriginalEphemeral(CardInstanceState? card) =>
-            card?.DataId == EphemeralCardId && CardTerminalPurgeModel.Supports(card);
     }
 }

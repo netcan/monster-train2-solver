@@ -419,8 +419,6 @@ namespace MonsterTrain2Poju.Model
             {
                 if (context.Cards.Hand.Any(card => context.FindCard(card.InstanceId)?.MaskDescriptor == null))
                     return Unsupported("Suppressed hand discard requires captured hand traits.");
-                if (ephemeralCardIds.Any(id => !RelicHandAndEmberModel.OriginalEphemeral(context.FindCard(id))))
-                    return Unsupported("Unverified Ephemeral cleanup during suppressed hand discard.");
                 persistentCardIds = context.Cards.Hand.Select(card => card.InstanceId).ToList();
             }
             CardCycleResult discard = CardCycleModel.DiscardHand(context.Cards, ephemeralCardIds, persistentCardIds, infusionCardIds);

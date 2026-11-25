@@ -16,11 +16,13 @@ namespace MonsterTrain2Poju.Probe
         private const string EmberId = "0421d885-09a3-48ec-ad5e-762127ac336e";
         private const string TorchId = "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b";
         private const string EphemeralId = "9f9afce5-44fe-40ff-aee5-1df851b30263";
+        private const string EntropyScourgeId = "3b603b7f-300c-4022-9fc2-275448446e58";
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         private static readonly string? Mode = Environment.GetEnvironmentVariable("MT2_PROBE_HAND_AND_EMBER_WITNESS");
         internal static bool Enabled => Combined || Mode == "Stock";
-        internal static bool Combined => Mode is "Combined" or "Ephemeral";
-        private static bool Ephemeral => Mode == "Ephemeral";
+        internal static bool Combined => Mode == "Combined" || Ephemeral;
+        private static bool Ephemeral => Mode is "Ephemeral" or "EphemeralScourge";
+        private static bool Scourge => Mode == "EphemeralScourge";
         private static bool prepared;
         private static int? endingTurn;
         private static readonly List<PhaseEvent> phases = new List<PhaseEvent>();
@@ -109,14 +111,16 @@ namespace MonsterTrain2Poju.Probe
                     afterPlay ??= Capture();
                     if (Ephemeral && donor == null)
                     {
-                        var definition = save.GetAllGameData().FindCardData(EphemeralId);
-                        if (definition == null || definition.name != "TFB_PyreAttack" || definition.GetCardTriggers().Any() ||
-                            !definition.GetTraits().Select(trait => trait.GetTraitStateName())
-                                .SequenceEqual(new[] { nameof(CardTraitSelfPurge), nameof(CardTraitEphemeral) }))
+                        var definition = save.GetAllGameData().FindCardData(Scourge ? EntropyScourgeId : EphemeralId);
+                        string[] expectedTraits = Scourge ? new[] { nameof(CardTraitEphemeral) } :
+                            new[] { nameof(CardTraitSelfPurge), nameof(CardTraitEphemeral) };
+                        if (definition == null || definition.name != (Scourge ? "TFB_EntropyScourge" : "TFB_PyreAttack") ||
+                            definition.GetCardTriggers().Count != (Scourge ? 1 : 0) ||
+                            !definition.GetTraits().Select(trait => trait.GetTraitStateName()).SequenceEqual(expectedTraits))
                             throw new InvalidOperationException("Original Ephemeral donor definition changed.");
                         donor = cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false);
                         if (donor == null || !cards.GetHand().Contains(donor) || !donor.HasTrait<CardTraitEphemeral>() ||
-                            !donor.HasTrait<CardTraitSelfPurge>() || donor.TriggersOnUnplayed() || save.GetDeckState().Contains(donor))
+                            donor.HasTrait<CardTraitSelfPurge>() == Scourge || donor.TriggersOnUnplayed() != Scourge || save.GetDeckState().Contains(donor))
                             throw new InvalidOperationException("Native original Ephemeral donor did not enter only the combat hand.");
                         return Step.Wait;
                     }
@@ -267,6 +271,7 @@ namespace MonsterTrain2Poju.Probe
             public bool BufferAfter { get; set; }
             public bool DiscardAfter { get; set; }
             public bool PurgedAfter { get; set; }
+            public int PyreHealth { get; set; }
         }
 
         private static void Observe(string kind, int value = 0)
@@ -316,7 +321,8 @@ namespace MonsterTrain2Poju.Probe
                 if (endingTurn != 1 || donor == null || !ReferenceEquals(donor, discardCardParams.discardCard) ||
                     AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
                 __state = new CleanupMovement(FullBattleTrace.Active!.CardId(donor), discardCardParams, forceDiscardEffect,
-                    __instance.GetHand().Contains(donor), __instance.GetDiscardBufferPile().Contains(donor));
+                    __instance.GetHand().Contains(donor), __instance.GetDiscardBufferPile().Contains(donor))
+                    { PyreHealth = AllGameManagers.Instance.GetSaveManager().GetTowerHP() };
             }
 
             private static void Postfix(CardManager __instance, CleanupMovement? __state)

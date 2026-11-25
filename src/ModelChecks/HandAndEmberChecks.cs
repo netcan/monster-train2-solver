@@ -3,6 +3,9 @@ using MonsterTrain2Poju.Model;
 
 internal static class HandAndEmberChecks
 {
+    private const string PyreAttackId = "9f9afce5-44fe-40ff-aee5-1df851b30263";
+    private const string EntropyScourgeId = "3b603b7f-300c-4022-9fc2-275448446e58";
+
     internal static void Pair(FixtureValue combined, FixtureValue stock)
     {
         foreach (string field in new[] { "Seed", "ClassId", "SubclassId", "Scenario", "BaseEnergy", "BaseDraw", "MaxEnergy", "PaidCard" })
@@ -14,17 +17,19 @@ internal static class HandAndEmberChecks
 
     internal static void Ephemeral(FixtureValue root)
     {
-        Replay(root, combined: true, ephemeral: true);
-        Console.WriteLine("NATIVE-HAND-EPHEMERAL-REPLAY PASS: original HandDoesntDiscard, native buffer-only Ephemeral cleanup, ordinary retention and complete EndTurn successor.");
+        string mode = root.GetProperty("Mode").GetString()!;
+        Require(mode is "Ephemeral" or "EphemeralScourge", "Expected an original Ephemeral hand cleanup scenario.");
+        Replay(root, combined: true, ephemeralMode: mode);
+        Console.WriteLine($"NATIVE-HAND-EPHEMERAL-REPLAY PASS: mode={mode}, original HandDoesntDiscard, native buffer-only Ephemeral cleanup, ordinary retention and complete EndTurn successor.");
     }
 
-    private static void Replay(FixtureValue root, bool combined, bool ephemeral = false)
+    private static void Replay(FixtureValue root, bool combined, string? ephemeralMode = null)
     {
         Require(root.GetProperty("Boundary").GetString() == "OriginalHandAndEmberNewRun" &&
             root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
             root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
             root.GetProperty("RunType").GetString() == (combined ? "Custom" : "Class") &&
-            root.GetProperty("Mode").GetString() == (ephemeral ? "Ephemeral" : combined ? "Combined" : "Stock"), "Missing original paired start.");
+            root.GetProperty("Mode").GetString() == (ephemeralMode ?? (combined ? "Combined" : "Stock")), "Missing original paired start.");
 
         FixtureValue Decision(string name) => root.GetProperty(name).GetProperty("Decision");
         var deployment = Decision("Deployment").Deserialize<BattleTurnState>()!;
@@ -54,7 +59,7 @@ internal static class HandAndEmberChecks
         BattleActionResult played = BattleActionModel.PlayCard(state, input);
         Require(played.State != null && played.Outcome == RoomOutcome.Exchanged, "Paid action: " + played.Reason);
         state = RecordedBattleChecks.RecordedBoundary(played.State!, Decision("AfterPlay"), false, "After paid action");
-        if (ephemeral) state = DonorBoundary(root, state, second);
+        if (ephemeralMode != null) state = DonorBoundary(root, state, second, scourge: ephemeralMode == "EphemeralScourge");
         BattleTurnResult last = BattleTurnModel.EndTurn(state);
         Require(last.State != null && last.Outcome == RoomOutcome.Exchanged, "Ordinary EndTurn: " + last.UnsupportedReason);
         RecordedBattleChecks.RecordedBoundary(last.State!, Decision("SecondDraw"), false, "Second draw");
@@ -63,7 +68,7 @@ internal static class HandAndEmberChecks
             state.Spawn.Train.Context!.Cards.Hand.Select(card => card.InstanceId).ToArray();
     }
 
-    private static BattleTurnState DonorBoundary(FixtureValue root, BattleTurnState afterPlay, BattleTurnState second)
+    private static BattleTurnState DonorBoundary(FixtureValue root, BattleTurnState afterPlay, BattleTurnState second, bool scourge)
     {
         FixtureValue movement = root.GetProperty("Cleanup");
         int cardId = movement.GetProperty("CardId").GetInt32();
@@ -76,8 +81,11 @@ internal static class HandAndEmberChecks
 
         var boundary = root.GetProperty("BeforeCleanup").GetProperty("Decision").Deserialize<BattleTurnState>()!;
         CombatContext prior = afterPlay.Spawn.Train.Context!, before = boundary.Spawn.Train.Context!, after = second.Spawn.Train.Context!;
-        Require(RelicHandAndEmberModel.OriginalEphemeral(before.FindCard(cardId)) &&
-            before.Cards.Hand.Single(card => card.InstanceId == cardId).DataId == RelicHandAndEmberModel.EphemeralCardId &&
+        string dataId = scourge ? EntropyScourgeId : PyreAttackId;
+        var donor = before.FindCard(cardId)!;
+        Require(donor.DataId == dataId && CardBranchMaskModel.Resolve(donor).Traits.SequenceEqual(scourge
+                ? ["CardTraitEphemeral"] : ["CardTraitSelfPurge", "CardTraitEphemeral"]) &&
+            before.Cards.Hand.Single(card => card.InstanceId == cardId).DataId == dataId &&
             Tokens(before.Cards.Hand.Where(card => card.InstanceId != cardId)).SequenceEqual(Tokens(prior.Cards.Hand)) &&
             Tokens(before.Cards.Draw).SequenceEqual(Tokens(prior.Cards.Draw)) &&
             Tokens(before.Cards.Discard).SequenceEqual(Tokens(prior.Cards.Discard)) &&
@@ -89,6 +97,12 @@ internal static class HandAndEmberChecks
             !after.Cards.Hand.Concat(after.Cards.Draw).Concat(after.Cards.Discard).Any(card => card.InstanceId == cardId) &&
             after.Statistics!.Value(cardId, "TimesDiscarded", "ThisBattle") == before.Statistics.Value(cardId, "TimesDiscarded", "ThisBattle"),
             "Native donor did not stay exclusively in the discard buffer, or recorded a full discard.");
+        if (scourge)
+        {
+            int pyreBefore = boundary.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health;
+            Require(movement.GetProperty("PyreHealth").GetInt32() == pyreBefore - 3,
+                "The original unplayed Scourge must damage the Pyre before leaving the hand.");
+        }
 
         return boundary;
 

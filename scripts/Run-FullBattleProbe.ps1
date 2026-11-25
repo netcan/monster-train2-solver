@@ -640,7 +640,7 @@ param(
     [switch] $OriginalSkullCollectorsWitness,
     [switch] $SkullCollectorsFullBattle,
     [ValidateRange(1, 3)] [int] $SkullCollectorsTier = 1,
-    [ValidateSet('Combined', 'Stock', 'Ephemeral')]
+    [ValidateSet('Combined', 'Stock', 'Ephemeral', 'EphemeralScourge')]
     [string] $OriginalHandAndEmberWitness = '',
 
     [ValidateSet('Stock', 'Modified')]
