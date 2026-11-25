@@ -1692,7 +1692,10 @@ Fecundity 的原版升级回调会把全额减费值改为目标卡当前的实�
 [三级对照](../tests/compatibility/game-2.3.1/mechanics/skull-collectors/native-tier3-projected.mt2f)
 
 一级还完成了第二环原版胜局，共 20 次出牌、6 次结束回合，剩 35 点薪火。整局状态、随机流、两类候选、16 条独立分支和串并行计划复放通过。
-[一级整战](../tests/compatibility/game-2.3.1/mechanics/skull-collectors/native-tier1-battle.mt2f)
+二级和三级分别完成第四环与第七环原版败局。二级核对 21 次出牌、7 次结束回合，三级核对 4 次出牌、5 次结束回合。两场的整局状态、随机流、两类候选和每场 16 条独立分支均通过。二级还验证了遗物在场时的月相手牌刷新，三级录制等待死亡回调及原版单位对象销毁结算后再读快照。
+[一级整战](../tests/compatibility/game-2.3.1/mechanics/skull-collectors/native-tier1-battle.mt2f) ·
+[二级整战](../tests/compatibility/game-2.3.1/mechanics/skull-collectors/native-tier2-battle.mt2f) ·
+[三级整战](../tests/compatibility/game-2.3.1/mechanics/skull-collectors/native-tier3-battle.mt2f)
 
 第二层开局突变在首个可操作决策前多结算一次移层和出生。专项对照匹配了首波移至第二层、
 第二波在底层生成、寻宝单位生成及出生随机流的重置。支持范围由该开局的原版状态约束。

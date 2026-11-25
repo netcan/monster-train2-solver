@@ -103,6 +103,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Original SkullCollectors opening failed.' }
     dotnet $checks --solver-stage-case-only "$skullCollectors/native-tier1-battle.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original SkullCollectors tier 1 battle failed.' }
+    foreach ($tier in @('tier2', 'tier3')) {
+        dotnet $checks --native-skull-collectors-only "$skullCollectors/native-$tier-projected.mt2f"
+        if ($LASTEXITCODE -ne 0) { throw "Original SkullCollectors opening failed for $tier." }
+        dotnet $checks --recorded-chain-diagnose "$skullCollectors/native-$tier-battle.mt2f" --frontiers
+        if ($LASTEXITCODE -ne 0) { throw "Original SkullCollectors battle failed for $tier." }
+    }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }
